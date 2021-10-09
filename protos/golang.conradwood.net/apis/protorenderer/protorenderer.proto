@@ -1,0 +1,260 @@
+syntax = "proto3";
+
+package protorenderer;
+option java_package = "net.conradwood.golang.apis.protorenderer";
+import "golang.conradwood.net/apis/common/common.proto";
+import "golang.conradwood.net/apis/h2gproxy/h2gproxy.proto";
+import "google/protobuf/descriptor.proto";
+
+// keeping a file in database with metadata
+message DBProtoFile {
+  uint64 ID=1;
+  string Name=2; // as 'submitted', e.g. "protos/golang.conradwood.net/apis/protorenderer/protorenderer.proto"
+  uint64 RepositoryID=3; // a repo id, if submitted
+}
+
+// simple database mapping strategy to keep persistent IDs between restarts
+message PersistID {
+  uint64 ID = 1;
+  string Key = 2;
+}
+
+// add a single proto to the proto repo
+message AddProtoRequest {
+  string Name = 1;         // *absolute* file name of proto file
+  string Content = 2;      // the content of the proto file
+  uint64 RepositoryID = 3; // which repository does this file live in?
+}
+
+// response to adding a single proto
+message AddProtoResponse {
+  uint64 Version = 1;          // the version this update has created. if GetVersion() creates >= this than proto is compiled and ready
+  uint64 ProtoVersion = 2;     // the Version of the 'proto status' we are compiling. (TODO: align with 'version')
+  string GoPackage = 3;        // gopackage of this file
+  string JavaPackage = 4;      // javapackage of this file
+  repeated string Imports = 5; // imports of this file
+}
+
+message ProtoFile {
+  string GoPackage = 1;
+  string JavaPackage = 2;
+  string Filename = 3; // filename (w/o path)
+  string Content = 4;
+  repeated string Imports = 5;
+  /*
+   metacompiler adds ingredients here at the end of its compile process.
+   this provides a backreference to the 'meta-compiled' details for each protofile
+   */
+  MetaProtoFile Meta = 6;
+  uint64 RepositoryID = 7; // which repository does this file live in?
+}
+
+// link between "meta" and our protofiles.
+message MetaProtoFile {
+  // the package this protofile is in
+  string PackageID = 1;
+  // the "package" meta has parsed
+  Package Package = 2;
+}
+
+// package has an ID which we attempt to keep stable
+// suitable for semi-shortterm references, e.g. html links
+message Package {
+  string ID = 1;
+  string Name = 2;               // e.g. "protorenderer"
+  string Prefix = 3;             // e.g. "golang.conradwood.net/apis" or "golang.singingcat.net/apis"
+  repeated Service Services = 4; // e.g. { "ProtoRendererService" }
+  repeated Message Messages = 5; // e.g.  { "AddProtoRequest","ProtoFile" }
+}
+
+message Service {
+  string ID = 1;
+  string Name = 2; // e.g. "ProtoRendererService"
+  repeated RPC RPCs = 3;
+  string Comment = 4;
+  string PackageID = 5; // backreference to package
+  uint64 RepositoryID =6;
+}
+
+message RPC {
+  string ID = 1;
+  string Name = 2; // e.g. "UpdateProto"
+  Message Input = 3;
+  Message Output = 4;
+  string Comment = 5;
+  string ServiceID = 6; // backreference to service
+  bool Deprecated = 7;  // if deprecated (scans in comment for DEPRECATED)
+}
+message Message {
+  string ID = 1;
+  string Name = 2; // e.g. "AddProtoRequest"
+  string Comment = 3;
+  string PackageID = 4; // backreference to package
+  repeated Field Fields = 5;
+}
+
+message Field {
+  string ID = 1;
+  string Name = 2;
+  string Type = 3;
+  string ExtraType = 4;
+  bool Repeated = 5;
+  bool Required = 6;
+  bool Optional = 7;
+  string Comment = 8;
+  string MessageID = 9;    // a field might not be a built-in but a message
+  string MessageName = 10; // shortcut to the message name (which messageid links to)
+}
+
+message PackageIDRequest {
+  string Package = 1; // e.g. 'auth'
+  string Prefix = 2;  // e.g. "golang.conradwood.net/apis"
+}
+
+message ID {
+  // the actual ID
+  string ID = 1;
+}
+message MessageIDRequest {
+  string PackageID = 1;
+  string MessageName = 2;
+}
+/*****************************************************************
+Stuff for retrieving files
+*****************************************************************/
+message FilenameList {
+  repeated string Files = 1;
+}
+message FileRequest {
+  ID PackageID = 1;
+  string Filename = 2;
+}
+message File {
+  bytes Content = 1;
+  uint64 RepositoryID = 2; // which repository did it come from?
+}
+message Version {
+  uint64 Version = 1;      // changes whenever at least one file changes
+  bool Compiling = 2;      // true if protorenderer is currently compiling
+  uint64 NextVersion = 3;  // if Compiling==true, this gives the version of what is currently compiling
+  uint64 ProtoVersion = 4; // the Version of the 'proto status' we are compiling. (TODO: align with 'version')
+}
+
+/*****************************************************************
+Stuff that is sent by protoc to protorendererserver
+*****************************************************************/
+
+message ProtocRequest {
+  string VerifyToken = 1;
+  repeated google.protobuf.FileDescriptorProto ProtoFiles = 2;
+}
+
+/*****************************************************************
+Stuff that is useful to render it
+*****************************************************************/
+
+// a package, but without nested objects
+message FlatPackage {
+  string ID = 1;
+  string Name = 2;   // e.g. "protorenderer"
+  string Prefix = 3; // e.g. "golang.conradwood.net/apis" or "golang.singingcat.net/apis"
+}
+
+message FlatPackageList {
+  repeated FlatPackage Packages = 1;
+}
+
+message CompileRequest {
+  AddProtoRequest AddProtoRequest = 1;
+  repeated common.ProgrammingLanguage Languages = 2; // which languages do we want to compile for?
+}
+
+message CompileResult {
+  string SourceFilename = 1; // the "normalised" source filename
+  string CompileError = 2;   // if not "" there was some error compiling this
+  repeated CompiledFile Files = 3;
+}
+message CompiledFile {
+  common.ProgrammingLanguage Language = 1; // which languages do we want to compile for?
+  string Filename = 2;                     // filename of compiled file
+  bytes Content = 3;                       // the file's content
+}
+
+message DeleteRequest {
+  string Name=1; // filename as listed in protorenderer
+}
+message FindServiceByNameRequest {
+  string Name=1;
+}
+message ServiceList {
+  repeated ServiceResponse Services=1;
+}
+message ServiceResponse {
+  Service Service=1;
+  Package Package=2;
+  string  PackageName =3;
+  string PackageFQDN=4;
+}
+
+/*
+The protorenderer creates compilable protos in various languages
+based on user permissions
+it also creates documentation
+
+1) proto files come from multiple sources, repositories
+2) not all proto files are "public", some are restricted to certain users
+3) this applies to proto-source, documentation and proto-compiled
+4) we want to serve boiler-plate code for all the bits that a user has access to
+5) we want to version stuff
+
+we work on a "namespace" basis, that's usually an "internet domain", each proto is part of exactly one namespace
+This helps to keep identical names apart
+access rights need to be granular to the proto, not namespace
+*/
+service ProtoRendererService {
+  // add or update a ".proto" file in the renderers database
+  rpc UpdateProto(AddProtoRequest) returns (AddProtoResponse);
+  // basic parse ;). Fast, quick no dependency parser
+  rpc MiniParser(AddProtoRequest) returns (ProtoFile);
+  // we can submit protofiles from protoc to protorenderer server for analysis
+  rpc SubmitSource(ProtocRequest) returns (common.Void);
+  // download classes, jars, .pb.go files or a tar full of pythons
+  rpc StreamHTTP(h2gproxy.StreamRequest) returns (stream h2gproxy.StreamDataResponse);
+  // get all packages ("flat", it does not include services/message protos)
+  rpc GetPackages(common.Void) returns (FlatPackageList);
+  // get a specific package (not "flat", it _does_ include services/messages protos)
+  rpc GetPackageByID(ID) returns (Package);
+  /* get all java class names for a given packageID
+   This is an EXPERIMENTAL API - subject to change.
+   the match between "package" and "namespace" and "filename" is ill-defined. In future
+   The api might return filenames in an abstract naming scheme (or not) and requires
+   more input parameters.
+  */
+  rpc GetFilesJavaClass(ID) returns (FilenameList);
+  /* get all .pb.go files for a given package */
+  rpc GetFilesGO(ID) returns (FilenameList);
+  /* get all .proto files for a given package */
+  rpc GetFilesProto(ID) returns (FilenameList);
+  /* get all .py files for a given package */
+  rpc GetFilesPython(ID) returns (FilenameList);
+  /*
+   get a specific file by filename
+   This is an EXPERIMENTAL API - subject to change.
+   the match between "package" and "namespace" and "filename" is ill-defined. In future
+   The api might return filenames in an abstract naming scheme (or not) and requires
+   more input parameters.
+  */
+  rpc GetFile(FileRequest) returns (File);
+  // get the current version of the store
+  rpc GetVersion(common.Void) returns (Version);
+  // compile a file, return output(s), but do not store results
+  rpc CompileFile(CompileRequest) returns (CompileResult);
+  // list all sourcefiles
+  rpc ListSourceFiles(common.Void) returns (FilenameList);
+  // delete a file
+  rpc DeleteFile(DeleteRequest) returns (common.Void);
+  // find a service by name (might return multiple - beware)
+  rpc FindServiceByName(FindServiceByNameRequest) returns (ServiceList);
+  // get a service by ID
+  rpc FindServiceByID(ID) returns (ServiceResponse);
+}

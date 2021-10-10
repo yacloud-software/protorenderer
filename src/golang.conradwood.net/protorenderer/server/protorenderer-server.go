@@ -48,6 +48,7 @@ var (
 	compile_python      = flag.Bool("compile_python", true, "if true compile python...")
 	compile_java        = flag.Bool("compile_java", true, "if true compile java...")
 	port                = flag.Int("port", 4102, "The grpc server port")
+	recreate_version    = flag.Bool("initialise_version", false, "if true will start version counting from 0 again. this will reshuffle proto/service ids (that is: it will break deep html links). intented use is ONCE for the first time protorenderer-server is started")
 	protocache          = pc.New()
 	updateChan          = make(chan *updateinfo, 10000)
 	names               = make(map[string]bool)
@@ -88,6 +89,12 @@ func main() {
 		bs, err := client.Get(ar.Context(), VERSIONOBJECT)
 		if err != nil {
 			fmt.Printf("Failed to get version cache: %s\n", utils.ErrorString(err))
+			if *recreate_version {
+				err = client.PutWithID(ar.Context(), VERSIONOBJECT, []byte("1"))
+				utils.Bail("failed to initialize version cache", err)
+				time.Sleep(1 * time.Second)
+				continue
+			}
 			time.Sleep(10 * time.Second)
 			continue
 		}

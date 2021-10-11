@@ -24,6 +24,7 @@ var (
 	protoClient pb.ProtoRendererServiceClient
 	view        = flag.Bool("view", false, "view current proto docs")
 	files       = flag.Bool("files", false, "download .pb.go files")
+	sources     = flag.Bool("sources", false, "download .proto files")
 	version     = flag.Bool("version", false, "get version")
 	delete      = flag.Bool("delete", false, "delete files listed on command line")
 	compile     = flag.Bool("compile", false, "compile files on the fly (but do not add to repository")
@@ -39,6 +40,10 @@ func main() {
 	protoClient = pb.GetProtoRendererServiceClient()
 	if *packages {
 		Packages()
+		os.Exit(0)
+	}
+	if *sources {
+		Sources()
 		os.Exit(0)
 	}
 	if *listflag {

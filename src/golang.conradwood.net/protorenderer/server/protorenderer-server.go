@@ -253,6 +253,10 @@ func (e *protoRenderer) UpdateProto(ctx context.Context, req *pb.AddProtoRequest
 		}
 	}
 	add := pp.Protofile()
+	pfdb, err := dbproto.ByName(context.Background(), req.Name)
+	if err == nil && len(pfdb) != 0 {
+		add.RepositoryID = pfdb[0].RepositoryID
+	}
 	add.Filename = req.Name
 	nv := current.version
 	pv, err := protocache.AddOrUpdate(add)

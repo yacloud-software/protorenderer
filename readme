@@ -1,0 +1,35 @@
+the protorenderer solves the following problems:
+
+* protoc and its plugins are often different depending on the linux distribution being used and somewhat finicky to install. This provides a service which renders .proto files and returns .pb.go, .java, .class and python files
+
+* protos are distributed across repositories, thus a developer might not have all the protos available on their development machine. The protorender has a full filesystem of all protos ever seen in their latest version
+
+
+this evolves to be a protohandler
+
+1) proto files come from multiple sources, repositories
+2) not all proto files are "public", some are restricted to certain users
+3) this applies to proto-source, documentation and proto-compiled
+4) we want to serve boiler-plate code for all the bits that a user has access to
+5) we want to version stuff
+
+we work on a "namespace" basis, that's usually an "internet domain", each proto is part of exactly one namespace
+This helps to keep identical names apart
+access rights need to be granular to the proto, not namespace
+
+
+
+== packages ==
+to update client repositories and builds we must provide packages of .pb.go and .class files etc.
+How do we provide those?
+
+== TODO ==
+
+1) incremental compiling
+2) serve "last good" (instead of those WHILST compiling)
+3) serve "branch"
+4) compile single protos into a temporary branch (for CI/CD)
+5) compile a single proto and return it (for CI/CD)
+6) rethink versioning
+7) rethink what a package means (per user or service or organistation)
+

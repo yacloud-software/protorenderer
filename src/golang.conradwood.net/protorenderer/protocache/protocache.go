@@ -58,6 +58,9 @@ func (p *ProtoCache) GetFile(ctx context.Context, filename string) (*pr.ProtoFil
 		res = p
 		lf = p.version
 	}
+	if res == nil {
+		return nil, fmt.Errorf("file \"%s\" not found", filename)
+	}
 	return res.protoFile, nil
 }
 func (p *ProtoCache) Delete(ctx context.Context, filename string) (int, error) {

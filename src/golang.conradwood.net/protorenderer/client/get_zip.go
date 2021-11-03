@@ -6,6 +6,8 @@ import (
 	"golang.conradwood.net/go-easyops/authremote"
 	"golang.conradwood.net/go-easyops/utils"
 	"io"
+	"os"
+	"path/filepath"
 )
 
 func GetZip(pkg string) {
@@ -14,7 +16,9 @@ func GetZip(pkg string) {
 	ctx := authremote.Context()
 	srv, err := protoClient.GetFilesGoByPackageName(ctx, &pb.PackageName{PackageName: pkg})
 	utils.Bail("failed to get zip", err)
-	res := make([]byte, 0)
+	wd := "/tmp/x/"
+	currentFilename := ""
+	var curFile *os.File
 	for {
 		zf, err := srv.Recv()
 		if err != nil {
@@ -23,9 +27,26 @@ func GetZip(pkg string) {
 			}
 			utils.Bail("failed to get zip", err)
 		}
-		res = append(res, zf.Payload...)
+		if zf.Filename != currentFilename {
+			if curFile != nil {
+				curFile.Close()
+				curFile = nil
+			}
+			fname := wd + zf.Filename
+			cdir(fname)
+			curFile, err = os.Create(fname)
+			utils.Bail("failed to create file", err)
+		}
+		_, err = curFile.Write(zf.Payload)
+		utils.Bail("failed to write", err)
 	}
-	err = utils.WriteFile("/tmp/proto.zip", res)
-	utils.Bail("failed to write file", err)
-	fmt.Printf("zipfile in /tmp/proto.zip (length=%d bytes)\n", len(res))
+	if curFile != nil {
+		curFile.Close()
+		curFile = nil
+	}
+	fmt.Printf("files in %s\n", wd)
+}
+func cdir(fname string) {
+	s := filepath.Dir(fname)
+	os.MkdirAll(s, 0777)
 }

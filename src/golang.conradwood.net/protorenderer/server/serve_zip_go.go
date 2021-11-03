@@ -1,7 +1,6 @@
 package main
 
 import (
-	"archive/zip"
 	"fmt"
 	pb "golang.conradwood.net/apis/protorenderer"
 	"golang.conradwood.net/go-easyops/errors"
@@ -47,29 +46,19 @@ func (e *protoRenderer) GetFilesGoByPackageName(req *pb.PackageName, srv pb.Prot
 	}
 
 	// "files" now contains the files we want
-	zipWriter := zip.NewWriter(&zipcopier{srv: srv})
+	fz := &zipcopier{srv: srv}
 	for _, f := range files {
-		fz, err := zipWriter.Create(f.GetFilename())
-		if err != nil {
-			fmt.Printf("Failed to create zip: %s\n", err)
-			return err
-		}
 		buf, err := f.GetContent()
 		if err != nil {
 			fmt.Printf("Failed to get content for \"%s\": %s\n", f.GetFilename(), err)
 			return err
 		}
-		_, err = fz.Write(buf)
+		_, err = fz.Write(f.GetFilename(), buf)
 		if err != nil {
-			fmt.Printf("Failed to write zip: %s\n", err)
+			fmt.Printf("Failed to write file %s: %s\n", f.GetFilename(), err)
 			return err
 		}
-		fmt.Printf("File zipped: %s\n", f.GetFilename())
-	}
-	err := zipWriter.Close()
-	if err != nil {
-		fmt.Printf("Failed to close zip (%s)\n", err)
-		return err
+		fmt.Printf("File sent: %s\n", f.GetFilename())
 	}
 	return nil
 }
@@ -78,7 +67,7 @@ type zipcopier struct {
 	srv pb.ProtoRendererService_GetFilesGoByPackageNameServer
 }
 
-func (z *zipcopier) Write(buf []byte) (int, error) {
+func (z *zipcopier) Write(filename string, buf []byte) (int, error) {
 	start := 0
 	for {
 		to_send := len(buf)
@@ -92,7 +81,10 @@ func (z *zipcopier) Write(buf []byte) (int, error) {
 			break
 		}
 		fmt.Printf("Sending %d bytes (offset %d)...\n", to_send, start)
-		zf := &pb.ZipFile{Payload: buf[start : start+to_send]}
+		zf := &pb.FileStream{
+			Filename: filename,
+			Payload:  buf[start : start+to_send],
+		}
 		err := z.srv.Send(zf)
 		if err != nil {
 			return 0, err

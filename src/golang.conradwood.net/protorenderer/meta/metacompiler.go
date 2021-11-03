@@ -73,7 +73,7 @@ func (m *MetaCompiler) Compile(myport int) error {
 		return err
 	}
 	cmd := []string{
-		"/opt/cnw/ctools/dev/go/current/protoc/protoc",
+		"/opt/yacloud/ctools/dev/go/current/protoc/protoc",
 		fmt.Sprintf("--plugin=protoc-gen-meta=%s", pcfname),
 		"--meta_out=/tmp", // has no output
 		fmt.Sprintf("--meta_opt=%s,%s,%d,%s", m.verifytoken, sctx, port, cmdline.GetClientRegistryAddress()),

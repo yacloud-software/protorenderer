@@ -48,7 +48,7 @@ func (g *GoCompiler) Files(ctx context.Context, pkg *pr.Package, filetype string
 	var res []File
 	for _, f := range fs {
 		fn := pkg.Prefix + "/" + f
-		fl := &StdFile{Filename: fn, version: 1, ctFilename: f}
+		fl := &StdFile{Filename: fn, version: 1, ctFilename: ds + "/" + f}
 		res = append(res, fl)
 	}
 	return res, nil
@@ -86,7 +86,7 @@ func (g *GoCompiler) Compile() error {
 	pcfname := FindCompiler("protoc-gen-go")
 	fmt.Printf("Using: %s\n", pcfname)
 	cmd := []string{
-		"/opt/cnw/ctools/dev/go/current/protoc/protoc",
+		"/opt/yacloud/ctools/dev/go/current/protoc/protoc",
 		fmt.Sprintf("--plugin=protoc-gen-go=%s", pcfname),
 		fmt.Sprintf("--go_out=plugins=grpc:%s", targetdir),
 	}
@@ -106,7 +106,7 @@ func (g *GoCompiler) Compile() error {
 	pcfname = FindCompiler("protoc-gen-cnw")
 	fmt.Printf("Using: %s\n", pcfname)
 	cmd = []string{
-		"/opt/cnw/ctools/dev/go/current/protoc/protoc",
+		"/opt/yacloud/ctools/dev/go/current/protoc/protoc",
 		fmt.Sprintf("--plugin=protoc-gen-cnw=%s", pcfname),
 		fmt.Sprintf("--cnw_out=%s", targetdir),
 	}
@@ -131,6 +131,7 @@ func FindCompiler(cname string) string {
 		"dist/linux/amd64/",
 		"extra/compilers/",
 		"linux/amd64/",
+		"/opt/yacloud/ctools/dev/go/current/go/bin/",
 		"/opt/cnw/ctools/dev/go/current/go/bin/",
 		"/home/cnw/go/bin/",
 		"/home/cnw/devel/go/protorenderer/dist/linux/amd64/",

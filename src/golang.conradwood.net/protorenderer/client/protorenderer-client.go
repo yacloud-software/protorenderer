@@ -33,11 +33,16 @@ var (
 	repoid      = flag.Uint64("repository_id", 0, "repository id of the proto being submitted. if not set, will look at deploy.yaml")
 	pkgid       = flag.Uint64("package_id", 0, "package id to operate on")
 	packages    = flag.Bool("packages", false, "get packages")
+	get_zip     = flag.String("zip", "", "if non-nil get zip file for packagename")
 )
 
 func main() {
 	flag.Parse()
 	protoClient = pb.GetProtoRendererServiceClient()
+	if *get_zip != "" {
+		GetZip(*get_zip)
+		os.Exit(0)
+	}
 	if *packages {
 		Packages()
 		os.Exit(0)

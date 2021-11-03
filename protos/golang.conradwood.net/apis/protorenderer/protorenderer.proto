@@ -195,7 +195,13 @@ message ServiceResponse {
   string  PackageName =3;
   string PackageFQDN=4;
 }
-
+message PackageName {
+  string PackageName=1; // e.g. golang.conradwood.net/apis/common
+}
+message ZipFile {
+  bytes Payload=1;
+}
+  
 /*
 The protorenderer creates compilable protos in various languages
 based on user permissions
@@ -257,4 +263,6 @@ service ProtoRendererService {
   rpc FindServiceByName(FindServiceByNameRequest) returns (ServiceList);
   // get a service by ID
   rpc FindServiceByID(ID) returns (ServiceResponse);
+  // get .pb.go files for a given package, stream as zip file
+  rpc GetFilesGoByPackageName(PackageName) returns (stream ZipFile);
 }

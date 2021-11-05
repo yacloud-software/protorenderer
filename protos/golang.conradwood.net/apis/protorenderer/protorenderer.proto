@@ -267,6 +267,8 @@ service ProtoRendererService {
   rpc FindServiceByName(FindServiceByNameRequest) returns (ServiceList);
   // get a service by ID
   rpc FindServiceByID(ID) returns (ServiceResponse);
-  // get .pb.go files for a given package, stream as zip file
+  // get .pb.go files for a given package, stream one file after the other
   rpc GetFilesGoByPackageName(PackageName) returns (stream FileStream);
+  // get packageid by name
+  rpc GetPackageByName(PackageName) returns (Package);
 }

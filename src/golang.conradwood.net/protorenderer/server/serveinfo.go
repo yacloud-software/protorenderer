@@ -12,6 +12,22 @@ import (
 	"strings"
 )
 
+func (p *protoRenderer) GetPackageByName(ctx context.Context, req *pb.PackageName) (*pb.Package, error) {
+	ev := NeedVersion(ctx)
+	if ev != nil {
+		return nil, ev
+	}
+	result := completeVersion.metaCompiler.GetMostRecentResult()
+	if result == nil {
+		return nil, errors.Unavailable(ctx, "GetPackages (most recent result)")
+	}
+	for _, pk := range result.Packages {
+		if pk.FQDN == req.PackageName {
+			return p.GetPackageByID(ctx, &pb.ID{ID: pk.Proto.ID})
+		}
+	}
+	return nil, errors.NotFound(ctx, "package not found")
+}
 func (p *protoRenderer) GetPackages(ctx context.Context, req *common.Void) (*pb.FlatPackageList, error) {
 	ev := NeedVersion(ctx)
 	if ev != nil {

@@ -28,6 +28,7 @@ func GetZip(pkg string) {
 			utils.Bail("failed to get zip", err)
 		}
 		if zf.Filename != currentFilename {
+			fmt.Printf("new file: %s\n", zf.Filename)
 			if curFile != nil {
 				curFile.Close()
 				curFile = nil
@@ -36,6 +37,7 @@ func GetZip(pkg string) {
 			cdir(fname)
 			curFile, err = os.Create(fname)
 			utils.Bail("failed to create file", err)
+			currentFilename = zf.Filename
 		}
 		_, err = curFile.Write(zf.Payload)
 		utils.Bail("failed to write", err)

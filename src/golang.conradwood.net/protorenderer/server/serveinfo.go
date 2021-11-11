@@ -26,7 +26,7 @@ func (p *protoRenderer) GetPackageByName(ctx context.Context, req *pb.PackageNam
 			return p.GetPackageByID(ctx, &pb.ID{ID: pk.Proto.ID})
 		}
 	}
-	return nil, errors.NotFound(ctx, "package not found")
+	return nil, errors.NotFound(ctx, "package \"%s\" not found", req.PackageName)
 }
 func (p *protoRenderer) GetPackages(ctx context.Context, req *common.Void) (*pb.FlatPackageList, error) {
 	ev := NeedVersion(ctx)

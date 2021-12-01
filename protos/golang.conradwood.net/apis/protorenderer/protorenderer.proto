@@ -6,7 +6,16 @@ import "golang.conradwood.net/apis/common/common.proto";
 import "golang.conradwood.net/apis/h2gproxy/h2gproxy.proto";
 import "google/protobuf/descriptor.proto";
 
-// keeping a file in database with metadata
+enum CompilerType {
+  UNDEFINED=0;
+  GOLANG=1;
+  JAVA=2;
+  PYTHON=3;
+  NANOPB=4;
+  CPLUSPLUS=5;
+}
+
+  // keeping a file in database with metadata
 message DBProtoFile {
   uint64 ID=1;
   string Name=2; // as 'submitted', e.g. "protos/golang.conradwood.net/apis/protorenderer/protorenderer.proto"
@@ -128,6 +137,7 @@ message FilenameList {
 message FileRequest {
   ID PackageID = 1;
   string Filename = 2;
+  CompilerType Compiler=3; // optional, but strongly encouraged. If left undefined, server will attempt to derive compiler from filename suffix, for example ".class" to "java". In some cases, this is ambigous, for example, nanopb and c++ both have files with a suffix of ".h".
 }
 message File {
   bytes Content = 1;

@@ -57,8 +57,9 @@ func (npb *NanoPBCompiler) Compile() error {
 		out, err := l.SafelyExecuteWithDir(com, npb.fl.SrcDir(), nil)
 		if err != nil {
 			npb.Printf("Nanopb failed: %s\n", out)
-			npb.Printf("Error: %s\n", err)
-			return fmt.Errorf("nanopb compile error (%s)\n", err)
+			npb.Printf("File %s [Error: %s]\n", srcname, err)
+			// ignore errors for now..
+			continue
 		}
 		npb.Printf("File: %s [COMPILED]\n", srcname)
 	}

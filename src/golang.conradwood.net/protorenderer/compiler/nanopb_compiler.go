@@ -5,15 +5,17 @@ import (
 	"fmt"
 	pr "golang.conradwood.net/apis/protorenderer"
 	"golang.conradwood.net/go-easyops/linux"
+	"golang.conradwood.net/go-easyops/utils"
 	"golang.conradwood.net/protorenderer/common"
 	"golang.conradwood.net/protorenderer/filelayouter"
 	"sync"
 )
 
 type NanoPBCompiler struct {
-	lock sync.Mutex
-	err  error
-	fl   *filelayouter.FileLayouter
+	lock      sync.Mutex
+	err       error
+	fl        *filelayouter.FileLayouter
+	targetdir string
 }
 
 func (npb *NanoPBCompiler) WorkDir() string {
@@ -33,21 +35,21 @@ func (npb *NanoPBCompiler) Compile() error {
 	}
 	l := linux.New()
 	l.MyIP()
-	targetdir := npb.WorkDir() + "/nanopb"
-	err = common.RecreateSafely(targetdir)
+	npb.targetdir = npb.WorkDir() + "/nanopb"
+	err = common.RecreateSafely(npb.targetdir)
 	if err != nil {
 		npb.err = err
 		return err
 	}
 	npb.Printf("Sourcedir: %s\n", npb.fl.SrcDir())
 	npb.Printf("Workdir:   %s\n", npb.WorkDir())
-	npb.Printf("Targetdir: %s\n", targetdir)
+	npb.Printf("Targetdir: %s\n", npb.targetdir)
 	for _, f := range files {
 		srcname := f
 		npb.Printf("File: %s [COMPILING]\n", srcname)
 		com := []string{
 			"nanopb_generator.py",
-			"-D", targetdir, // output dir
+			"-D", npb.targetdir, // output dir
 			"-Q", `# include "nanopb/%s"`,
 			"-L", `# include <nanopb/%s>"`,
 			srcname,
@@ -56,7 +58,7 @@ func (npb *NanoPBCompiler) Compile() error {
 		if err != nil {
 			npb.Printf("Nanopb failed: %s\n", out)
 			npb.Printf("Error: %s\n", err)
-			panic("nanopb failure")
+			return fmt.Errorf("nanopb compile error (%s)\n", err)
 		}
 		npb.Printf("File: %s [COMPILED]\n", srcname)
 	}
@@ -72,10 +74,34 @@ func (npb *NanoPBCompiler) Error() error {
 }
 func (npb *NanoPBCompiler) Files(ctx context.Context, pkg *pr.Package, filetype string) ([]File, error) {
 	npb.Printf("Want files for package: %v\n", pkg)
-	return nil, fmt.Errorf("nanopb compiler: not impl")
+	ds := npb.WorkDir() + "/go/" + pkg.Prefix
+	fmt.Printf("Targetdir: %s\n", npb.targetdir)
+	// examples of paths:
+	// targetdir: /tmp/wd//1438/build/nanopb
+	// pkg.Prefix: golang.conradwood.net/apis/weblogin
+	fpath := npb.targetdir + "/" + pkg.Prefix
+	if !utils.FileExists(fpath) {
+		// have 0 files matching this
+		return []File{}, nil
+	}
+	fnames, err := AllFiles(fpath, "")
+	if err != nil {
+		return nil, err
+	}
+	var res []File
+	for _, f := range fnames {
+		npb.Printf("File: \"%s\"\n", f)
+		fn := pkg.Prefix + "/" + f
+		fl := &StdFile{Filename: fn, version: 1, ctFilename: ds + "/" + f}
+		res = append(res, fl)
+	}
+	return res, nil
 }
 
 // get a specific file
 func (npb *NanoPBCompiler) GetFile(ctx context.Context, filename string) (File, error) {
-	return nil, fmt.Errorf("nanopb compiler: not impl")
+	fn := npb.targetdir + "/" + filename
+	npb.Printf("Want file \"%s\" => \"%s\"\n", filename, fn)
+	fl := &StdFile{Filename: filename, version: 1, ctFilename: fn}
+	return fl, nil
 }

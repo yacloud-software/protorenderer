@@ -40,7 +40,8 @@ func get_files() {
 		fmt.Printf("Name: %s (%d go files, %d java files, %d protos)\n", pkg.Name, len(gofiles.Files), len(javafiles.Files), len(protofiles.Files))
 		for _, f := range gofiles.Files {
 			ctx = ar.Context()
-			file, err := protoClient.GetFile(ctx, &pb.FileRequest{PackageID: pkgid, Filename: f})
+			fr := &pb.FileRequest{Compiler: pb.CompilerType_GOLANG, PackageID: pkgid, Filename: f}
+			file, err := protoClient.GetFile(ctx, fr)
 			utils.Bail("failed to get file", err)
 			fmt.Printf("  Go File  : %s (%d bytes)\n", f, len(file.Content))
 			if save {
@@ -49,7 +50,8 @@ func get_files() {
 		}
 		for _, f := range nanofiles.Files {
 			ctx = ar.Context()
-			file, err := protoClient.GetFile(ctx, &pb.FileRequest{PackageID: pkgid, Filename: f})
+			fr := &pb.FileRequest{Compiler: pb.CompilerType_NANOPB, PackageID: pkgid, Filename: f}
+			file, err := protoClient.GetFile(ctx, fr)
 			utils.Bail("failed to get file", err)
 			fmt.Printf("  Go File  : %s (%d bytes)\n", f, len(file.Content))
 			if save {

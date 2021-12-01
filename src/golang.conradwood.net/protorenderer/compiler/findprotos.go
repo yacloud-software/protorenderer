@@ -14,6 +14,8 @@ func AllJava(dir string) ([]string, error) {
 func AllProtos(dir string) ([]string, error) {
 	return AllFiles(dir, ".proto")
 }
+
+// suffix might be "" (empty string) to include all files in dir
 func AllFiles(dir string, suffix string) ([]string, error) {
 	dir = strings.TrimSuffix(dir, "/")
 	files, err := addDir(dir, suffix)

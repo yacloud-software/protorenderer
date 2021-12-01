@@ -193,14 +193,29 @@ func (p *protoRenderer) GetFile(ctx context.Context, req *pr.FileRequest) (*pr.F
 		}, nil
 	}
 
-	if suffix == ".class" || suffix == ".java" {
-		compiler = cv.javaCompiler
-	} else if suffix == ".py" {
-		compiler = cv.pythonCompiler
-	} else if suffix == ".go" || suffix == ".pb.go" {
-		compiler = cv.goCompiler
+	// do we need to guess the compiler?
+	if req.Compiler == pr.CompilerType_UNDEFINED {
+		if suffix == ".class" || suffix == ".java" {
+			compiler = cv.javaCompiler
+		} else if suffix == ".py" {
+			compiler = cv.pythonCompiler
+		} else if suffix == ".go" || suffix == ".pb.go" {
+			compiler = cv.goCompiler
+		} else {
+			return nil, fmt.Errorf("unknown file \"%s\"", suffix)
+		}
 	} else {
-		return nil, fmt.Errorf("unknown file \"%s\"", suffix)
+		if req.Compiler == pr.CompilerType_GOLANG {
+			compiler = cv.goCompiler
+		} else if req.Compiler == pr.CompilerType_JAVA {
+			compiler = cv.javaCompiler
+		} else if req.Compiler == pr.CompilerType_PYTHON {
+			compiler = cv.pythonCompiler
+		} else if req.Compiler == pr.CompilerType_NANOPB {
+			compiler = cv.nanopbCompiler
+		} else {
+			return nil, errors.InvalidArgs(ctx, "invalid compilertype", "invalid compilertype (%v)", req.Compiler)
+		}
 	}
 	f, err := compiler.GetFile(ctx, req.Filename)
 	if err != nil {

@@ -19,6 +19,7 @@ access rights need to be granular to the proto, not namespace
 
 == required ==
 nanopb, javac etc
+apt-get install nanopb python3-protobuf
 
 == packages ==
 to update client repositories and builds we must provide packages of .pb.go and .class files etc.

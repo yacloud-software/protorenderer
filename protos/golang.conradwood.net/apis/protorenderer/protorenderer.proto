@@ -247,6 +247,8 @@ service ProtoRendererService {
   rpc GetFilesProto(ID) returns (FilenameList);
   /* get all .py files for a given package */
   rpc GetFilesPython(ID) returns (FilenameList);
+  /* get all nanopb files for a given package */
+  rpc GetFilesNanoPB(ID) returns (FilenameList);
   /*
    get a specific file by filename
    This is an EXPERIMENTAL API - subject to change.

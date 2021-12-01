@@ -17,7 +17,8 @@ we work on a "namespace" basis, that's usually an "internet domain", each proto 
 This helps to keep identical names apart
 access rights need to be granular to the proto, not namespace
 
-
+== required ==
+nanopb, javac etc
 
 == packages ==
 to update client repositories and builds we must provide packages of .pb.go and .class files etc.

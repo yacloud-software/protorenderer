@@ -135,7 +135,42 @@ func (p *protoRenderer) GetFilesGO(ctx context.Context, req *pr.ID) (*pr.Filenam
 	return fl, nil
 
 }
+func (p *protoRenderer) GetFilesNanoPB(ctx context.Context, req *pr.ID) (*pr.FilenameList, error) {
+	filetype := "."
+	compiler := completeVersion.nanopbCompiler
 
+	result := completeVersion.metaCompiler.GetMostRecentResult()
+	if result == nil {
+		return nil, errors.Unavailable(ctx, "GetPackages")
+	}
+	var pkg *meta.Package
+	id := req.ID
+	if id == "" {
+		return nil, errors.InvalidArgs(ctx, "missing packageid", "missing packageid")
+	}
+	for _, pm := range result.Packages {
+		if pm.Proto.ID == id {
+			pkg = pm
+			break
+		}
+	}
+	if pkg == nil {
+		return nil, errors.InvalidArgs(ctx, "no such package", "no package \"%s\"", id)
+	}
+
+	rf, err := compiler.Files(ctx, pkg.Proto, filetype)
+	if err != nil {
+		return nil, err
+	}
+	fl := &pr.FilenameList{}
+	for _, f := range rf {
+		s := f.GetFilename()
+		fl.Files = append(fl.Files, s)
+	}
+	return fl, nil
+}
+
+// get a specific file
 func (p *protoRenderer) GetFile(ctx context.Context, req *pr.FileRequest) (*pr.File, error) {
 	cv := completeVersion
 	if cv == nil {

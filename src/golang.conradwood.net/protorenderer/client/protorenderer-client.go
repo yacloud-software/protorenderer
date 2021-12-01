@@ -23,7 +23,7 @@ var (
 	http_port   = flag.Int("http_port", 8081, "http port to listen on")
 	protoClient pb.ProtoRendererServiceClient
 	view        = flag.Bool("view", false, "view current proto docs")
-	files       = flag.Bool("files", false, "download .pb.go files")
+	files       = flag.Bool("files", false, "download .proto, .pb.go, .class, .py, and nanopb files")
 	sources     = flag.Bool("sources", false, "download .proto files")
 	version     = flag.Bool("version", false, "get version")
 	delete      = flag.Bool("delete", false, "delete files listed on command line")

@@ -48,6 +48,13 @@ type GenericCompiler struct {
 	err         error
 }
 
+func NewNanoPBCompiler(f *filelayouter.FileLayouter) Compiler {
+	res := &NanoPBCompiler{
+		fl: f,
+	}
+	return res
+}
+
 func NewPythonCompiler(f *filelayouter.FileLayouter) Compiler {
 	res := &GenericCompiler{
 		plugin_args: []string{"python_out", "grpc_python_out"},

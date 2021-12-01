@@ -65,6 +65,7 @@ type version struct {
 	goCompiler         compiler.Compiler
 	javaCompiler       compiler.Compiler
 	pythonCompiler     compiler.Compiler
+	nanopbCompiler     compiler.Compiler
 	metaCompiler       *meta.MetaCompiler
 	protocache_version int
 	version            int
@@ -115,6 +116,7 @@ func main() {
 		goCompiler:     compiler.NewGoCompiler(fly),
 		javaCompiler:   compiler.NewJavaCompiler(fly),
 		pythonCompiler: compiler.NewPythonCompiler(fly),
+		nanopbCompiler: compiler.NewNanoPBCompiler(fly),
 		metaCompiler:   meta.NewMetaCompiler(fly),
 		version:        lv,
 	}
@@ -314,6 +316,7 @@ func updater() {
 			goCompiler:     compiler.NewGoCompiler(nfly),
 			javaCompiler:   compiler.NewJavaCompiler(nfly),
 			pythonCompiler: compiler.NewPythonCompiler(nfly),
+			nanopbCompiler: compiler.NewNanoPBCompiler(nfly),
 			metaCompiler:   meta.NewMetaCompiler(nfly),
 			version:        nv,
 		}
@@ -337,6 +340,11 @@ func updater() {
 			fmt.Printf("Error compiling go: %s\n", err)
 		}
 
+		err = current.nanopbCompiler.Compile()
+		if err != nil {
+			fmt.Printf("Error compiling nanopb: %s\n", err)
+		}
+
 		if *compile_java {
 			err = current.javaCompiler.Compile()
 			if err != nil {
@@ -356,7 +364,9 @@ func updater() {
 
 		ctx = ar.Context()
 		bs := fmt.Sprintf("%d", completeVersion.version)
-		client.PutWithID(ctx, VERSIONOBJECT, []byte(bs))
+		if updateObjectStore() {
+			client.PutWithID(ctx, VERSIONOBJECT, []byte(bs))
+		}
 		fmt.Printf("********************** Created version %d ***************************\n", completeVersion.version)
 	}
 }

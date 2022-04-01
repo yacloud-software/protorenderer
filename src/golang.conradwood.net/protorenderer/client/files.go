@@ -1,12 +1,14 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"golang.conradwood.net/apis/common"
 	pb "golang.conradwood.net/apis/protorenderer"
 	ar "golang.conradwood.net/go-easyops/authremote"
 	"os"
 	"path/filepath"
+	"strings"
 	//	"golang.conradwood.net/go-easyops/tokens"
 	"golang.conradwood.net/go-easyops/utils"
 )
@@ -24,6 +26,9 @@ func get_files() {
 	pkgs, err := protoClient.GetPackages(ctx, &common.Void{})
 	utils.Bail("failed to get packages", err)
 	for _, pkg := range pkgs.Packages {
+		if !packageMatches(pkg) {
+			continue
+		}
 		pkgid := &pb.ID{ID: pkg.ID}
 		gofiles, err := protoClient.GetFilesGO(ctx, pkgid)
 		utils.Bail("failed to get go files", err)
@@ -43,7 +48,7 @@ func get_files() {
 			fr := &pb.FileRequest{Compiler: pb.CompilerType_GOLANG, PackageID: pkgid, Filename: f}
 			file, err := protoClient.GetFile(ctx, fr)
 			utils.Bail("failed to get file", err)
-			fmt.Printf("  Go File  : %s (%d bytes)\n", f, len(file.Content))
+			fmt.Printf("  Go File  : %s (%d bytes) (repo=%d)\n", f, len(file.Content), file.RepositoryID)
 			if save {
 				write(*outdir+"/go/"+f, file.Content)
 			}
@@ -87,4 +92,22 @@ func write(s string, b []byte) {
 	os.MkdirAll(p, 0777)
 	err := utils.WriteFile(s, b)
 	utils.Bail("failed to write file", err)
+}
+
+func packageMatches(fp *pb.FlatPackage) bool {
+	if len(flag.Args()) == 0 {
+		return true
+	}
+	sname := strings.ToLower(fp.Name)
+	spkg := strings.ToLower(fp.Prefix)
+	for _, arg := range flag.Args() {
+		a := strings.ToLower(arg)
+		if strings.Contains(sname, a) {
+			return true
+		}
+		if strings.Contains(spkg, a) {
+			return true
+		}
+	}
+	return false
 }

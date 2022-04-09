@@ -56,8 +56,8 @@ func (npb *NanoPBCompiler) Compile() error {
 		com := []string{
 			"nanopb_generator.py",
 			"-D", npb.targetdir, // output dir
-			"-Q", `# include "nanopb/%s"`,
-			"-L", `# include <nanopb/%s>`,
+			"-Q", `#include "nanopb/%s"`,
+			"-L", `#include <nanopb/%s>`,
 		}
 		com = addNanoPBOptions(com)
 		com = append(com, srcname)
@@ -122,7 +122,7 @@ func addNanoPBOptions(com []string) []string {
 	for _, opt := range cl {
 		kvs := strings.Split(opt, "=")
 		if len(kvs) != 2 {
-			fmt.Printf("[nanopb] opt \"%s\" does not split into 2 parts, but %d\n", len(kvs))
+			fmt.Printf("[nanopb] opt \"%s\" does not split into 2 parts, but %d\n", opt, len(kvs))
 			return com
 		}
 		k := kvs[0]

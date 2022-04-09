@@ -2,13 +2,19 @@ package compiler
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	pr "golang.conradwood.net/apis/protorenderer"
 	"golang.conradwood.net/go-easyops/linux"
 	"golang.conradwood.net/go-easyops/utils"
 	"golang.conradwood.net/protorenderer/common"
 	"golang.conradwood.net/protorenderer/filelayouter"
+	"strings"
 	"sync"
+)
+
+var (
+	nanopb_flags = flag.String("nanopb_options", "", "comma delimited key=value options that will be passed to nanopb_generator with -s option")
 )
 
 type NanoPBCompiler struct {
@@ -51,9 +57,10 @@ func (npb *NanoPBCompiler) Compile() error {
 			"nanopb_generator.py",
 			"-D", npb.targetdir, // output dir
 			"-Q", `# include "nanopb/%s"`,
-			"-L", `# include <nanopb/%s>"`,
-			srcname,
+			"-L", `# include <nanopb/%s>`,
 		}
+		com = addNanoPBOptions(com)
+		com = append(com, srcname)
 		out, err := l.SafelyExecuteWithDir(com, npb.fl.SrcDir(), nil)
 		if err != nil {
 			npb.Printf("Nanopb failed: %s\n", out)
@@ -105,4 +112,25 @@ func (npb *NanoPBCompiler) GetFile(ctx context.Context, filename string) (File, 
 	npb.Printf("Want file \"%s\" => \"%s\"\n", filename, fn)
 	fl := &StdFile{Filename: filename, version: 1, ctFilename: fn}
 	return fl, nil
+}
+func addNanoPBOptions(com []string) []string {
+	if *nanopb_flags == "" {
+		return com
+	}
+	res := com
+	cl := strings.Split(*nanopb_flags, ",")
+	for _, opt := range cl {
+		kvs := strings.Split(opt, "=")
+		if len(kvs) != 2 {
+			fmt.Printf("[nanopb] opt \"%s\" does not split into 2 parts, but %d\n", len(kvs))
+			return com
+		}
+		k := kvs[0]
+		v := kvs[1]
+		k = strings.Trim(k, " ")
+		v = strings.Trim(v, " ")
+		res = append(res, "-s")
+		res = append(res, fmt.Sprintf("%s:%s", k, v))
+	}
+	return res
 }

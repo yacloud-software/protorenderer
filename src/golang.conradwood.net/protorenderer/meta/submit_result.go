@@ -7,7 +7,6 @@ import (
 	pr "golang.conradwood.net/apis/protorenderer"
 	"golang.conradwood.net/go-easyops/authremote"
 	"golang.conradwood.net/go-easyops/cache"
-	"golang.conradwood.net/go-easyops/sql"
 	"golang.conradwood.net/protorenderer/db"
 	"sync"
 )
@@ -71,11 +70,7 @@ func (id *idGen) Retrieve(key string) (string, error) {
 // that each object has a unique ID
 func (m *MetaCompiler) submitResult(result *Result) error {
 	if persistid == nil {
-		ps, err := sql.Open()
-		if err != nil {
-			return err
-		}
-		persistid = db.NewDBPersistID(ps)
+		persistid = db.DefaultDBPersistID()
 	}
 	for _, pkg := range result.Packages {
 		// all packages need an id

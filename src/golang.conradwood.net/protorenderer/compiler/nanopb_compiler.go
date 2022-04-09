@@ -11,10 +11,12 @@ import (
 	"golang.conradwood.net/protorenderer/filelayouter"
 	"strings"
 	"sync"
+	"time"
 )
 
 var (
-	nanopb_flags = flag.String("nanopb_options", "", "comma delimited key=value options that will be passed to nanopb_generator with -s option")
+	nanopb_version = ""
+	nanopb_flags   = flag.String("nanopb_options", "", "comma delimited key=value options that will be passed to nanopb_generator with -s option")
 )
 
 type NanoPBCompiler struct {
@@ -69,6 +71,11 @@ func (npb *NanoPBCompiler) Compile() error {
 			continue
 		}
 		npb.Printf("File: %s [COMPILED]\n", srcname)
+		err = addCustomFiles(srcname, npb.targetdir)
+		if err != nil {
+			npb.Printf("Custom files failed: %s\n", err)
+			continue
+		}
 	}
 	return nil
 }
@@ -133,4 +140,41 @@ func addNanoPBOptions(com []string) []string {
 		res = append(res, fmt.Sprintf("%s:%s", k, v))
 	}
 	return res
+}
+
+// write some custom files
+func addCustomFiles(srcfile string, targetdir string) error {
+	if !strings.HasSuffix(srcfile, ".proto") {
+		return nil
+	}
+	outfile := strings.TrimSuffix(srcfile, ".proto")
+	outfile = targetdir + "/" + outfile + "_def.h"
+	templ := `/*
+Compile-Options: %s
+Compile-Timestamp: %d
+Compile-Time: %s
+Compiler-Version: %s
+/*`
+	t := time.Now()
+	s := fmt.Sprintf(templ, *nanopb_flags, t.Unix(), utils.TimeString(t), get_nanopb_version())
+	err := utils.WriteFile(outfile, []byte(s))
+	return err
+}
+
+func get_nanopb_version() string {
+	if nanopb_version != "" {
+		return nanopb_version
+	}
+	l := linux.New()
+	out, err := l.SafelyExecuteWithDir([]string{"nanopb_generator.py", "--version"}, "/", nil)
+	if err != nil {
+		fmt.Printf("Failure: %s\n", out)
+		fmt.Printf("Failure: %s\n", err)
+		panic("failed to execute nanopb_generator.py")
+	}
+	out = strings.Trim(out, "\n")
+	out = strings.Trim(out, "\r")
+	out = strings.Trim(out, " ")
+	nanopb_version = out
+	return out
 }

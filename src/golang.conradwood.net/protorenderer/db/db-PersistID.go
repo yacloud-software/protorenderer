@@ -33,14 +33,42 @@ import (
 	"fmt"
 	savepb "golang.conradwood.net/apis/protorenderer"
 	"golang.conradwood.net/go-easyops/sql"
+	"os"
+)
+
+var (
+	default_def_DBPersistID *DBPersistID
 )
 
 type DBPersistID struct {
-	DB *sql.DB
+	DB                  *sql.DB
+	SQLTablename        string
+	SQLArchivetablename string
 }
 
+func DefaultDBPersistID() *DBPersistID {
+	if default_def_DBPersistID != nil {
+		return default_def_DBPersistID
+	}
+	psql, err := sql.Open()
+	if err != nil {
+		fmt.Printf("Failed to open database: %s\n", err)
+		os.Exit(10)
+	}
+	res := NewDBPersistID(psql)
+	ctx := context.Background()
+	err = res.CreateTable(ctx)
+	if err != nil {
+		fmt.Printf("Failed to create table: %s\n", err)
+		os.Exit(10)
+	}
+	default_def_DBPersistID = res
+	return res
+}
 func NewDBPersistID(db *sql.DB) *DBPersistID {
 	foo := DBPersistID{DB: db}
+	foo.SQLTablename = "persistid"
+	foo.SQLArchivetablename = "persistid_archive"
 	return &foo
 }
 
@@ -54,7 +82,7 @@ func (a *DBPersistID) Archive(ctx context.Context, id uint64) error {
 	}
 
 	// now save it to archive:
-	_, e := a.DB.ExecContext(ctx, "insert_DBPersistID", "insert into persistid_archive (id,key) values ($1,$2) ", p.ID, p.Key)
+	_, e := a.DB.ExecContext(ctx, "archive_DBPersistID", "insert into "+a.SQLArchivetablename+" (id,key) values ($1,$2) ", p.ID, p.Key)
 	if e != nil {
 		return e
 	}
@@ -67,7 +95,7 @@ func (a *DBPersistID) Archive(ctx context.Context, id uint64) error {
 // Save (and use database default ID generation)
 func (a *DBPersistID) Save(ctx context.Context, p *savepb.PersistID) (uint64, error) {
 	qn := "DBPersistID_Save"
-	rows, e := a.DB.QueryContext(ctx, qn, "insert into persistid (key) values ($1) returning id", p.Key)
+	rows, e := a.DB.QueryContext(ctx, qn, "insert into "+a.SQLTablename+" (key) values ($1) returning id", p.Key)
 	if e != nil {
 		return 0, a.Error(ctx, qn, e)
 	}
@@ -87,13 +115,13 @@ func (a *DBPersistID) Save(ctx context.Context, p *savepb.PersistID) (uint64, er
 // Save using the ID specified
 func (a *DBPersistID) SaveWithID(ctx context.Context, p *savepb.PersistID) error {
 	qn := "insert_DBPersistID"
-	_, e := a.DB.ExecContext(ctx, qn, "insert into persistid (id,key) values ($1,$2) ", p.ID, p.Key)
+	_, e := a.DB.ExecContext(ctx, qn, "insert into "+a.SQLTablename+" (id,key) values ($1,$2) ", p.ID, p.Key)
 	return a.Error(ctx, qn, e)
 }
 
 func (a *DBPersistID) Update(ctx context.Context, p *savepb.PersistID) error {
 	qn := "DBPersistID_Update"
-	_, e := a.DB.ExecContext(ctx, qn, "update persistid set key=$1 where id = $2", p.Key, p.ID)
+	_, e := a.DB.ExecContext(ctx, qn, "update "+a.SQLTablename+" set key=$1 where id = $2", p.Key, p.ID)
 
 	return a.Error(ctx, qn, e)
 }
@@ -101,14 +129,14 @@ func (a *DBPersistID) Update(ctx context.Context, p *savepb.PersistID) error {
 // delete by id field
 func (a *DBPersistID) DeleteByID(ctx context.Context, p uint64) error {
 	qn := "deleteDBPersistID_ByID"
-	_, e := a.DB.ExecContext(ctx, qn, "delete from persistid where id = $1", p)
+	_, e := a.DB.ExecContext(ctx, qn, "delete from "+a.SQLTablename+" where id = $1", p)
 	return a.Error(ctx, qn, e)
 }
 
 // get it by primary id
 func (a *DBPersistID) ByID(ctx context.Context, p uint64) (*savepb.PersistID, error) {
 	qn := "DBPersistID_ByID"
-	rows, e := a.DB.QueryContext(ctx, qn, "select id,key from persistid where id = $1", p)
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,key from "+a.SQLTablename+" where id = $1", p)
 	if e != nil {
 		return nil, a.Error(ctx, qn, fmt.Errorf("ByID: error querying (%s)", e))
 	}
@@ -118,10 +146,10 @@ func (a *DBPersistID) ByID(ctx context.Context, p uint64) (*savepb.PersistID, er
 		return nil, a.Error(ctx, qn, fmt.Errorf("ByID: error scanning (%s)", e))
 	}
 	if len(l) == 0 {
-		return nil, a.Error(ctx, qn, fmt.Errorf("No PersistID with id %d", p))
+		return nil, a.Error(ctx, qn, fmt.Errorf("No PersistID with id %v", p))
 	}
 	if len(l) != 1 {
-		return nil, a.Error(ctx, qn, fmt.Errorf("Multiple (%d) PersistID with id %d", len(l), p))
+		return nil, a.Error(ctx, qn, fmt.Errorf("Multiple (%d) PersistID with id %v", len(l), p))
 	}
 	return l[0], nil
 }
@@ -129,7 +157,7 @@ func (a *DBPersistID) ByID(ctx context.Context, p uint64) (*savepb.PersistID, er
 // get all rows
 func (a *DBPersistID) All(ctx context.Context) ([]*savepb.PersistID, error) {
 	qn := "DBPersistID_all"
-	rows, e := a.DB.QueryContext(ctx, qn, "select id,key from persistid order by id")
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,key from "+a.SQLTablename+" order by id")
 	if e != nil {
 		return nil, a.Error(ctx, qn, fmt.Errorf("All: error querying (%s)", e))
 	}
@@ -148,7 +176,7 @@ func (a *DBPersistID) All(ctx context.Context) ([]*savepb.PersistID, error) {
 // get all "DBPersistID" rows with matching Key
 func (a *DBPersistID) ByKey(ctx context.Context, p string) ([]*savepb.PersistID, error) {
 	qn := "DBPersistID_ByKey"
-	rows, e := a.DB.QueryContext(ctx, qn, "select id,key from persistid where key = $1", p)
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,key from "+a.SQLTablename+" where key = $1", p)
 	if e != nil {
 		return nil, a.Error(ctx, qn, fmt.Errorf("ByKey: error querying (%s)", e))
 	}
@@ -163,7 +191,7 @@ func (a *DBPersistID) ByKey(ctx context.Context, p string) ([]*savepb.PersistID,
 // the 'like' lookup
 func (a *DBPersistID) ByLikeKey(ctx context.Context, p string) ([]*savepb.PersistID, error) {
 	qn := "DBPersistID_ByLikeKey"
-	rows, e := a.DB.QueryContext(ctx, qn, "select id,key from persistid where key ilike $1", p)
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,key from "+a.SQLTablename+" where key ilike $1", p)
 	if e != nil {
 		return nil, a.Error(ctx, qn, fmt.Errorf("ByKey: error querying (%s)", e))
 	}
@@ -176,17 +204,30 @@ func (a *DBPersistID) ByLikeKey(ctx context.Context, p string) ([]*savepb.Persis
 }
 
 /**********************************************************************
+* Helper to convert from an SQL Query
+**********************************************************************/
+
+// from a query snippet (the part after WHERE)
+func (a *DBPersistID) FromQuery(ctx context.Context, query_where string, args ...interface{}) ([]*savepb.PersistID, error) {
+	rows, err := a.DB.QueryContext(ctx, "custom_query_"+a.Tablename(), "select "+a.SelectCols()+" from "+a.Tablename()+" where "+query_where, args...)
+	if err != nil {
+		return nil, err
+	}
+	return a.FromRows(ctx, rows)
+}
+
+/**********************************************************************
 * Helper to convert from an SQL Row to struct
 **********************************************************************/
 func (a *DBPersistID) Tablename() string {
-	return "persistid"
+	return a.SQLTablename
 }
 
 func (a *DBPersistID) SelectCols() string {
 	return "id,key"
 }
 func (a *DBPersistID) SelectColsQualified() string {
-	return "persistid.id,persistid.key"
+	return "" + a.SQLTablename + ".id," + a.SQLTablename + ".key"
 }
 
 func (a *DBPersistID) FromRows(ctx context.Context, rows *gosql.Rows) ([]*savepb.PersistID, error) {
@@ -207,11 +248,12 @@ func (a *DBPersistID) FromRows(ctx context.Context, rows *gosql.Rows) ([]*savepb
 **********************************************************************/
 func (a *DBPersistID) CreateTable(ctx context.Context) error {
 	csql := []string{
-		`create sequence persistid_seq;`,
-		`CREATE TABLE persistid (id integer primary key default nextval('persistid_seq'),key text not null);`,
+		`create sequence if not exists ` + a.SQLTablename + `_seq;`,
+		`CREATE TABLE if not exists ` + a.SQLTablename + ` (id integer primary key default nextval('` + a.SQLTablename + `_seq'),key text not null  );`,
+		`CREATE TABLE if not exists ` + a.SQLTablename + `_archive (id integer primary key default nextval('` + a.SQLTablename + `_seq'),key text not null  );`,
 	}
 	for i, c := range csql {
-		_, e := a.DB.ExecContext(ctx, fmt.Sprintf("create_persistid_%d", i), c)
+		_, e := a.DB.ExecContext(ctx, fmt.Sprintf("create_"+a.SQLTablename+"_%d", i), c)
 		if e != nil {
 			return e
 		}
@@ -226,5 +268,5 @@ func (a *DBPersistID) Error(ctx context.Context, q string, e error) error {
 	if e == nil {
 		return nil
 	}
-	return fmt.Errorf("[table=persistid, query=%s] Error: %s", q, e)
+	return fmt.Errorf("[table="+a.SQLTablename+", query=%s] Error: %s", q, e)
 }

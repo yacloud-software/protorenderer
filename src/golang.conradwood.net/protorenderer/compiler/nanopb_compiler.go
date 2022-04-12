@@ -9,6 +9,7 @@ import (
 	"golang.conradwood.net/go-easyops/utils"
 	"golang.conradwood.net/protorenderer/common"
 	"golang.conradwood.net/protorenderer/filelayouter"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -16,6 +17,7 @@ import (
 
 var (
 	nanopb_version = ""
+	nanopb_gen     = flag.String("nanopb_binary", "", "executable name for generator")
 	nanopb_flags   = flag.String("nanopb_options", "", "comma delimited key=value options that will be passed to nanopb_generator with -s option")
 )
 
@@ -56,10 +58,11 @@ func (npb *NanoPBCompiler) Compile() error {
 		srcname := f
 		npb.Printf("File: %s [COMPILING]\n", srcname)
 		com := []string{
-			"nanopb_generator.py",
+			nanopb_binary(),
 			"-D", npb.targetdir, // output dir
 			"-Q", `#include "nanopb/%s"`,
 			"-L", `#include <nanopb/%s>`,
+			"--strip-path",
 		}
 		com = addNanoPBOptions(com)
 		com = append(com, srcname)
@@ -166,7 +169,7 @@ func get_nanopb_version() string {
 		return nanopb_version
 	}
 	l := linux.New()
-	out, err := l.SafelyExecuteWithDir([]string{"nanopb_generator.py", "--version"}, "/", nil)
+	out, err := l.SafelyExecuteWithDir([]string{nanopb_binary(), "--version"}, "/", nil)
 	if err != nil {
 		fmt.Printf("Failure: %s\n", out)
 		fmt.Printf("Failure: %s\n", err)
@@ -177,4 +180,29 @@ func get_nanopb_version() string {
 	out = strings.Trim(out, " ")
 	nanopb_version = out
 	return out
+}
+
+func nanopb_binary() string {
+	res := find_nanopb_binary()
+	if !utils.FileExists(res) {
+		panic("nanopb_generator.py (" + res + ") is not executable")
+	}
+	return res
+}
+func find_nanopb_binary() string {
+	if *nanopb_gen != "" {
+		return *nanopb_gen
+	}
+	paths := []string{"/sbin", "/usr/sbin", "/bin", "/usr/bin", "/usr/local/bin"}
+	for _, p := range paths {
+		filename := p + "/nanopb_generator.py"
+		if utils.FileExists(filename) {
+			return filename
+		}
+	}
+	pwd, err := os.Getwd()
+	if err != nil {
+		fmt.Printf("failed to get current working directory: %s\n", err)
+	}
+	return pwd + "/" + "extra/compilers/nanopb/nanopb_generator.py"
 }

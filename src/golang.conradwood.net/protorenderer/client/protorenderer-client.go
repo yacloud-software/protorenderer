@@ -7,6 +7,7 @@ import (
 	"golang.conradwood.net/apis/common"
 	pb "golang.conradwood.net/apis/protorenderer"
 	"path/filepath"
+	"strings"
 	//	ch "golang.conradwood.net/go-easyops/http"
 	//	au "golang.conradwood.net/go-easyops/auth"
 	ar "golang.conradwood.net/go-easyops/authremote"
@@ -25,6 +26,7 @@ var (
 	view        = flag.Bool("view", false, "view current proto docs")
 	files       = flag.Bool("files", false, "download .proto, .pb.go, .class, .py, and nanopb files (if extra arguments are given on the commandline, limit downloads to those packages matching remaining non-option arguments")
 	sources     = flag.Bool("sources", false, "download .proto files")
+	compilers   = flag.String("compilers", "", "specify compilers. if empty (Default): autodetect")
 	version     = flag.Bool("version", false, "get version")
 	delete      = flag.Bool("delete", false, "delete files listed on command line")
 	compile     = flag.Bool("compile", false, "compile files on the fly (but do not add to repository")
@@ -129,6 +131,7 @@ func CompileFile(fname string) {
 	utils.Bail("failed to read file", err)
 	ctx := getContext()
 	req := &pb.CompileRequest{
+		Compilers: GetSpecifiedCompilers(),
 		AddProtoRequest: &pb.AddProtoRequest{
 			Name:    fname,
 			Content: string(fs),
@@ -178,4 +181,27 @@ func Packages() {
 		fmt.Printf("Package #%4s %s\n", f.ID, f.Name)
 	}
 
+}
+
+// return the compilers, either from commandline or autodetect
+func GetSpecifiedCompilers() []pb.CompilerType {
+	if *compilers == "" {
+		return []pb.CompilerType{
+			pb.CompilerType_GOLANG,
+		}
+	}
+	var res []pb.CompilerType
+	sx := strings.Split(*compilers, ",")
+	for _, comp_name := range sx {
+		comp_name = strings.ToLower(strings.Trim(comp_name, " "))
+		for cdefnum, cdef := range pb.CompilerType_name {
+			cdef = strings.ToLower(cdef)
+			if cdef == comp_name {
+				res = append(res, pb.CompilerType(cdefnum))
+				break
+			}
+		}
+
+	}
+	return res
 }

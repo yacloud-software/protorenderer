@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	pb "golang.conradwood.net/apis/protorenderer"
+	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/go-easyops/linux"
 	"golang.conradwood.net/go-easyops/utils"
 	"golang.conradwood.net/protorenderer/common"
@@ -35,7 +36,20 @@ func normaliseFilename(filename string) string {
 	return res
 }
 
+type onthefly_compiler struct {
+	protofile string             // the full filename of the proto file to compile
+	workdir   string             // the directory to place the results into
+	req       *pb.CompileRequest // the compile request
+	renderer  *protoRenderer
+}
+
 func (e *protoRenderer) CompileFile(ctx context.Context, req *pb.CompileRequest) (*pb.CompileResult, error) {
+	// default: golang compiler
+	if len(req.Compilers) == 0 {
+		req.Compilers = []pb.CompilerType{
+			pb.CompilerType_GOLANG,
+		}
+	}
 	dir := TopDir() + fmt.Sprintf("/onthefly/%d", newOnTheFlyNum())
 	fmt.Printf("Compilefile in dir \"%s\"\n", dir)
 	err := common.RecreateSafely(dir)
@@ -49,7 +63,40 @@ func (e *protoRenderer) CompileFile(ctx context.Context, req *pb.CompileRequest)
 	if err != nil {
 		return nil, err
 	}
+	oc := &onthefly_compiler{
+		protofile: fullfilename,
+		workdir:   dir,
+		renderer:  e,
+		req:       req,
+	}
+	res := &pb.CompileResult{
+		SourceFilename: fullfilename,
+	}
+	for _, compiler := range req.Compilers {
+		// add new compilers here
+		if compiler == pb.CompilerType_GOLANG {
+			cr, err := oc.golang(ctx)
+			if err != nil || cr.CompileError != "" {
+				return cr, err
+			}
+			res.Files = append(res.Files, cr.Files...)
+		} else if compiler == pb.CompilerType_NANOPB {
+			cr, err := oc.nanopb(ctx)
+			if err != nil || cr.CompileError != "" {
+				return cr, err
+			}
+			res.Files = append(res.Files, cr.Files...)
+		} else {
+			return nil, errors.NotImplemented(ctx, fmt.Sprintf("compiler %v not implemented to compile on-the-fly", compiler))
+		}
+	}
+	return res, nil
+}
 
+// compile go file
+func (oc *onthefly_compiler) golang(ctx context.Context) (*pb.CompileResult, error) {
+	dir := oc.workdir
+	fname := oc.protofile
 	targetdir := dir + "/build/go"
 	os.MkdirAll(targetdir, 0777)
 	incdir := current.filelayouter.SrcDir()
@@ -68,7 +115,7 @@ func (e *protoRenderer) CompileFile(ctx context.Context, req *pb.CompileRequest)
 		fmt.Sprintf("--go_out=plugins=grpc:%s", targetdir),
 	}
 
-	err = e.CompileGoWithPlugin(cmd, dir, fname, targetdir, res)
+	err := oc.renderer.CompileGoWithPlugin(cmd, dir, fname, targetdir, res)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +130,7 @@ func (e *protoRenderer) CompileFile(ctx context.Context, req *pb.CompileRequest)
 		fmt.Sprintf("--cnw_out=%s", targetdir),
 	}
 
-	err = e.CompileGoWithPlugin(cmd, dir, fname, targetdir, res)
+	err = oc.renderer.CompileGoWithPlugin(cmd, dir, fname, targetdir, res)
 	if err != nil {
 		return nil, err
 	}
@@ -132,4 +179,17 @@ func (e *protoRenderer) CompileGoWithPlugin(cmd []string, curdir string, fname s
 		res.Files = append(res.Files, cf)
 	}
 	return nil
+}
+
+// compile go file
+func (oc *onthefly_compiler) nanopb(ctx context.Context) (*pb.CompileResult, error) {
+	nc := compiler.NanoPBCompiler{
+		TargetDir: "/tmp/x/foonanopb",
+		Layouter:  current.filelayouter,
+	}
+	err := nc.Compile()
+	if err != nil {
+		return nil, err
+	}
+	return nil, fmt.Errorf("cannot compile nanopb on-the-fly yet")
 }

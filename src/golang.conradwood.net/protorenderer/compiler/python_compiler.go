@@ -50,7 +50,7 @@ type GenericCompiler struct {
 
 func NewNanoPBCompiler(f *filelayouter.FileLayouter) Compiler {
 	res := &NanoPBCompiler{
-		fl: f,
+		Layouter: f,
 	}
 	return res
 }

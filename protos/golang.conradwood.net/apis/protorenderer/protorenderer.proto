@@ -176,7 +176,7 @@ message FlatPackageList {
 
 message CompileRequest {
   AddProtoRequest AddProtoRequest = 1;
-  repeated common.ProgrammingLanguage Languages = 2; // which languages do we want to compile for?
+  repeated CompilerType Compilers = 2; // which compiler to invoke?
 }
 
 message CompileResult {

@@ -43,6 +43,10 @@ type onthefly_compiler struct {
 	renderer  *protoRenderer
 }
 
+func (oc *onthefly_compiler) WorkDir() string {
+	return oc.workdir
+}
+
 func (e *protoRenderer) CompileFile(ctx context.Context, req *pb.CompileRequest) (*pb.CompileResult, error) {
 	// default: golang compiler
 	if len(req.Compilers) == 0 {
@@ -183,13 +187,67 @@ func (e *protoRenderer) CompileGoWithPlugin(cmd []string, curdir string, fname s
 
 // compile go file
 func (oc *onthefly_compiler) nanopb(ctx context.Context) (*pb.CompileResult, error) {
-	nc := compiler.NanoPBCompiler{
-		TargetDir: "/tmp/x/foonanopb",
-		Layouter:  current.filelayouter,
-	}
-	err := nc.Compile()
+	l := linux.New()
+	targetDir := oc.WorkDir() + "/nanopb"
+	err := common.RecreateSafely(targetDir)
 	if err != nil {
 		return nil, err
 	}
-	return nil, fmt.Errorf("cannot compile nanopb on-the-fly yet")
+	layouter := current.filelayouter
+	fmt.Printf("Sourcedir: %s\n", layouter.SrcDir())
+	fmt.Printf("Workdir:   %s\n", oc.WorkDir())
+	fmt.Printf("Targetdir: %s\n", targetDir)
+	srcname := oc.protofile
+	fmt.Printf("File: %s [COMPILING]\n", srcname)
+	com := []string{
+		compiler.Nanopb_binary(),
+		"-D", targetDir, // output dir
+		"-Q", `#include "nanopb/%s"`,
+		"-L", `#include <nanopb/%s>`,
+		"-I", oc.WorkDir() + "/src/protos",
+		"--strip-path",
+	}
+	com = compiler.AddNanoPBOptions(com)
+	com = append(com, srcname)
+	out, err := l.SafelyExecuteWithDir(com, layouter.SrcDir(), nil)
+	if err != nil {
+		fmt.Printf("Nanopb failed: %s\n", out)
+		fmt.Printf("File %s [Error: %s]\n", srcname, err)
+		// ignore errors for now..
+		return nil, err
+	}
+	fmt.Printf("File: %s [COMPILED]\n", srcname)
+	/*
+		err = addCustomFiles(srcname, npb.TargetDir)
+		if err != nil {
+			fmt.Printf("Custom files failed: %s\n", err)
+			continue
+		}
+	*/
+
+	// pick up the files and return them
+	results, err := compiler.AllFiles(targetDir, "")
+	if err != nil {
+		return nil, err
+	}
+
+	res := &pb.CompileResult{}
+
+	for _, f := range results {
+		ct, err := utils.ReadFile(targetDir + "/" + f)
+		if err != nil {
+			res.CompileError = fmt.Sprintf("Binary file not loadable (%s)", err)
+			return nil, err
+		}
+		if *debug {
+			fmt.Printf("Created file %s\n", f)
+		}
+		cf := &pb.CompiledFile{
+			Filename: f,
+			Content:  ct,
+		}
+		res.Files = append(res.Files, cf)
+	}
+	return res, nil
+
 }

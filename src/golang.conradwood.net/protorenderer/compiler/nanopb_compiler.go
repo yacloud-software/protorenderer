@@ -32,6 +32,7 @@ type NanoPBCompiler struct {
 func (npb *NanoPBCompiler) WorkDir() string {
 	return npb.Layouter.TopDir() + "build"
 }
+
 func (npb *NanoPBCompiler) Compile() error {
 	npb.Printf("***************** nanopb compiler ******************\n")
 	dir := npb.Layouter.SrcDir()
@@ -59,13 +60,13 @@ func (npb *NanoPBCompiler) Compile() error {
 		srcname := f
 		npb.Printf("File: %s [COMPILING]\n", srcname)
 		com := []string{
-			nanopb_binary(),
+			Nanopb_binary(),
 			"-D", npb.TargetDir, // output dir
 			"-Q", `#include "nanopb/%s"`,
 			"-L", `#include <nanopb/%s>`,
 			"--strip-path",
 		}
-		com = addNanoPBOptions(com)
+		com = AddNanoPBOptions(com)
 		com = append(com, srcname)
 		out, err := l.SafelyExecuteWithDir(com, npb.Layouter.SrcDir(), nil)
 		if err != nil {
@@ -93,7 +94,7 @@ func (npb *NanoPBCompiler) Error() error {
 }
 func (npb *NanoPBCompiler) Files(ctx context.Context, pkg *pr.Package, filetype string) ([]File, error) {
 	npb.Printf("Want files for package: %v\n", pkg)
-	ds := npb.WorkDir() + "/go/" + pkg.Prefix
+	ds := npb.WorkDir() + "/nanopb/" + pkg.Prefix
 	fmt.Printf("Targetdir: %s\n", npb.TargetDir)
 	// examples of paths:
 	// targetdir: /tmp/wd//1438/build/nanopb
@@ -124,7 +125,7 @@ func (npb *NanoPBCompiler) GetFile(ctx context.Context, filename string) (File, 
 	fl := &StdFile{Filename: filename, version: 1, ctFilename: fn}
 	return fl, nil
 }
-func addNanoPBOptions(com []string) []string {
+func AddNanoPBOptions(com []string) []string {
 	if *nanopb_flags == "" {
 		return com
 	}
@@ -170,7 +171,7 @@ func get_nanopb_version() string {
 		return nanopb_version
 	}
 	l := linux.New()
-	out, err := l.SafelyExecuteWithDir([]string{nanopb_binary(), "--version"}, "/", nil)
+	out, err := l.SafelyExecuteWithDir([]string{Nanopb_binary(), "--version"}, "/", nil)
 	if err != nil {
 		fmt.Printf("Failure: %s\n", out)
 		fmt.Printf("Failure: %s\n", err)
@@ -183,7 +184,7 @@ func get_nanopb_version() string {
 	return out
 }
 
-func nanopb_binary() string {
+func Nanopb_binary() string {
 	res := find_nanopb_binary()
 	if !utils.FileExists(res) {
 		panic("nanopb_generator.py (" + res + ") is not executable")

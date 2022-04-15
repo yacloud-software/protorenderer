@@ -194,12 +194,21 @@ func GetSpecifiedCompilers() []pb.CompilerType {
 	sx := strings.Split(*compilers, ",")
 	for _, comp_name := range sx {
 		comp_name = strings.ToLower(strings.Trim(comp_name, " "))
+		found := false
 		for cdefnum, cdef := range pb.CompilerType_name {
 			cdef = strings.ToLower(cdef)
 			if cdef == comp_name {
+				found = true
 				res = append(res, pb.CompilerType(cdefnum))
 				break
 			}
+		}
+		if !found {
+			fmt.Printf("\"%s\" is not a supported compiler.\n", comp_name)
+			for _, cdef := range pb.CompilerType_name {
+				fmt.Printf("\"%s\"\n", cdef)
+			}
+			os.Exit(10)
 		}
 
 	}

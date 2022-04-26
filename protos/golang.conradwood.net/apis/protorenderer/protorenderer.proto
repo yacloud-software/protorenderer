@@ -185,9 +185,10 @@ message CompileResult {
   repeated CompiledFile Files = 3;
 }
 message CompiledFile {
-  common.ProgrammingLanguage Language = 1; // which languages do we want to compile for?
+  common.ProgrammingLanguage Language = 1; // deprecated, obsolete see compiler instead
   string Filename = 2;                     // filename of compiled file
   bytes Content = 3;                       // the file's content
+  CompilerType Compiler=4; // compiler used to generate this
 }
 
 message DeleteRequest {

@@ -54,6 +54,15 @@ func (e *protoRenderer) CompileFile(ctx context.Context, req *pb.CompileRequest)
 			pb.CompilerType_GOLANG,
 		}
 	}
+	if req.AddProtoRequest == nil {
+		return nil, errors.InvalidArgs(ctx, "missing proto", "missing proto")
+	}
+	if req.AddProtoRequest.Name == "" {
+		return nil, errors.InvalidArgs(ctx, "missing proto name", "missing proto name")
+	}
+	if req.AddProtoRequest.Content == "" {
+		return nil, errors.InvalidArgs(ctx, "missing proto content", "missing proto content")
+	}
 	dir := TopDir() + fmt.Sprintf("/onthefly/%d", newOnTheFlyNum())
 	fmt.Printf("Compilefile in dir \"%s\"\n", dir)
 	err := common.RecreateSafely(dir)

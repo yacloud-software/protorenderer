@@ -85,23 +85,29 @@ func (e *protoRenderer) CompileFile(ctx context.Context, req *pb.CompileRequest)
 	res := &pb.CompileResult{
 		SourceFilename: fullfilename,
 	}
+	var cr *pb.CompileResult
 	for _, compiler := range req.Compilers {
+		cr = nil
 		// add new compilers here
 		if compiler == pb.CompilerType_GOLANG {
-			cr, err := oc.golang(ctx)
+			cr, err = oc.golang(ctx)
 			if err != nil || cr.CompileError != "" {
 				return cr, err
 			}
-			res.Files = append(res.Files, cr.Files...)
 		} else if compiler == pb.CompilerType_NANOPB {
-			cr, err := oc.nanopb(ctx)
+			cr, err = oc.nanopb(ctx)
 			if err != nil || cr.CompileError != "" {
 				return cr, err
 			}
-			res.Files = append(res.Files, cr.Files...)
 		} else {
 			return nil, errors.NotImplemented(ctx, fmt.Sprintf("compiler %v not implemented to compile on-the-fly", compiler))
 		}
+
+		// set the compiler on all files returned
+		for _, f := range cr.Files {
+			f.Compiler = compiler
+		}
+		res.Files = append(res.Files, cr.Files...)
 	}
 	return res, nil
 }

@@ -23,7 +23,11 @@ var (
 
 func Delete() {
 	ctx := getContext()
+	s := ""
+	deli := ""
 	for _, file := range flag.Args() {
+		s = s + deli + file
+		deli = ", "
 		_, err := protoClient.DeleteFile(ctx, &pb.DeleteRequest{Name: file})
 		utils.Bail("failed to delete file", err)
 	}
@@ -52,7 +56,7 @@ func Delete() {
 		_, err = osclient().PutWithID(ctx, pir)
 		utils.Bail("failed to update index", err)
 	*/
-	fmt.Printf("Done")
+	fmt.Printf("Deleted %s, done\n", s)
 }
 func ListedFile(filename string) bool {
 	for _, f := range flag.Args() {

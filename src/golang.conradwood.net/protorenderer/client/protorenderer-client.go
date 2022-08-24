@@ -36,11 +36,16 @@ var (
 	pkgid       = flag.Uint64("package_id", 0, "package id to operate on")
 	packages    = flag.Bool("packages", false, "get packages")
 	get_zip     = flag.String("zip", "", "if non-nil get zip file for packagename")
+	find_pkg    = flag.String("find_package", "", "if non-nil find package by name")
 )
 
 func main() {
 	flag.Parse()
 	protoClient = pb.GetProtoRendererServiceClient()
+	if *find_pkg != "" {
+		utils.Bail("failed to find package", FindPkg(*find_pkg))
+		os.Exit(0)
+	}
 	if *get_zip != "" {
 		GetZip(*get_zip)
 		os.Exit(0)
@@ -213,4 +218,27 @@ func GetSpecifiedCompilers() []pb.CompilerType {
 
 	}
 	return res
+}
+
+func FindPkg(pkgname string) error {
+	fmt.Printf("Finding package \"%s\"\n", pkgname)
+	ctx := ar.Context()
+	pkg := &pb.PackageName{
+		PackageName: pkgname,
+	}
+	res, err := protoClient.GetPackageByName(ctx, pkg)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Name: %s\n", res.Name)
+	fmt.Printf("Prefix: %s\n", res.Prefix)
+	svc := "none"
+	cmt := "n/a"
+	if len(res.Services) > 0 {
+		svc = res.Services[0].Name
+		cmt = res.Services[0].Comment
+	}
+	fmt.Printf("Service: %s\n", svc)
+	fmt.Printf("Comment: %s\n", cmt)
+	return nil
 }

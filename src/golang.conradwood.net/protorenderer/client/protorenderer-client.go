@@ -182,10 +182,16 @@ func Packages() {
 	ctx := getContext()
 	fl, err := protoClient.GetPackages(ctx, &common.Void{})
 	utils.Bail("failed to get packages", err)
+	t := utils.Table{}
+	t.AddHeaders("ID", "Prefix", "Name", "RepositoryID")
 	for _, f := range fl.Packages {
-		fmt.Printf("Package #%4s %s\n", f.ID, f.Name)
+		t.AddString(f.ID)
+		t.AddString(f.Prefix)
+		t.AddString(f.Name)
+		t.AddUint64(f.RepositoryID)
+		t.NewRow()
 	}
-
+	fmt.Println(t.ToPrettyString())
 }
 
 // return the compilers, either from commandline or autodetect

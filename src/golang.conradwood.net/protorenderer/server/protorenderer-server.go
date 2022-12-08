@@ -14,15 +14,14 @@ import (
 	"golang.conradwood.net/go-easyops/client"
 	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/go-easyops/server"
-	"golang.conradwood.net/go-easyops/sql"
 	"golang.conradwood.net/go-easyops/utils"
-	"golang.conradwood.net/protoparser"
 	cm "golang.conradwood.net/protorenderer/common"
 	"golang.conradwood.net/protorenderer/compiler"
 	"golang.conradwood.net/protorenderer/db"
 	fl "golang.conradwood.net/protorenderer/filelayouter"
 	"golang.conradwood.net/protorenderer/meta"
 	pc "golang.conradwood.net/protorenderer/protocache"
+	"golang.conradwood.net/protorenderer/protoparser"
 	"google.golang.org/grpc"
 	"os"
 	"path/filepath"
@@ -81,9 +80,7 @@ func main() {
 	utils.Bail(fmt.Sprintf("Failed to recreate topdir (%s)", TopDir()), err)
 	fmt.Printf("Starting ProtoRendererServiceServer...\n")
 	fmt.Printf("Workdir: \"%s\"\n", TopDir())
-	psql, err := sql.Open()
-	utils.Bail("failed to open db", err)
-	dbproto = db.NewDBDBProtoFile(psql)
+	dbproto = db.DefaultDBDBProtoFile()
 
 	lv := 0
 	for {

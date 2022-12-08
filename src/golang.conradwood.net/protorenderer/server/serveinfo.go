@@ -41,9 +41,13 @@ func (p *protoRenderer) GetPackages(ctx context.Context, req *common.Void) (*pb.
 	for _, p := range result.Packages {
 		pf := p.FQDN
 		pf = filepath.Dir(pf)
-		pp := &pb.FlatPackage{ID: p.Proto.ID, Name: p.Name, Prefix: pf}
+		pp := &pb.FlatPackage{ID: p.Proto.ID, Name: p.Name, Prefix: pf, Filename: p.Filename}
 		if pp.ID == "" {
 			fmt.Printf("WARNING package %s - %s has no ID!!\n", pp.Prefix, pp.Name)
+		}
+		dbpf, err := FindByName(ctx, pp.Filename)
+		if err == nil && dbpf != nil {
+			pp.RepositoryID = dbpf.RepositoryID
 		}
 		res.Packages = append(res.Packages, pp)
 	}

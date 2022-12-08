@@ -11,7 +11,7 @@ import (
 	pr "golang.conradwood.net/apis/protorenderer"
 	"golang.conradwood.net/go-easyops/linux"
 	"golang.conradwood.net/go-easyops/utils"
-	"golang.conradwood.net/protoparser"
+	"golang.conradwood.net/protorenderer/protoparser"
 	"golang.conradwood.net/protorenderer/common"
 	"golang.conradwood.net/protorenderer/filelayouter"
 	"path/filepath"

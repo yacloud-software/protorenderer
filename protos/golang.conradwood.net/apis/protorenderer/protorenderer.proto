@@ -168,6 +168,8 @@ message FlatPackage {
   string ID = 1;
   string Name = 2;   // e.g. "protorenderer"
   string Prefix = 3; // e.g. "golang.conradwood.net/apis" or "golang.singingcat.net/apis"
+  uint64 RepositoryID = 4;
+  string Filename=5;//filename which generated this
 }
 
 message FlatPackageList {

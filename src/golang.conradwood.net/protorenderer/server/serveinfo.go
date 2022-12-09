@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"golang.conradwood.net/apis/common"
 	pb "golang.conradwood.net/apis/protorenderer"
@@ -10,6 +11,10 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+)
+
+var (
+	add_repo_to_flat = flag.Bool("add_repo_to_flat_package", true, "if true adds repositoryid to flat package")
 )
 
 func (p *protoRenderer) GetPackageByName(ctx context.Context, req *pb.PackageName) (*pb.Package, error) {
@@ -45,9 +50,11 @@ func (p *protoRenderer) GetPackages(ctx context.Context, req *common.Void) (*pb.
 		if pp.ID == "" {
 			fmt.Printf("WARNING package %s - %s has no ID!!\n", pp.Prefix, pp.Name)
 		}
-		dbpf, err := FindByName(ctx, pp.Filename)
-		if err == nil && dbpf != nil {
-			pp.RepositoryID = dbpf.RepositoryID
+		if *add_repo_to_flat {
+			dbpf, err := FindByName(ctx, pp.Filename)
+			if err == nil && dbpf != nil {
+				pp.RepositoryID = dbpf.RepositoryID
+			}
 		}
 		res.Packages = append(res.Packages, pp)
 	}

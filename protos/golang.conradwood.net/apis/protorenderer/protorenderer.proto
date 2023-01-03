@@ -75,7 +75,10 @@ message Package {
   repeated Service Services = 4; // e.g. { "ProtoRendererService" }
   repeated Message Messages = 5; // e.g.  { "AddProtoRequest","ProtoFile" }
 }
-
+message PackageFindResult {
+  bool Exists=1;
+  Package Package=2;
+}
 message Service {
   string ID = 1;
   string Name = 2; // e.g. "ProtoRendererService"
@@ -286,4 +289,6 @@ service ProtoRendererService {
   rpc GetFilesGoByPackageName(PackageName) returns (stream FileStream);
   // get packageid by name
   rpc GetPackageByName(PackageName) returns (Package);
+  // get packageid by name (no error)
+  rpc FindPackageByName(PackageName) returns (PackageFindResult);
 }

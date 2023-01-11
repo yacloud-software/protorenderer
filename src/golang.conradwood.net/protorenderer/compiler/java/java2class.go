@@ -6,6 +6,7 @@ import (
 	"golang.conradwood.net/go-easyops/linux"
 	"strings"
 	"sync"
+	"time"
 )
 
 const (
@@ -51,10 +52,10 @@ func (j *Java2Class) Files() []*JavaFile {
 }
 
 /*
- we take ALL files and keep splitting into half the size groups to compile
- until either:
- * no group failed
- * a group with a single file failed
+we take ALL files and keep splitting into half the size groups to compile
+until either:
+* no group failed
+* a group with a single file failed
 */
 func (j *Java2Class) Compile() error {
 	jfg := &JavaFileGroup{jc: j, Files: j.Files()}
@@ -154,7 +155,7 @@ func (j *JavaFileGroup) compileGroup() {
 		cmdandfile = append(cmdandfile, j.Absolute)
 	}
 	l := linux.New()
-	l.SetRuntime(600)
+	l.SetMaxRuntime(time.Duration(600) * time.Second)
 	l.SetAllowConcurrency(true)
 	out, err := l.SafelyExecuteWithDir(cmdandfile, cwd, nil)
 	j.Result = err

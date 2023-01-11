@@ -11,7 +11,6 @@ import (
 	//	ch "golang.conradwood.net/go-easyops/http"
 	//	au "golang.conradwood.net/go-easyops/auth"
 	ar "golang.conradwood.net/go-easyops/authremote"
-	//	"golang.conradwood.net/go-easyops/tokens"
 	"golang.conradwood.net/go-easyops/utils"
 	//	"golang.conradwood.net/protorenderer/renderer"
 	//	"io/ioutil"
@@ -164,7 +163,7 @@ func CompileFile(fname string) {
 
 func getContext() context.Context {
 	var ctx context.Context
-	//	ctx = tokens.ContextWithToken()
+	//	ctx = authremote.Context()
 	//	ctx = au.Context() // use env var
 	ctx = ar.Context()
 	return ctx

@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 var (
@@ -66,7 +67,7 @@ func (m *MetaCompiler) Compile(myport int) error {
 		panic("No context!")
 	}
 	l := linux.New()
-	l.SetRuntime(600)
+	l.SetMaxRuntime(time.Duration(600) * time.Second)
 	sctx, err := auth.SerialiseContextToString(ctx)
 	if err != nil {
 		fmt.Printf("Meta-Compiler: Unable to serialise context: %s\n", err)

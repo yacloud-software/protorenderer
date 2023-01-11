@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+	"time"
 )
 
 var (
@@ -25,9 +26,9 @@ var (
 )
 
 /*
- java compiles in two stages:
- 1) .proto to .java
- 2) .java to .class
+java compiles in two stages:
+1) .proto to .java
+2) .java to .class
 */
 type JavaCompiler struct {
 	WorkDir     string
@@ -183,7 +184,7 @@ func (j *JavaCompiler) CompileToClass() error {
 	classpath = classpath + deli + "."
 	//	j.Printf("Classpath: %s\n", classpath)
 	l := linux.New()
-	l.SetRuntime(1200)
+	l.SetMaxRuntime(time.Duration(1200) * time.Second)
 	cmd := []string{
 		*java_compiler_bin,
 		"-Xlint:none",

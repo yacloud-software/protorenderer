@@ -30,7 +30,7 @@ message PersistID {
 
 // add a single proto to the proto repo
 message AddProtoRequest {
-  string Name = 1;         // *absolute* file name of proto file
+  string Name = 1;         // relative filename of proto, starting with "protos/". for example: "protos/golang.conradwood.net/apis/protorenderer/protorenderer.proto"
   string Content = 2;      // the content of the proto file
   uint64 RepositoryID = 3; // which repository does this file live in?
 }

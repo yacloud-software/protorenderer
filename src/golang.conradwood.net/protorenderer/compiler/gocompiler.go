@@ -11,10 +11,11 @@ import (
 	pr "golang.conradwood.net/apis/protorenderer"
 	"golang.conradwood.net/go-easyops/linux"
 	"golang.conradwood.net/go-easyops/utils"
-	"golang.conradwood.net/protorenderer/protoparser"
 	"golang.conradwood.net/protorenderer/common"
 	"golang.conradwood.net/protorenderer/filelayouter"
+	"golang.conradwood.net/protorenderer/protoparser"
 	"path/filepath"
+	"strings"
 	"sync"
 )
 
@@ -69,7 +70,6 @@ func (g *GoCompiler) Compile() error {
 		g.err = err
 		return err
 	}
-	l := linux.New()
 	targetdir := g.WorkDir + "/go"
 	err = common.RecreateSafely(targetdir)
 	if err != nil {
@@ -95,6 +95,7 @@ func (g *GoCompiler) Compile() error {
 	for _, f := range dirfiles {
 		//		fmt.Printf("Compiler working dir: %s, compiling %s\n", dir, f)
 		cmdandfile := append(cmd, f...)
+		l := linux.New()
 		out, err := l.SafelyExecuteWithDir(cmdandfile, dir, nil)
 		if err != nil {
 			fmt.Printf("Failed to compile: %s: %s\n", f, err)
@@ -115,6 +116,7 @@ func (g *GoCompiler) Compile() error {
 	for _, f := range files {
 		//		fmt.Printf("Compiler working dir: %s, compiling %s\n", dir, f)
 		cmdandfile := append(cmd, f)
+		l := linux.New()
 		out, err := l.SafelyExecuteWithDir(cmdandfile, dir, nil)
 		if err != nil {
 			fmt.Printf("Failed to compile: %s: %s\n", f, err)
@@ -136,8 +138,16 @@ func FindCompiler(cname string) string {
 		"/home/cnw/go/bin/",
 		"/home/cnw/devel/go/protorenderer/dist/linux/amd64/",
 	}
+	var err error
 	for _, d := range check {
 		c := d + cname
+		if !strings.HasPrefix(d, "/") {
+			c, err = utils.FindFile(d + cname)
+			if err != nil {
+				continue
+			}
+		}
+
 		if !utils.FileExists(c) {
 			continue
 		}

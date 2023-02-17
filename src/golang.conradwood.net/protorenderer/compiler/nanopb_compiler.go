@@ -45,8 +45,7 @@ func (npb *NanoPBCompiler) Compile() error {
 		npb.err = err
 		return err
 	}
-	l := linux.New()
-	l.MyIP()
+	//	l.MyIP()
 	npb.TargetDir = npb.WorkDir() + "/nanopb"
 	err = common.RecreateSafely(npb.TargetDir)
 	if err != nil {
@@ -68,6 +67,7 @@ func (npb *NanoPBCompiler) Compile() error {
 		}
 		com = AddNanoPBOptions(com)
 		com = append(com, srcname)
+		l := linux.New()
 		out, err := l.SafelyExecuteWithDir(com, npb.Layouter.SrcDir(), nil)
 		if err != nil {
 			npb.Printf("Nanopb failed: %s\n", out)

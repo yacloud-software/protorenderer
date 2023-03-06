@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 )
 
-// this is called by protoc
+// this is called by protoc plugin (via SubmitSource)
 func (m *MetaCompiler) generate(req *pr.ProtocRequest) error {
 	pp := m.processingProtofile.Protofile()
 	if pp == nil {
@@ -30,8 +30,10 @@ func (m *MetaCompiler) generate(req *pr.ProtocRequest) error {
 				return fmt.Errorf("Only proto3 is supported (in %s: \"%s\")", *pf.Name, *pf.Syntax)
 			}
 		*/
+		opts := parseCNWOptionsFromFile(pf)
 		fqdn := filepath.Dir(*pf.Name)
 		pkg := result.ObtainPackage(fqdn)
+		pkg.CNWOptions = opts
 		pkg.Protofiles = append(pkg.Protofiles, pp)
 		pkg.Filename = *pf.Name
 		pkg.Name = *pf.Package
@@ -174,6 +176,8 @@ func ResolveMessage(msgs []*Message, fqdn string) *Message {
 		}
 		return m
 	}
-	fmt.Printf("WARNING - did not find message for \"%s\" (pkg=%s,msg=%s)\n", fqdn, pkgname, msgname)
+	if !strings.HasPrefix(fqdn, ".google.protobuf") {
+		fmt.Printf("WARNING - did not find message for \"%s\" (pkg=%s,msg=%s)\n", fqdn, pkgname, msgname)
+	}
 	return nil
 }

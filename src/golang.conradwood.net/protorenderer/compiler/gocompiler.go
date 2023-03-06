@@ -25,13 +25,15 @@ type GoCompiler struct {
 	lock    sync.Mutex
 	WorkDir string
 	err     error
+	cc      CompilerCallback
 	fl      *filelayouter.FileLayouter
 }
 
-func NewGoCompiler(f *filelayouter.FileLayouter) Compiler {
+func NewGoCompiler(cc CompilerCallback) Compiler {
 	res := &GoCompiler{
-		fl:      f,
-		WorkDir: f.TopDir() + "build",
+		cc:      cc,
+		fl:      cc.GetFileLayouter(),
+		WorkDir: cc.GetFileLayouter().TopDir() + "build",
 	}
 	return res
 }
@@ -64,12 +66,13 @@ func (g *GoCompiler) Compile() error {
 	g.lock.Lock()
 	defer g.lock.Unlock()
 	g.err = nil
-	fmt.Printf("Compiling go \"%s\"\n", dir)
 	files, err := AllProtos(dir)
 	if err != nil {
+		fmt.Printf("Failed to compile go files: %s\n", err)
 		g.err = err
 		return err
 	}
+	fmt.Printf("Compiling %d .proto files to .pb.go \"%s\"\n", len(files), dir)
 	targetdir := g.WorkDir + "/go"
 	err = common.RecreateSafely(targetdir)
 	if err != nil {
@@ -93,7 +96,7 @@ func (g *GoCompiler) Compile() error {
 
 	//	fmt.Printf("Compiler working dir: %s\n", dir)
 	for _, f := range dirfiles {
-		//		fmt.Printf("Compiler working dir: %s, compiling %s\n", dir, f)
+		Debugf("Compiler working dir: %s, compiling %s\n", dir, f)
 		cmdandfile := append(cmd, f...)
 		l := linux.New()
 		out, err := l.SafelyExecuteWithDir(cmdandfile, dir, nil)

@@ -24,7 +24,7 @@ import (
 var (
 	debug             = flag.Bool("debug_meta", false, "debug mode of meta compiler")
 	accept_all_tokens = flag.Bool("accept_all_tokens_by_protoc", false, "do not use in production. disables verification between protoc and this service")
-	mostRecent        *Result
+	//mostRecent        *Result
 )
 
 type MetaCompiler struct {
@@ -99,7 +99,7 @@ func (m *MetaCompiler) Compile(myport int) error {
 			fmt.Printf("protoc output: %s\n", out)
 		}
 	}
-	mostRecent = m.result
+	//mostRecent = m.result
 	fmt.Printf("meta compiler done\n")
 	return nil
 }
@@ -110,7 +110,7 @@ func debugf(format string, args ...interface{}) {
 	fmt.Fprintf(os.Stderr, format, args...)
 }
 
-// called by protoc
+// this function is called by protoc - it is the implementation of the meta compiler
 func (m *MetaCompiler) SubmitSource(ctx context.Context, req *pr.ProtocRequest) error {
 	if !*accept_all_tokens {
 		if req.VerifyToken != m.verifytoken {
@@ -162,8 +162,8 @@ func (m *MetaCompiler) Packages() []*Package {
 }
 
 // most recently parsed result - get package
-func PackageByID(pkgid string) *Package {
-	for _, r := range mostRecent.Packages {
+func (m *MetaCompiler) PackageByID(pkgid string) *Package {
+	for _, r := range m.result.Packages {
 		if r.Proto.ID == pkgid {
 			return r
 		}

@@ -11,7 +11,7 @@ import (
 	"golang.conradwood.net/protorenderer/common"
 	"golang.conradwood.net/protorenderer/compiler/java"
 	"golang.conradwood.net/protorenderer/filelayouter"
-	"golang.conradwood.net/protorenderer/meta"
+	//	"golang.conradwood.net/protorenderer/meta"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -39,12 +39,14 @@ type JavaCompiler struct {
 	fl          *filelayouter.FileLayouter
 	stage       string
 	lastVersion int
+	cc          CompilerCallback
 }
 
-func NewJavaCompiler(f *filelayouter.FileLayouter) Compiler {
+func NewJavaCompiler(cc CompilerCallback) Compiler {
 	res := &JavaCompiler{
-		fl:      f,
-		WorkDir: f.TopDir() + "build",
+		cc:      cc,
+		fl:      cc.GetFileLayouter(),
+		WorkDir: cc.GetFileLayouter().TopDir() + "build",
 	}
 	return res
 }
@@ -433,7 +435,7 @@ public static {{.GRPCClientName}}.{{.Name}}BlockingStub Get{{.Name}}(io.grpc.Con
 		if ps.Protofile.JavaPackage == "1" {
 			panic("java package cannot be '1'")
 		}
-		mpkg := meta.PackageByID(pid)
+		mpkg := j.cc.GetMetaPackageByID(pid)
 		if mpkg == nil {
 			fmt.Printf("No meta package for %s\n", pid)
 			continue

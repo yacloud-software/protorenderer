@@ -48,19 +48,19 @@ type GenericCompiler struct {
 	err         error
 }
 
-func NewNanoPBCompiler(f *filelayouter.FileLayouter) Compiler {
+func NewNanoPBCompiler(cc CompilerCallback) Compiler {
 	res := &NanoPBCompiler{
-		Layouter: f,
+		Layouter: cc.GetFileLayouter(),
 	}
 	return res
 }
 
-func NewPythonCompiler(f *filelayouter.FileLayouter) Compiler {
+func NewPythonCompiler(cc CompilerCallback) Compiler {
 	res := &GenericCompiler{
 		plugin_args: []string{"python_out", "grpc_python_out"},
 		subdir:      "python",
-		fl:          f,
-		WorkDir:     f.TopDir() + "build",
+		fl:          cc.GetFileLayouter(),
+		WorkDir:     cc.GetFileLayouter().TopDir() + "build",
 	}
 	return res
 }

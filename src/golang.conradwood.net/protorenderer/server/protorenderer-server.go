@@ -46,6 +46,7 @@ var (
 	update_object_store = flag.Bool("update_object_store", true, "if false index in objectstore will not be updated")
 	compile_python      = flag.Bool("compile_python", true, "if true compile python...")
 	compile_java        = flag.Bool("compile_java", true, "if true compile java...")
+	compile_nano        = flag.Bool("compile_nanopb", true, "if true compile with nanopb")
 	port                = flag.Int("port", 4102, "The grpc server port")
 	recreate_version    = flag.Bool("initialise_version", false, "if true will start version counting from 0 again. this will reshuffle proto/service ids (that is: it will break deep html links). intented use is ONCE for the first time protorenderer-server is started")
 	protocache          = pc.New()
@@ -108,15 +109,17 @@ func main() {
 	}
 
 	fly := fl.New(protocache, fmt.Sprintf("%s/%d/", TopDir(), lv))
+	cc := &compilerCallback{nfly: fly}
 	nextVersion = &version{
 		filelayouter:   fly,
-		goCompiler:     compiler.NewGoCompiler(fly),
-		javaCompiler:   compiler.NewJavaCompiler(fly),
-		pythonCompiler: compiler.NewPythonCompiler(fly),
-		nanopbCompiler: compiler.NewNanoPBCompiler(fly),
+		goCompiler:     compiler.NewGoCompiler(cc),
+		javaCompiler:   compiler.NewJavaCompiler(cc),
+		pythonCompiler: compiler.NewPythonCompiler(cc),
+		nanopbCompiler: compiler.NewNanoPBCompiler(cc),
 		metaCompiler:   meta.NewMetaCompiler(fly),
 		version:        lv,
 	}
+	cc.metacompiler = nextVersion.metaCompiler
 	current = nextVersion
 	go updater()
 	sd := server.NewServerDef()
@@ -308,16 +311,17 @@ func updater() {
 		current.protocache_version = v
 		nv := current.version + 1
 		nfly := fl.New(protocache, fmt.Sprintf("%s/%d/", TopDir(), nv))
+		cc := &compilerCallback{nfly: nfly}
 		nextVersion = &version{
 			filelayouter:   nfly,
-			goCompiler:     compiler.NewGoCompiler(nfly),
-			javaCompiler:   compiler.NewJavaCompiler(nfly),
-			pythonCompiler: compiler.NewPythonCompiler(nfly),
-			nanopbCompiler: compiler.NewNanoPBCompiler(nfly),
+			goCompiler:     compiler.NewGoCompiler(cc),
+			javaCompiler:   compiler.NewJavaCompiler(cc),
+			pythonCompiler: compiler.NewPythonCompiler(cc),
+			nanopbCompiler: compiler.NewNanoPBCompiler(cc),
 			metaCompiler:   meta.NewMetaCompiler(nfly),
 			version:        nv,
 		}
-
+		cc.metacompiler = nextVersion.metaCompiler
 		var err error
 		fmt.Printf("********************** Creating new version ***************************\n")
 		ctx := ar.Context()
@@ -337,9 +341,11 @@ func updater() {
 			fmt.Printf("Error compiling go: %s\n", err)
 		}
 
-		err = current.nanopbCompiler.Compile()
-		if err != nil {
-			fmt.Printf("Error compiling nanopb: %s\n", err)
+		if *compile_nano {
+			err = current.nanopbCompiler.Compile()
+			if err != nil {
+				fmt.Printf("Error compiling nanopb: %s\n", err)
+			}
 		}
 
 		if *compile_java {

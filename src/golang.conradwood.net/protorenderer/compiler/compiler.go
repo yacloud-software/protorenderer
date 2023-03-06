@@ -3,6 +3,7 @@ package compiler
 import (
 	"context"
 	"flag"
+	"fmt"
 	pr "golang.conradwood.net/apis/protorenderer"
 )
 
@@ -24,4 +25,11 @@ type File interface {
 	GetVersion() int
 	GetFilename() string
 	GetContent() ([]byte, error)
+}
+
+func Debugf(format string, args ...interface{}) {
+	if !*debug {
+		return
+	}
+	fmt.Printf("[compiler ] "+format, args...)
 }

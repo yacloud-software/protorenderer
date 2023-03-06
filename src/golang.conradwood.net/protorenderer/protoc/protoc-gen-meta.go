@@ -34,6 +34,11 @@ var (
 )
 
 func main() {
+	if len(os.Args) > 1 && (os.Args[1]) == "-h" {
+		print_help()
+		os.Exit(0)
+	}
+
 	// oh we cannot use flag.Parse here..
 	// this gives us a problem with finding the registry...
 	data, err := ioutil.ReadAll(os.Stdin)
@@ -107,4 +112,15 @@ func debugf(format string, args ...interface{}) {
 }
 func printf(format string, args ...interface{}) {
 	fmt.Fprintf(os.Stderr, format, args...)
+}
+
+func print_help() {
+	h := `protoc meta compiler
+
+  Sourcecode: %s
+
+  this plugin is a stub. It's only function is to take the input from the protoc compiler and forward it to protorender service, specifically the SubmitSource RPC. The result of the RPC is returned to protoc.
+`
+	fmt.Printf(h, cmdline.SourceCodePath())
+
 }

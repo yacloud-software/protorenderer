@@ -24,6 +24,7 @@ type Package struct {
 	Services   []*Service
 	Messages   []*Message
 	Protofiles []*pr.ProtoFile
+	CNWOptions map[string]string // options in comments, such as //CNW_OPTION: foo=bar
 }
 
 // give, e.g. "golang.conradwood.net/apis/common"

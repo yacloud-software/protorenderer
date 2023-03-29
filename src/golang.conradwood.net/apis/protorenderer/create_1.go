@@ -1,8 +1,15 @@
 // client create: ProtoRendererServiceClient
+/*
+  Created by /home/cnw/devel/go/go-tools/src/golang.conradwood.net/gotools/protoc-gen-cnw/protoc-gen-cnw.go
+*/
+
 /* geninfo:
    filename  : protos/golang.conradwood.net/apis/protorenderer/protorenderer.proto
    gopackage : golang.conradwood.net/apis/protorenderer
    importname: ai_0
+   clientfunc: GetProtoRendererService
+   serverfunc: NewProtoRendererService
+   lookupfunc: ProtoRendererServiceLookupID
    varname   : client_ProtoRendererServiceClient_0
    clientname: ProtoRendererServiceClient
    servername: ProtoRendererServiceServer
@@ -33,7 +40,7 @@ func GetProtoRendererClient() ProtoRendererServiceClient {
        return client_ProtoRendererServiceClient_0
     }
 
-    client_ProtoRendererServiceClient_0 = NewProtoRendererServiceClient(client.Connect("protorenderer.ProtoRendererService"))
+    client_ProtoRendererServiceClient_0 = NewProtoRendererServiceClient(client.Connect(ProtoRendererServiceLookupID()))
     lock_ProtoRendererServiceClient_0.Unlock()
     return client_ProtoRendererServiceClient_0
 }
@@ -49,8 +56,9 @@ func GetProtoRendererServiceClient() ProtoRendererServiceClient {
        return client_ProtoRendererServiceClient_0
     }
 
-    client_ProtoRendererServiceClient_0 = NewProtoRendererServiceClient(client.Connect("protorenderer.ProtoRendererService"))
+    client_ProtoRendererServiceClient_0 = NewProtoRendererServiceClient(client.Connect(ProtoRendererServiceLookupID()))
     lock_ProtoRendererServiceClient_0.Unlock()
     return client_ProtoRendererServiceClient_0
 }
 
+func ProtoRendererServiceLookupID() string { return "protorenderer.ProtoRendererService" } // returns the ID suitable for lookup in the registry. treat as opaque, subject to change.

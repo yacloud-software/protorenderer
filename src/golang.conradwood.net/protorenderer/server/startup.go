@@ -50,9 +50,10 @@ func startup() {
 	}
 
 	time.Sleep(time.Duration(2) * time.Second)
-	b, err := osclient().Get(ar.Context(), &ost.GetRequest{ID: *prefix_object_store + INDEX_FILENAME})
+	idxfilename := *prefix_object_store + INDEX_FILENAME
+	b, err := osclient().Get(ar.Context(), &ost.GetRequest{ID: idxfilename})
 	if err != nil {
-		fmt.Printf("No index file: %s\n", err)
+		fmt.Printf("No index file \"%s\": %s\n", idxfilename, err)
 		return
 	}
 

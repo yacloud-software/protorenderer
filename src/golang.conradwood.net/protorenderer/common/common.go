@@ -1,12 +1,19 @@
 package common
 
 import (
+	"flag"
 	"fmt"
 	"golang.conradwood.net/go-easyops/utils"
 	"os"
 )
 
-var ()
+var (
+	compiler_versions = flag.Int("compiler_versions", 1, "refers to the directory under extra/ to look for compilers")
+)
+
+func GetCompilerVersion() int {
+	return *compiler_versions
+}
 
 // if dir does not exist: create it and create a file ".filelayouter"
 // if dir DOES exist, check for existence of a file  ".filelayouter", if so, recreate

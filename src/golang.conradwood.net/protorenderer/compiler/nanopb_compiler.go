@@ -202,7 +202,7 @@ func find_nanopb_binary() string {
 			return filename
 		}
 	}
-	f, err := utils.FindFile(fmt.Sprintf("extra/compilers/%d/nanopb/nanopb_generator.py", common.GetCompilerVersion()))
+	f, err := utils.FindFile(fmt.Sprintf("extra/compilers/%s/nanopb/nanopb_generator.py", common.GetCompilerVersion()))
 	if err == nil {
 		f, err = filepath.Abs(f)
 		if err == nil {
@@ -213,6 +213,6 @@ func find_nanopb_binary() string {
 	if err != nil {
 		fmt.Printf("failed to get current working directory: %s\n", err)
 	}
-	return pwd + "/" + fmt.Sprintf("extra/compilers/%d/nanopb/nanopb_generator.py", common.GetCompilerVersion())
+	return pwd + "/" + fmt.Sprintf("extra/compilers/%s/nanopb/nanopb_generator.py", common.GetCompilerVersion())
 
 }

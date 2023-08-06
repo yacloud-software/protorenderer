@@ -85,7 +85,7 @@ func (j *JavaCompiler) Compile() error {
 
 	if !*java_use_std_protoc {
 		// find the non-std compiler from this repo:
-		compiler_exe, err = utils.FindFile(fmt.Sprintf("extra/compilers/%d/weird.exe", common.GetCompilerVersion()))
+		compiler_exe, err = utils.FindFile(fmt.Sprintf("extra/compilers/%s/weird.exe", common.GetCompilerVersion()))
 		if err != nil {
 			j.err = j.Errorf("findweird.exe", err)
 			return j.err
@@ -98,7 +98,7 @@ func (j *JavaCompiler) Compile() error {
 	}
 
 	// find the compiler plugin:
-	plugin_exe, err := utils.FindFile(fmt.Sprintf("extra/compilers/%d/%s", common.GetCompilerVersion(), *java_plugin_name))
+	plugin_exe, err := utils.FindFile(fmt.Sprintf("extra/compilers/%s/%s", common.GetCompilerVersion(), *java_plugin_name))
 	if err != nil {
 		j.err = j.Errorf("findgengrpcplugin", err)
 		return j.err
@@ -161,7 +161,7 @@ func (j *JavaCompiler) Compile() error {
  */
 func (j *JavaCompiler) CompileToClass() error {
 	compiling_version := j.fl.CurrentVersionNumber()
-	jars, err := utils.FindFile(fmt.Sprintf("extra/%d/jars", common.GetCompilerVersion()))
+	jars, err := utils.FindFile(fmt.Sprintf("extra/%s/jars", common.GetCompilerVersion()))
 	if err != nil {
 		return j.Errorf("findjars", err)
 	}

@@ -8,10 +8,10 @@ import (
 )
 
 var (
-	compiler_versions = flag.Int("compiler_versions", 1, "refers to the directory under extra/ to look for compilers")
+	compiler_versions = flag.String("compiler_versions", "original", "refers to the directory under extra/ to look for compilers")
 )
 
-func GetCompilerVersion() int {
+func GetCompilerVersion() string {
 	return *compiler_versions
 }
 

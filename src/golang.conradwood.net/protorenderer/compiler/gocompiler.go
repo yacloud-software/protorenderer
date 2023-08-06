@@ -134,7 +134,7 @@ func (g *GoCompiler) Compile() error {
 func FindCompiler(cname string) string {
 	check := []string{
 		"dist/linux/amd64/",
-		fmt.Sprintf("extra/compilers/%d", common.GetCompilerVersion()),
+		fmt.Sprintf("extra/compilers/%s/", common.GetCompilerVersion()),
 		"linux/amd64/",
 		"/opt/yacloud/ctools/dev/go/current/go/bin/",
 		"/opt/cnw/ctools/dev/go/current/go/bin/",

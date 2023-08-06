@@ -29,6 +29,7 @@ var (
 	version     = flag.Bool("version", false, "get version")
 	delete      = flag.Bool("delete", false, "delete files listed on command line")
 	compile     = flag.Bool("compile", false, "compile files on the fly (but do not add to repository")
+	show_failed = flag.Bool("failed", false, "show failed files")
 	outdir      = flag.String("outdir", "", "directory where to place compiled protos files")
 	listflag    = flag.Bool("list", false, "list source files currently in repository")
 	repoid      = flag.Uint64("repository_id", 0, "repository id of the proto being submitted. if not set, will look at deploy.yaml")
@@ -41,6 +42,10 @@ var (
 func main() {
 	flag.Parse()
 	protoClient = pb.GetProtoRendererServiceClient()
+	if *show_failed {
+		utils.Bail("failed to show failed files", showFailed())
+		os.Exit(0)
+	}
 	if *find_pkg != "" {
 		utils.Bail("failed to find package", FindPkg(*find_pkg))
 		os.Exit(0)
@@ -245,5 +250,23 @@ func FindPkg(pkgname string) error {
 	}
 	fmt.Printf("Service: %s\n", svc)
 	fmt.Printf("Comment: %s\n", cmt)
+	return nil
+}
+
+func showFailed() error {
+	ctx := getContext()
+	res, err := protoClient.GetFailedFiles(ctx, &common.Void{})
+	if err != nil {
+		return err
+	}
+	t := &utils.Table{}
+	t.AddHeaders("filename", "compiler", "message")
+	for _, f := range res.Files {
+		t.AddString(f.Filename)
+		t.AddString(f.Compiler)
+		t.AddString(f.Message)
+		t.NewRow()
+	}
+	fmt.Println(t.ToPrettyString())
 	return nil
 }

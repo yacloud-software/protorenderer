@@ -61,7 +61,8 @@ func (g *GoCompiler) GetFile(ctx context.Context, filename string) (File, error)
 	fl := &StdFile{Filename: filename, version: 1, ctFilename: fn}
 	return fl, nil
 }
-func (g *GoCompiler) Compile() error {
+func (g *GoCompiler) Name() string { return "go" }
+func (g *GoCompiler) Compile(rt ResultTracker) error {
 	dir := g.fl.SrcDir()
 	g.lock.Lock()
 	defer g.lock.Unlock()

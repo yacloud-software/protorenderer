@@ -69,6 +69,7 @@ type version struct {
 	metaCompiler       *meta.MetaCompiler
 	protocache_version int
 	version            int
+	failures           *failuretracker
 }
 type protoRenderer struct {
 }
@@ -118,6 +119,7 @@ func main() {
 		nanopbCompiler: compiler.NewNanoPBCompiler(cc),
 		metaCompiler:   meta.NewMetaCompiler(fly),
 		version:        lv,
+		failures:       &failuretracker{},
 	}
 	cc.metacompiler = nextVersion.metaCompiler
 	current = nextVersion
@@ -320,6 +322,7 @@ func updater() {
 			nanopbCompiler: compiler.NewNanoPBCompiler(cc),
 			metaCompiler:   meta.NewMetaCompiler(nfly),
 			version:        nv,
+			failures:       &failuretracker{},
 		}
 		cc.metacompiler = nextVersion.metaCompiler
 		var err error
@@ -336,26 +339,26 @@ func updater() {
 			fmt.Printf("Error compiling metadata: %s\n", err)
 		}
 
-		err = current.goCompiler.Compile()
+		err = current.goCompiler.Compile(current.failures)
 		if err != nil {
 			fmt.Printf("Error compiling go: %s\n", err)
 		}
 
 		if *compile_nano {
-			err = current.nanopbCompiler.Compile()
+			err = current.nanopbCompiler.Compile(current.failures)
 			if err != nil {
 				fmt.Printf("Error compiling nanopb: %s\n", err)
 			}
 		}
 
 		if *compile_java {
-			err = current.javaCompiler.Compile()
+			err = current.javaCompiler.Compile(current.failures)
 			if err != nil {
 				fmt.Printf("Error compiling java: %s\n", err)
 			}
 		}
 		if *compile_python {
-			err = current.pythonCompiler.Compile()
+			err = current.pythonCompiler.Compile(current.failures)
 			if err != nil {
 				fmt.Printf("Error compiling python: %s\n", err)
 			}
@@ -470,4 +473,24 @@ func (e *protoRenderer) FindServiceByID(ctx context.Context, req *pb.ID) (*pb.Se
 	}
 	return nil, errors.NotFound(ctx, "service not found (id=%s)", req.ID)
 
+}
+func (e *protoRenderer) GetFailedFiles(ctx context.Context, req *common.Void) (*pb.FailedFilesList, error) {
+	if completeVersion == nil {
+		return nil, errors.Unavailable(ctx, "GetFailedFiles")
+	}
+	result := completeVersion.metaCompiler.GetMostRecentResult()
+	if result == nil {
+		return nil, errors.Unavailable(ctx, "GetFailedFiles")
+	}
+	res := &pb.FailedFilesList{}
+	rt := completeVersion.failures
+	for _, f := range rt.Failures() {
+		ff := &pb.FailedFile{
+			Filename: f.filename,
+			Message:  f.message,
+			Compiler: f.c.Name(),
+		}
+		res.Files = append(res.Files, ff)
+	}
+	return res, nil
 }

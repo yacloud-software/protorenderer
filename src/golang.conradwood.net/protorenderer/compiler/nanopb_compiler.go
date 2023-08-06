@@ -32,8 +32,8 @@ type NanoPBCompiler struct {
 func (npb *NanoPBCompiler) WorkDir() string {
 	return npb.Layouter.TopDir() + "build"
 }
-
-func (npb *NanoPBCompiler) Compile() error {
+func (g *NanoPBCompiler) Name() string { return "nanopb" }
+func (npb *NanoPBCompiler) Compile(rt ResultTracker) error {
 	npb.Printf("***************** nanopb compiler ******************\n")
 	dir := npb.Layouter.SrcDir()
 	npb.lock.Lock()

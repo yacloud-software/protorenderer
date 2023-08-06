@@ -56,7 +56,8 @@ func (j *JavaCompiler) SetStage(s string) {
 func (j *JavaCompiler) Error() error {
 	return j.err
 }
-func (j *JavaCompiler) Compile() error {
+func (g *JavaCompiler) Name() string { return "java" }
+func (j *JavaCompiler) Compile(rt ResultTracker) error {
 	dir := j.fl.SrcDir()
 	j.err = nil
 	j.SetStage("prepare")

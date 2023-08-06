@@ -64,7 +64,8 @@ func NewPythonCompiler(cc CompilerCallback) Compiler {
 	}
 	return res
 }
-func (pc *GenericCompiler) Compile() error {
+func (g *GenericCompiler) Name() string { return "generic" }
+func (pc *GenericCompiler) Compile(rt ResultTracker) error {
 	dir := pc.fl.SrcDir()
 	pc.lock.Lock()
 	defer pc.lock.Unlock()

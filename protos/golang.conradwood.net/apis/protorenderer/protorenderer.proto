@@ -221,6 +221,14 @@ message FileStream {
   string Filename=1; // filename this payload belongs to
   bytes Payload=2; // payload 
 }
+message FailedFilesList {
+  repeated FailedFile Files=1;
+}
+message FailedFile {
+  string Compiler=1;
+  string Filename=2;
+  string Message=3;
+}
   
 /*
 The protorenderer creates compilable protos in various languages
@@ -291,4 +299,6 @@ service ProtoRendererService {
   rpc GetPackageByName(PackageName) returns (Package);
   // get packageid by name (no error)
   rpc FindPackageByName(PackageName) returns (PackageFindResult);
+  // get failures
+  rpc GetFailedFiles(common.Void) returns (FailedFilesList);
 }

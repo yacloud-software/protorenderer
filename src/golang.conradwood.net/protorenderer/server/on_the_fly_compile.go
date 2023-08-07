@@ -109,6 +109,13 @@ func (e *protoRenderer) CompileFile(ctx context.Context, req *pb.CompileRequest)
 		}
 		res.Files = append(res.Files, cr.Files...)
 	}
+
+	// the compilers do not necessarily put them under the 'protos/' directory
+	for _, f := range res.Files {
+		if !strings.HasPrefix(f.Filename, "protos/") {
+			f.Filename = "protos/" + f.Filename
+		}
+	}
 	return res, nil
 }
 

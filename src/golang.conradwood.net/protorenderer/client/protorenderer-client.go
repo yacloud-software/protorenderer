@@ -37,6 +37,7 @@ var (
 	packages    = flag.Bool("packages", false, "get packages")
 	get_zip     = flag.String("zip", "", "if non-nil get zip file for packagename")
 	find_pkg    = flag.String("find_package", "", "if non-nil find package by name")
+	debug       = flag.Bool("debug", false, "debug mode")
 )
 
 func main() {
@@ -155,7 +156,7 @@ func CompileFile(fname string) {
 	fmt.Printf("Compiled file \"%s\" (%d files returned)\n", res.SourceFilename, len(res.Files))
 	for _, cf := range res.Files {
 		if *outdir == "" {
-			fmt.Printf("  %s [%d bytes]\n", cf.Filename, len(cf.Content))
+			fmt.Printf("  %s [%d bytes] (not saved, no outdir)\n", cf.Filename, len(cf.Content))
 			continue
 		}
 		// save file

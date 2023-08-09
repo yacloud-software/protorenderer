@@ -9,6 +9,7 @@ import (
 	"context"
 	"fmt"
 	pr "golang.conradwood.net/apis/protorenderer"
+	"golang.conradwood.net/go-easyops/cmdline"
 	"golang.conradwood.net/go-easyops/linux"
 	"golang.conradwood.net/go-easyops/utils"
 	"golang.conradwood.net/protorenderer/common"
@@ -90,7 +91,7 @@ func (g *GoCompiler) Compile(rt ResultTracker) error {
 	pcfname := FindCompiler("protoc-gen-go")
 	fmt.Printf("Using: %s\n", pcfname)
 	cmd := []string{
-		"/opt/yacloud/ctools/dev/go/current/protoc/protoc",
+		cmdline.GetYACloudDir() + "/ctools/dev/go/current/protoc/protoc",
 		fmt.Sprintf("--plugin=protoc-gen-go=%s", pcfname),
 		fmt.Sprintf("--go_out=plugins=grpc:%s", targetdir),
 	}
@@ -114,7 +115,7 @@ func (g *GoCompiler) Compile(rt ResultTracker) error {
 	pcfname = FindCompiler("protoc-gen-cnw")
 	fmt.Printf("Using: %s\n", pcfname)
 	cmd = []string{
-		"/opt/yacloud/ctools/dev/go/current/protoc/protoc",
+		cmdline.GetYACloudDir() + "/ctools/dev/go/current/protoc/protoc",
 		fmt.Sprintf("--plugin=protoc-gen-cnw=%s", pcfname),
 		fmt.Sprintf("--cnw_out=%s", targetdir),
 	}
@@ -143,7 +144,7 @@ func FindCompiler(cname string) string {
 		"dist/linux/amd64/",
 		fmt.Sprintf("extra/compilers/%s/", common.GetCompilerVersion()),
 		"linux/amd64/",
-		"/opt/yacloud/ctools/dev/go/current/go/bin/",
+		cmdline.GetYACloudDir() + "/ctools/dev/go/current/go/bin/",
 		"/opt/cnw/ctools/dev/go/current/go/bin/",
 		"/home/cnw/go/bin/",
 		"/home/cnw/devel/go/protorenderer/dist/linux/amd64/",

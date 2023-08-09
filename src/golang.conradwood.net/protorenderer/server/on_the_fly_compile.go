@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	pb "golang.conradwood.net/apis/protorenderer"
+	"golang.conradwood.net/go-easyops/cmdline"
 	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/go-easyops/linux"
 	"golang.conradwood.net/go-easyops/utils"
@@ -134,7 +135,7 @@ func (oc *onthefly_compiler) golang(ctx context.Context) (*pb.CompileResult, err
 	// compile go, plugin protoc-gen-go
 	pcfname := compiler.FindCompiler("protoc-gen-go")
 	cmd := []string{
-		"/opt/yacloud/ctools/dev/go/current/protoc/protoc",
+		cmdline.GetYACloudDir() + "/ctools/dev/go/current/protoc/protoc",
 		fmt.Sprintf("-I%s", incdir),
 		fmt.Sprintf("-I%s", dir),
 		fmt.Sprintf("--plugin=protoc-gen-go=%s", pcfname),
@@ -149,7 +150,7 @@ func (oc *onthefly_compiler) golang(ctx context.Context) (*pb.CompileResult, err
 	// compile go, plugin protoc-gen-cnw
 	pcfname = compiler.FindCompiler("protoc-gen-cnw")
 	cmd = []string{
-		"/opt/yacloud/ctools/dev/go/current/protoc/protoc",
+		cmdline.GetYACloudDir() + "/ctools/dev/go/current/protoc/protoc",
 		fmt.Sprintf("-I%s", incdir),
 		fmt.Sprintf("-I%s", dir),
 		fmt.Sprintf("--plugin=protoc-gen-cnw=%s", pcfname),

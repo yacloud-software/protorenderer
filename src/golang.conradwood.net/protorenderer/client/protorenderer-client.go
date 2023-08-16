@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	//	ch "golang.conradwood.net/go-easyops/http"
+	"golang.conradwood.net/go-easyops/cmdline"
 	//	au "golang.conradwood.net/go-easyops/auth"
 	ar "golang.conradwood.net/go-easyops/authremote"
 	"golang.conradwood.net/go-easyops/utils"
@@ -132,6 +133,7 @@ func Compile() {
 		fmt.Printf("missing filename(s)\n")
 		os.Exit(10)
 	}
+	fmt.Printf("Registry: %s\n", cmdline.GetRegistryAddress())
 	for _, fname := range flag.Args() {
 		CompileFile(fname)
 	}

@@ -162,10 +162,12 @@ func CompileFile(fname string) {
 			continue
 		}
 		// save file
-		fname := fmt.Sprintf("%s/%s", *outdir, cf.Filename)
+		cfname := strings.TrimPrefix(cf.Filename, "protos/")
+		fname := fmt.Sprintf("%s/%s", *outdir, cfname)
 		os.MkdirAll(filepath.Dir(fname), 0777)
 		err = utils.WriteFile(fname, cf.Content)
 		utils.Bail("failed to store file", err)
+		fmt.Printf("Saved to \"%s\"\n", fname)
 	}
 }
 

@@ -296,6 +296,7 @@ func (e *protoRenderer) MiniParser(ctx context.Context, req *pb.AddProtoRequest)
 
 }
 
+// the thing that actually compiles
 func updater() {
 	lastone := 0
 	fmt.Printf("Updater started...\n")

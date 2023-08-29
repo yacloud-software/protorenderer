@@ -54,6 +54,8 @@ golang.conradwood.net/apis/rpcinterceptor v1.1.2309 h1:YI44HUoA2dkUGhfI58q6p5eJu
 golang.conradwood.net/apis/rpcinterceptor v1.1.2309/go.mod h1:PlaSdGFeaJP0y+tHicV9+jpjZ1yddzoG4T8S5Dxx65E=
 golang.conradwood.net/go-easyops v0.1.18912 h1:UV14uuWSQhd4pwd5v6tF2uxMgE8Igrjhh8Mn+uaLdtk=
 golang.conradwood.net/go-easyops v0.1.18912/go.mod h1:Cz6Uz7Or6Yrsyb1iLzMwA8ItnDz/d0AdIkXGM23xv6M=
+golang.conradwood.net/go-easyops v0.1.19057 h1:OFr2RUgV1JEQbrXnQJa8xc2QnOBpPs4vwPKCSRT34pg=
+golang.conradwood.net/go-easyops v0.1.19057/go.mod h1:Cz6Uz7Or6Yrsyb1iLzMwA8ItnDz/d0AdIkXGM23xv6M=
 golang.org/x/net v0.14.0 h1:BONx9s002vGdD9umnlX1Po8vOZmrgH34qlHcD1MfK14=
 golang.org/x/net v0.14.0/go.mod h1:PpSgVXXLK0OxS0F31C1/tv6XNguvCrnXIDrFMspZIUI=
 golang.org/x/sync v0.0.0-20181221193216-37e7f081c4d4/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=

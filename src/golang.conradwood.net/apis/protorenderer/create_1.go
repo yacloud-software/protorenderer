@@ -1,6 +1,6 @@
 // client create: ProtoRendererServiceClient
 /*
-  Created by /srv/home/cnw/devel/go/go-tools/src/golang.conradwood.net/gotools/protoc-gen-cnw/protoc-gen-cnw.go
+  Created by /home/cnw/devel/go/yatools/src/golang.yacloud.eu/yatools/protoc-gen-cnw/protoc-gen-cnw.go
 */
 
 /* geninfo:
@@ -13,7 +13,7 @@
    varname   : client_ProtoRendererServiceClient_0
    clientname: ProtoRendererServiceClient
    servername: ProtoRendererServiceServer
-   gscvname  : protorenderer.ProtoRendererService
+   gsvcname  : protorenderer.ProtoRendererService
    lockname  : lock_ProtoRendererServiceClient_0
    activename: active_ProtoRendererServiceClient_0
 */
@@ -62,3 +62,7 @@ func GetProtoRendererServiceClient() ProtoRendererServiceClient {
 }
 
 func ProtoRendererServiceLookupID() string { return "protorenderer.ProtoRendererService" } // returns the ID suitable for lookup in the registry. treat as opaque, subject to change.
+
+func init() {
+   client.RegisterDependency("protorenderer.ProtoRendererService")
+}

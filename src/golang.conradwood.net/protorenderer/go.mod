@@ -8,7 +8,7 @@ require (
 	golang.conradwood.net/apis/h2gproxy v1.1.2526
 	golang.conradwood.net/apis/objectstore v1.1.2503
 	golang.conradwood.net/apis/protorenderer v1.1.2017
-	golang.conradwood.net/go-easyops v0.1.19709
+	golang.conradwood.net/go-easyops v0.1.19748
 	google.golang.org/grpc v1.57.0
 )
 

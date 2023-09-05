@@ -127,9 +127,6 @@ func (g *GoCompiler) Compile(rt ResultTracker) error {
 		l := linux.New()
 		out, err := l.SafelyExecuteWithDir(cmdandfile, dir, nil)
 		if err != nil {
-			for _, af := range f {
-				rt.AddFailed(g, af, fmt.Sprintf("%s", out))
-			}
 			fmt.Printf("Failed to compile: %s: %s\n", f, err)
 			fmt.Printf("Compiler output: %s\n", out)
 			g.err = err

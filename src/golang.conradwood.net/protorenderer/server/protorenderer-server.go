@@ -37,6 +37,7 @@ const (
 )
 
 var (
+	compile_count       = 0 // how many times did we compile stuff
 	osc                 ost.ObjectStoreClient
 	uosLock             sync.Mutex
 	start_update        = false
@@ -78,6 +79,7 @@ type updateinfo struct {
 
 func main() {
 	flag.Parse()
+	server.SetHealth(server.STARTING)
 	err := cm.RecreateSafely(TopDir())
 	utils.Bail(fmt.Sprintf("Failed to recreate topdir (%s)", TopDir()), err)
 	fmt.Printf("Starting ProtoRendererServiceServer...\n")
@@ -373,6 +375,10 @@ func updater() {
 		bs := fmt.Sprintf("%d", completeVersion.version)
 		if updateObjectStore() {
 			client.PutWithID(ctx, VERSIONOBJECT, []byte(bs))
+		}
+		compile_count++
+		if compile_count == 1 {
+			server.SetHealth(server.READY)
 		}
 		fmt.Printf("********************** Created version %d ***************************\n", completeVersion.version)
 	}

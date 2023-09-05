@@ -52,8 +52,6 @@ golang.conradwood.net/apis/registry v1.1.2503 h1:jMHHCMhp46AgN45C88X0hKVlTIYVzTP
 golang.conradwood.net/apis/registry v1.1.2503/go.mod h1:pnR5o+8d4YoubdlhRkLjVs9qOZBd8orpTuF8WrUGkmI=
 golang.conradwood.net/apis/rpcinterceptor v1.1.2495 h1:XDRtCEz7qm+ioYm1yo2hQjUfNyCoJy3XZW8tDP9aKX4=
 golang.conradwood.net/apis/rpcinterceptor v1.1.2495/go.mod h1:b70dVRDjNyMcJW73kMLnu4Bl7w5F04WC/4QmgeeXuCI=
-golang.conradwood.net/go-easyops v0.1.19667 h1:jcXyKuHSwPrbltLsKh3i7uFK1y6qnkkqkp9efKkZgO8=
-golang.conradwood.net/go-easyops v0.1.19667/go.mod h1:RC7fYrRFMXBQWlCSx3eaLTwAKA89p7LcP0fJz7wbv+4=
 golang.conradwood.net/go-easyops v0.1.19705 h1:7PLjIaR94c0n02GpahN7Wid9sKP5LYtezlQTtZIFYsQ=
 golang.conradwood.net/go-easyops v0.1.19705/go.mod h1:RC7fYrRFMXBQWlCSx3eaLTwAKA89p7LcP0fJz7wbv+4=
 golang.conradwood.net/go-easyops v0.1.19709 h1:2kJM6ElOguAPPOlOdbmo3aJLEGkeP25PUfW6j7n+BF4=

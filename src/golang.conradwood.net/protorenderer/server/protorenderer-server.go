@@ -127,7 +127,7 @@ func main() {
 	current = nextVersion
 	go updater()
 	sd := server.NewServerDef()
-	sd.Port = *port
+	sd.SetPort(*port)
 	e := new(protoRenderer)
 	sd.Register = server.Register(
 		func(server *grpc.Server) error {

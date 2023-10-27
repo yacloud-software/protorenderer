@@ -238,7 +238,10 @@ func (e *protoRenderer) UpdateProto(ctx context.Context, req *pb.AddProtoRequest
 	fmt.Printf("  Go   Package: %s\n", pp.GoPackage)
 	fmt.Printf("  Java Package: %s\n", pp.JavaPackage)
 	if len(pp.JavaPackage) < 2 {
-		return nil, errors.InvalidArgs(ctx, "Invalid java package", "Invalid java package \"%s\" in file %s", pp.JavaPackage, req.Name)
+		pp.JavaPackage = "no.javapackage.proto." + pp.GoPackage
+		if *compile_java {
+			return nil, errors.InvalidArgs(ctx, "Invalid java package", "Invalid java package \"%s\" in file %s", pp.JavaPackage, req.Name)
+		}
 	}
 
 	names[req.Name] = true

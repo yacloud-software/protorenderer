@@ -25,7 +25,7 @@ var (
 	protoClient pb.ProtoRendererServiceClient
 	view        = flag.Bool("view", false, "view current proto docs")
 	files       = flag.Bool("files", false, "download .proto, .pb.go, .class, .py, and nanopb files (if extra arguments are given on the commandline, limit downloads to those packages matching remaining non-option arguments")
-	sources     = flag.Bool("sources", false, "download .proto files")
+	sources     = flag.Bool("sources", false, "download .proto files (remaining args, if present, filter the output)")
 	compilers   = flag.String("compilers", "", "specify compilers. if empty (Default): autodetect")
 	version     = flag.Bool("version", false, "get version")
 	delete      = flag.Bool("delete", false, "delete files listed on command line")

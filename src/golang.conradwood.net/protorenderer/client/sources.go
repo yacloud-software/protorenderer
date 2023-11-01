@@ -29,7 +29,7 @@ func Sources() {
 		pkgid := &pr.ID{ID: fpkg.ID}
 		pkg, err := ps.GetPackageByID(ctx, pkgid)
 		utils.Bail("Failed to get package", err)
-		fmt.Printf("Package: #%s %s (prefix=%s)\n", pkg.ID, pkg.Name, pkg.Prefix)
+		fmt.Printf("Package: #%s %s (prefix=%s) (fpkgname=%s)\n", pkg.ID, pkg.Name, pkg.Prefix, fpkg.Name)
 		fl, err := ps.GetFilesProto(ctx, pkgid)
 		utils.Bail("failed to get files", err)
 		for i, filename := range fl.Files {
@@ -39,7 +39,8 @@ func Sources() {
 			fullpath := "/tmp/x/protos/" + filename
 			dn := filepath.Dir(fullpath)
 			os.MkdirAll(dn, 0777)
-			utils.WriteFile(fullpath, file.Content)
+			utils.Bail("failed to write", utils.WriteFile(fullpath, file.Content))
+			fmt.Printf("written to %s\n", fullpath)
 		}
 	}
 }

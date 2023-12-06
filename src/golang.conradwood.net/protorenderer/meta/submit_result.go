@@ -140,3 +140,4 @@ func (m *MetaCompiler) submitResult(result *Result) error {
 func (m *MetaCompiler) GetMostRecentResult() *Result {
 	return m.result
 }
+

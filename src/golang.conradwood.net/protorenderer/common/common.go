@@ -41,3 +41,4 @@ func RecreateSafely(dirname string) error {
 	err = utils.WriteFile(fname, make([]byte, 0))
 	return err
 }
+

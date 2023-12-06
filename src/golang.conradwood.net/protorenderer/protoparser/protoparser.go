@@ -73,3 +73,4 @@ func lastElement(input string) string {
 	s = strings.Trim(s, "\"")
 	return s
 }
+

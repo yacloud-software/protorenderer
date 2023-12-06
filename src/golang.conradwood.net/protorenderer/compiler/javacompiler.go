@@ -497,3 +497,4 @@ type servicedef struct {
 	RegistryName   string
 	GRPCClientName string
 }
+

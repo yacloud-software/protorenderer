@@ -24,3 +24,4 @@ func (f *failuretracker) AddFailed(c compiler.Compiler, filename, message string
 func (f *failuretracker) Failures() []*failure_tracked {
 	return f.failures
 }
+

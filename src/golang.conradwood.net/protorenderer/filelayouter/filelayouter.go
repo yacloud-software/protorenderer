@@ -124,3 +124,4 @@ func (f *FileLayouter) ChangedProtos(version int) []*TrackedChange {
 	}
 	return f.current_version.ChangesSince(version)
 }
+

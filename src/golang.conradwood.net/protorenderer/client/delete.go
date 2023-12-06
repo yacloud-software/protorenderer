@@ -73,3 +73,4 @@ func osclient() ost.ObjectStoreClient {
 	osc = ost.NewObjectStoreClient(client.Connect("objectstore.ObjectStore"))
 	return nil
 }
+

@@ -110,3 +110,4 @@ func (tc *TrackedChange) Filename() string {
 func (tc *TrackedChange) RelativeDir() string {
 	return tc.relativeDir
 }
+

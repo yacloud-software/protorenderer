@@ -116,3 +116,4 @@ func (p *ProtoCache) AddOrUpdate(protofile *pr.ProtoFile) (int, error) {
 func (p *ProtoCache) Get(ctx context.Context) []*CachedFile {
 	return p.protos
 }
+

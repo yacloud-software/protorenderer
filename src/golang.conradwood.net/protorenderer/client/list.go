@@ -45,3 +45,4 @@ func msgLine(msg *pr.Message) string {
 	}
 	return fmt.Sprintf("%s[#%s]", msg.ID, msg.Name)
 }
+

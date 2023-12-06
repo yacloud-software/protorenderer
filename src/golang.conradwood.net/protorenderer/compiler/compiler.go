@@ -38,3 +38,4 @@ func Debugf(format string, args ...interface{}) {
 	}
 	fmt.Printf("[compiler ] "+format, args...)
 }
+

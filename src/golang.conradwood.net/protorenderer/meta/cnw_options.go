@@ -52,3 +52,4 @@ func handle_cnw_option_string(res map[string]string, opt string) {
 	opt = strings.TrimPrefix(opt, CNW_OPTION_KEYWORD)
 	debugf("Cnw option: \"%s\"\n", opt)
 }
+

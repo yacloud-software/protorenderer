@@ -129,12 +129,12 @@ func main() {
 	sd := server.NewServerDef()
 	sd.SetPort(*port)
 	e := new(protoRenderer)
-	sd.Register = server.Register(
+	sd.SetRegister(server.Register(
 		func(server *grpc.Server) error {
 			pb.RegisterProtoRendererServiceServer(server, e)
 			return nil
 		},
-	)
+	))
 	go startup()
 	err = server.ServerStartup(sd)
 	utils.Bail("Unable to start server", err)
@@ -504,3 +504,4 @@ func (e *protoRenderer) GetFailedFiles(ctx context.Context, req *common.Void) (*
 	}
 	return res, nil
 }
+

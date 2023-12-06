@@ -26,3 +26,4 @@ func (s *StdFile) GetContent() ([]byte, error) {
 func (s *StdFile) GetFilename() string {
 	return s.Filename
 }
+

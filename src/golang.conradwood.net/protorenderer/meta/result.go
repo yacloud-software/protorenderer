@@ -139,3 +139,4 @@ func (m *Message) ObtainField(name string) *Field {
 func (f *Field) TypeName() string {
 	return fmt.Sprintf("%v", f.Type)
 }
+

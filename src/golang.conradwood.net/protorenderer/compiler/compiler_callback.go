@@ -9,3 +9,4 @@ type CompilerCallback interface {
 	GetFileLayouter() *fl.FileLayouter
 	GetMetaPackageByID(pkgid string) *meta.Package
 }
+

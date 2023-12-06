@@ -52,3 +52,4 @@ func cdir(fname string) {
 	s := filepath.Dir(fname)
 	os.MkdirAll(s, 0777)
 }
+

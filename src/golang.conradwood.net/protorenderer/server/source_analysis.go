@@ -34,3 +34,4 @@ func (p *protoRenderer) GetIDForPackage(ctx context.Context, req *pr.PackageIDRe
 func (p *protoRenderer) GetIDForMessage(ctx context.Context, req *pr.MessageIDRequest) (*pr.ID, error) {
 	return &pr.ID{ID: "package-id"}, nil
 }
+

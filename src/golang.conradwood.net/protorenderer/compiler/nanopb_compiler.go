@@ -216,3 +216,4 @@ func find_nanopb_binary() string {
 	return pwd + "/" + fmt.Sprintf("extra/compilers/%s/nanopb/nanopb_generator.py", common.GetCompilerVersion())
 
 }
+

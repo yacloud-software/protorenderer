@@ -228,3 +228,4 @@ func (p *protoRenderer) GetFile(ctx context.Context, req *pr.FileRequest) (*pr.F
 	res := &pr.File{Content: ct}
 	return res, nil
 }
+

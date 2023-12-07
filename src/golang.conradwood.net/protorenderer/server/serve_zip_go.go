@@ -94,3 +94,4 @@ func (z *zipcopier) Write(filename string, buf []byte) (int, error) {
 	return len(buf), nil
 }
 
+

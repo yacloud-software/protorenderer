@@ -34,3 +34,4 @@ func metrics_update() {
 	failedGauge.Set(float64(len(v.failures.Failures())))
 }
 
+

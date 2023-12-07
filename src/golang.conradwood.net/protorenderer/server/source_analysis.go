@@ -35,3 +35,4 @@ func (p *protoRenderer) GetIDForMessage(ctx context.Context, req *pr.MessageIDRe
 	return &pr.ID{ID: "package-id"}, nil
 }
 
+

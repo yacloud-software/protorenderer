@@ -10,3 +10,4 @@ type CompilerCallback interface {
 	GetMetaPackageByID(pkgid string) *meta.Package
 }
 
+

@@ -79,7 +79,7 @@ type updateinfo struct {
 
 func main() {
 	flag.Parse()
-	server.SetHealth(server.STARTING)
+	server.SetHealth(common.Health_STARTING)
 	err := cm.RecreateSafely(TopDir())
 	utils.Bail(fmt.Sprintf("Failed to recreate topdir (%s)", TopDir()), err)
 	fmt.Printf("Starting ProtoRendererServiceServer...\n")
@@ -381,7 +381,7 @@ func updater() {
 		}
 		compile_count++
 		if compile_count == 1 {
-			server.SetHealth(server.READY)
+			server.SetHealth(common.Health_READY)
 		}
 		fmt.Printf("********************** Created version %d ***************************\n", completeVersion.version)
 	}
@@ -504,109 +504,3 @@ func (e *protoRenderer) GetFailedFiles(ctx context.Context, req *common.Void) (*
 	}
 	return res, nil
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

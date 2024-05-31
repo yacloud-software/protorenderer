@@ -14,7 +14,7 @@ import (
 	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/go-easyops/linux"
 	"golang.conradwood.net/go-easyops/utils"
-	"golang.conradwood.net/protorenderer/filelayouter"
+	"golang.conradwood.net/protorenderer/v1/filelayouter"
 	"os"
 	"path/filepath"
 	"strings"

@@ -7,7 +7,7 @@ import (
 	pr "golang.conradwood.net/apis/protorenderer"
 	"golang.conradwood.net/go-easyops/authremote"
 	"golang.conradwood.net/go-easyops/cache"
-	"golang.conradwood.net/protorenderer/db"
+	"golang.conradwood.net/protorenderer/v1/db"
 	"sync"
 )
 

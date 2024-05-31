@@ -1,11 +1,11 @@
-package main
+package srv
 
 import (
 	"fmt"
 	pb "golang.conradwood.net/apis/protorenderer"
 	"golang.conradwood.net/go-easyops/errors"
-	"golang.conradwood.net/protorenderer/compiler"
-	"golang.conradwood.net/protorenderer/meta"
+	"golang.conradwood.net/protorenderer/v1/compiler"
+	"golang.conradwood.net/protorenderer/v1/meta"
 )
 
 func (e *protoRenderer) GetFilesGoByPackageName(req *pb.PackageName, srv pb.ProtoRendererService_GetFilesGoByPackageNameServer) error {

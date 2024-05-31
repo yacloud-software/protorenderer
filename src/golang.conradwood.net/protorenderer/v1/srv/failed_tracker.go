@@ -1,7 +1,7 @@
-package main
+package srv
 
 import (
-	"golang.conradwood.net/protorenderer/compiler"
+	"golang.conradwood.net/protorenderer/v1/compiler"
 )
 
 type failuretracker struct {

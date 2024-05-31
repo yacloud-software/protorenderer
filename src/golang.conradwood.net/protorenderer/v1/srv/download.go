@@ -1,4 +1,4 @@
-package main
+package srv
 
 import (
 	"archive/tar"
@@ -8,7 +8,7 @@ import (
 	h2g "golang.conradwood.net/apis/h2gproxy"
 	pb "golang.conradwood.net/apis/protorenderer"
 	"golang.conradwood.net/go-easyops/errors"
-	"golang.conradwood.net/protorenderer/compiler"
+	"golang.conradwood.net/protorenderer/v1/compiler"
 	"io"
 	"path/filepath"
 	"strings"

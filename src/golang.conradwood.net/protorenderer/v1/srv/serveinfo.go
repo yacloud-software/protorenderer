@@ -1,4 +1,4 @@
-package main
+package srv
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"golang.conradwood.net/apis/common"
 	pb "golang.conradwood.net/apis/protorenderer"
 	"golang.conradwood.net/go-easyops/errors"
-	"golang.conradwood.net/protorenderer/meta"
+	"golang.conradwood.net/protorenderer/v1/meta"
 	"path/filepath"
 	"sort"
 	"strings"

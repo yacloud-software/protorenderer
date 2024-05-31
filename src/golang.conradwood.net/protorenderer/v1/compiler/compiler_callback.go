@@ -1,8 +1,8 @@
 package compiler
 
 import (
-	fl "golang.conradwood.net/protorenderer/filelayouter"
-	"golang.conradwood.net/protorenderer/meta"
+	fl "golang.conradwood.net/protorenderer/v1/filelayouter"
+	"golang.conradwood.net/protorenderer/v1/meta"
 )
 
 type CompilerCallback interface {

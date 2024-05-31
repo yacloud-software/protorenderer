@@ -1,12 +1,12 @@
-package main
+package srv
 
 import (
 	"context"
 	"fmt"
 	pr "golang.conradwood.net/apis/protorenderer"
 	"golang.conradwood.net/go-easyops/errors"
-	"golang.conradwood.net/protorenderer/compiler"
-	"golang.conradwood.net/protorenderer/meta"
+	"golang.conradwood.net/protorenderer/v1/compiler"
+	"golang.conradwood.net/protorenderer/v1/meta"
 	"path/filepath"
 )
 

@@ -2,7 +2,7 @@ package filelayouter
 
 import (
 	pr "golang.conradwood.net/apis/protorenderer"
-	pc "golang.conradwood.net/protorenderer/protocache"
+	pc "golang.conradwood.net/protorenderer/v1/protocache"
 )
 
 /*

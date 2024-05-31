@@ -1,4 +1,4 @@
-package main
+package srv
 
 import (
 	"context"
@@ -8,8 +8,8 @@ import (
 	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/go-easyops/linux"
 	"golang.conradwood.net/go-easyops/utils"
-	"golang.conradwood.net/protorenderer/common"
-	"golang.conradwood.net/protorenderer/compiler"
+	"golang.conradwood.net/protorenderer/v1/common"
+	"golang.conradwood.net/protorenderer/v1/compiler"
 	"os"
 	"path/filepath"
 	"strings"

@@ -8,6 +8,7 @@ import (
 	"golang.conradwood.net/apis/common"
 	ost "golang.conradwood.net/apis/objectstore"
 	pb "golang.conradwood.net/apis/protorenderer"
+	"golang.conradwood.net/protorenderer/cmdline"
 	"sort"
 	//	"golang.conradwood.net/go-easyops/auth"
 	ar "golang.conradwood.net/go-easyops/authremote"
@@ -48,7 +49,6 @@ var (
 	compile_python      = flag.Bool("compile_python", true, "if true compile python...")
 	compile_java        = flag.Bool("compile_java", true, "if true compile java...")
 	compile_nano        = flag.Bool("compile_nanopb", true, "if true compile with nanopb")
-	port                = flag.Int("port", 4102, "The grpc server port")
 	recreate_version    = flag.Bool("initialise_version", false, "if true will start version counting from 0 again. this will reshuffle proto/service ids (that is: it will break deep html links). intented use is ONCE for the first time protorenderer-server is started")
 	protocache          = pc.New()
 	updateChan          = make(chan *updateinfo, 10000)
@@ -127,7 +127,7 @@ func Start() {
 	current = nextVersion
 	go updater()
 	sd := server.NewServerDef()
-	sd.SetPort(*port)
+	sd.SetPort(cmdline.GetRPCPort())
 	e := new(protoRenderer)
 	sd.SetRegister(server.Register(
 		func(server *grpc.Server) error {
@@ -340,7 +340,7 @@ func updater() {
 			continue
 		}
 
-		err = current.metaCompiler.Compile(*port)
+		err = current.metaCompiler.Compile(cmdline.GetRPCPort())
 		if err != nil {
 			fmt.Printf("Error compiling metadata: %s\n", err)
 		}

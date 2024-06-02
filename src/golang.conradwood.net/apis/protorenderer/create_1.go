@@ -65,32 +65,5 @@ func ProtoRendererServiceLookupID() string { return "protorenderer.ProtoRenderer
 
 func init() {
    client.RegisterDependency("protorenderer.ProtoRendererService")
+   AddService("protorenderer.ProtoRendererService")
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

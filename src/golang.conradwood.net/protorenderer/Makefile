@@ -2,6 +2,7 @@
 all:	client server protoc javaclient
 client:
 	cd client && go install ${LDFLAGS} protorenderer-client.go `ls -1 *.go|grep -v protorenderer-client.go`
+	cd v2/client && go install ${LDFLAGS} protorenderer2-client.go `ls -1 *.go|grep -v protorenderer2-client.go`
 javaclient:
 	cd v1/javaclient && go install ${LDFLAGS} protorenderer-java.go `ls -1 *.go|grep -v protorenderer-java.go`
 server:

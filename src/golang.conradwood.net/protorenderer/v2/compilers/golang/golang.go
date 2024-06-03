@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"golang.conradwood.net/go-easyops/cmdline"
 	"golang.conradwood.net/go-easyops/linux"
+	cc "golang.conradwood.net/protorenderer/v2/compilers/common"
 	"golang.conradwood.net/protorenderer/v2/interfaces"
 )
 
@@ -22,7 +23,7 @@ func (gc *golangCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnv
 		ce.WorkDir() + "/" + ce.AllKnownProtosDir(),
 	}
 	/***************************** compile .proto -> .pb.go ******************************/
-	pcfname := FindCompiler("protoc-gen-go")
+	pcfname := cc.FindCompiler("protoc-gen-go")
 	fmt.Printf("Using: %s\n", pcfname)
 	cmd := []string{
 		cmdline.GetYACloudDir() + "/ctools/dev/go/current/protoc/protoc",
@@ -46,7 +47,7 @@ func (gc *golangCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnv
 		}
 	}
 	/***************************** compile create.go ******************************/
-	pcfname = FindCompiler("protoc-gen-cnw")
+	pcfname = cc.FindCompiler("protoc-gen-cnw")
 	fmt.Printf("Using: %s\n", pcfname)
 	cmd = []string{
 		cmdline.GetYACloudDir() + "/ctools/dev/go/current/protoc/protoc",

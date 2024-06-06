@@ -20,7 +20,7 @@ func (pr *protoRenderer) Compile(srv pb.ProtoRenderer2_CompileServer) error {
 	defer compile_lock.Unlock()
 	ce := CompileEnv
 
-	od := ce.WorkDir() + "/compile_outdir/protos"
+	od := ce.WorkDir() + "/compile_outdir"
 	err := utils.RecreateSafely(od)
 	if err != nil {
 		return err

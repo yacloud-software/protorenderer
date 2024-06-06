@@ -6,6 +6,7 @@ import (
 	"golang.conradwood.net/go-easyops/cmdline"
 	"golang.conradwood.net/go-easyops/linux"
 	cc "golang.conradwood.net/protorenderer/v2/compilers/common"
+	"golang.conradwood.net/protorenderer/v2/helpers"
 	"golang.conradwood.net/protorenderer/v2/interfaces"
 )
 
@@ -16,8 +17,12 @@ func New() interfaces.Compiler {
 }
 func (gc *golangCompiler) ShortName() string { return "golang" }
 func (gc *golangCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnvironment, files []interfaces.ProtoFile, outdir string, cr interfaces.CompileResult) error {
-	targetdir := outdir
 	dir := ce.WorkDir() + "/" + ce.NewProtosDir()
+	targetdir := outdir + "/golang"
+	err := helpers.Mkdir(targetdir)
+	if err != nil {
+		return err
+	}
 	import_dirs := []string{
 		dir,
 		ce.WorkDir() + "/" + ce.AllKnownProtosDir(),

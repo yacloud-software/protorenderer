@@ -90,12 +90,12 @@ func submit_protos() {
 	utils.Bail("failed to stream files to server", err)
 	bs := utils.NewByteStreamSender(func(key, filename string) error {
 		// start new file
-		err = srv.Send(&pb.FileWithContent{Filename: filename})
+		err := srv.Send(&pb.FileTransfer{Filename: filename})
 		return err
 	},
 		// send contents
 		func(b []byte) error {
-			err = srv.Send(&pb.FileWithContent{Data: b})
+			err := srv.Send(&pb.FileTransfer{Data: b})
 			return err
 		},
 	)
@@ -113,10 +113,13 @@ func submit_protos() {
 	},
 	)
 	utils.Bail("failed to read proto files", err)
+	err = srv.Send(&pb.FileTransfer{TransferComplete: true}) // switching to recv mode now
 	for {
 		recv, err := srv.Recv()
 		if recv != nil {
-			fmt.Printf("Received: filename=%s, bytes=%d\n", recv.Filename, len(recv.Data))
+			if recv.Filename != "" {
+				fmt.Printf("Receiving: filename=%s, bytes=%d\n", recv.Filename, len(recv.Data))
+			}
 		}
 		if err != nil {
 			if err == io.EOF {

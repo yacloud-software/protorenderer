@@ -20,12 +20,18 @@ var (
 
 func Start() {
 	var err error
+
 	server.SetHealth(common.Health_STARTING)
 
+	CompileEnv = &StandardCompilerEnvironment{workdir: "/tmp/pr/v2", knownprotosdir: "known_protos/protos", newprotosdir: "new_protos/protos"}
 	//scr := &StandardCompileResult{}
-	CompileEnv = &StandardCompilerEnvironment{workdir: "/tmp/pr/v2", knownprotosdir: "proto_files/protos", newprotosdir: "new_protos/protos"}
 	mkdir(CompileEnv.WorkDir() + "/" + CompileEnv.AllKnownProtosDir())
 	mkdir(CompileEnv.WorkDir() + "/" + CompileEnv.NewProtosDir())
+
+	fmt.Printf("Creating workdir...\n")
+	err = createWorkDir()
+	utils.Bail("failed to create workdir", err)
+
 	server.SetHealth(common.Health_READY)
 	sd := server.NewServerDef()
 	sd.SetPort(cmdline.GetRPCPort())

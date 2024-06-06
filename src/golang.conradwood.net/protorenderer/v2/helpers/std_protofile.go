@@ -1,4 +1,4 @@
-package srv
+package helpers
 
 type StandardProtoFile struct {
 	id       uint64

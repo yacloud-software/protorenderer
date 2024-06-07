@@ -18,7 +18,7 @@ func New() interfaces.Compiler {
 func (gc *golangCompiler) ShortName() string { return "golang" }
 func (gc *golangCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnvironment, files []interfaces.ProtoFile, outdir string, cr interfaces.CompileResult) error {
 	dir := ce.WorkDir() + "/" + ce.NewProtosDir()
-	targetdir := outdir + "/golang"
+	targetdir := outdir + "/" + gc.ShortName()
 	err := helpers.Mkdir(targetdir)
 	if err != nil {
 		return err

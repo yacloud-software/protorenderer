@@ -3,11 +3,12 @@ package compiler
 import (
 	"bytes"
 	"context"
-	"flag"
+	//	"flag"
 	"fmt"
 	pr "golang.conradwood.net/apis/protorenderer"
 	"golang.conradwood.net/go-easyops/linux"
 	"golang.conradwood.net/go-easyops/utils"
+	"golang.conradwood.net/protorenderer/cmdline"
 	"golang.conradwood.net/protorenderer/v1/common"
 	"golang.conradwood.net/protorenderer/v1/compiler/java"
 	"golang.conradwood.net/protorenderer/v1/filelayouter"
@@ -19,10 +20,12 @@ import (
 )
 
 var (
-	java_compiler_bin   = flag.String("java_compiler", "/usr/bin/javac", "path to javac binary")
-	java_release        = flag.String("java_release", "11", "flag --target [java_release] for javac: build for specific target version")
-	java_use_std_protoc = flag.Bool("java_std_protoc", true, "if set use standard protoc compiler (the one with the OS rather than shipped in this repo")
-	java_plugin_name    = flag.String("java_plugin_name", "protoc-gen-grpc-java-1.13.1-linux-x86_64.exe", "the name of the java gprc plugin in extra/compilers")
+/*
+java_compiler_bin   = flag.String("java_compiler", "/usr/bin/javac", "path to javac binary")
+java_release        = flag.String("java_release", "11", "flag --target [java_release] for javac: build for specific target version")
+java_use_std_protoc = flag.Bool("java_std_protoc", true, "if set use standard protoc compiler (the one with the OS rather than shipped in this repo")
+java_plugin_name    = flag.String("java_plugin_name", "protoc-gen-grpc-java-1.13.1-linux-x86_64.exe", "the name of the java gprc plugin in extra/compilers")
+*/
 )
 
 /*
@@ -84,9 +87,9 @@ func (j *JavaCompiler) Compile(rt ResultTracker) error {
 
 	compiler_exe := "/opt/cnw/ctools/dev/go/current/protoc/protoc"
 
-	if !*java_use_std_protoc {
+	if !cmdline.GetJavaStdProtoC() {
 		// find the non-std compiler from this repo:
-		compiler_exe, err = utils.FindFile(fmt.Sprintf("extra/compilers/%s/weird.exe", common.GetCompilerVersion()))
+		compiler_exe, err = utils.FindFile(fmt.Sprintf("extra/compilers/%s/weird.exe", cmdline.GetCompilerVersion()))
 		if err != nil {
 			j.err = j.Errorf("findweird.exe", err)
 			return j.err
@@ -99,7 +102,7 @@ func (j *JavaCompiler) Compile(rt ResultTracker) error {
 	}
 
 	// find the compiler plugin:
-	plugin_exe, err := utils.FindFile(fmt.Sprintf("extra/compilers/%s/%s", common.GetCompilerVersion(), *java_plugin_name))
+	plugin_exe, err := utils.FindFile(fmt.Sprintf("extra/compilers/%s/%s", cmdline.GetCompilerVersion(), cmdline.GetJavaPluginName()))
 	if err != nil {
 		j.err = j.Errorf("findgengrpcplugin", err)
 		return j.err
@@ -189,7 +192,7 @@ func (j *JavaCompiler) CompileToClass() error {
 	l := linux.New()
 	l.SetMaxRuntime(time.Duration(1200) * time.Second)
 	cmd := []string{
-		*java_compiler_bin,
+		cmdline.GetJavaCompilerBin(),
 		"-Xlint:none",
 		"-Xdoclint:none",
 		/*
@@ -204,9 +207,9 @@ func (j *JavaCompiler) CompileToClass() error {
 		"-encoding",
 		"UTF-8",
 		"-target",
-		*java_release,
+		cmdline.GetJavaRelease(),
 		"-source",
-		*java_release,
+		cmdline.GetJavaRelease(),
 	}
 	// return filenames RELATIVE to j.javaSrc
 	files, err := j.findChangedJavaFiles()
@@ -497,31 +500,3 @@ type servicedef struct {
 	RegistryName   string
 	GRPCClientName string
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

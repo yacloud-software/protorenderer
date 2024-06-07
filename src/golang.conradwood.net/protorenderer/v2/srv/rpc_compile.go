@@ -3,6 +3,7 @@ package srv
 import (
 	"fmt"
 	"golang.conradwood.net/protorenderer/v2/compilers/golang"
+	"golang.conradwood.net/protorenderer/v2/compilers/java"
 	"golang.conradwood.net/protorenderer/v2/helpers"
 	"golang.conradwood.net/protorenderer/v2/interfaces"
 	//	pb1 "golang.conradwood.net/apis/protorenderer"
@@ -40,6 +41,12 @@ func (pr *protoRenderer) Compile(srv pb.ProtoRenderer2_CompileServer) error {
 
 	golang_compiler := golang.New()
 	err = golang_compiler.Compile(ctx, ce, pfs, od, scr)
+	if err != nil {
+		return err
+	}
+
+	java_compiler := java.New()
+	err = java_compiler.Compile(ctx, ce, pfs, od, scr)
 	if err != nil {
 		return err
 	}

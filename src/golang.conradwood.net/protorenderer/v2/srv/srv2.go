@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"golang.conradwood.net/apis/common"
 	pb "golang.conradwood.net/apis/protorenderer2"
+	"golang.conradwood.net/go-easyops/authremote"
 	"golang.conradwood.net/go-easyops/linux"
 	"golang.conradwood.net/go-easyops/server"
 	"golang.conradwood.net/go-easyops/utils"
 	"golang.conradwood.net/protorenderer/cmdline"
 	"golang.conradwood.net/protorenderer/v2/compilers/java"
 	ms "golang.conradwood.net/protorenderer/v2/meta-compiler/server"
+	"golang.conradwood.net/protorenderer/v2/store"
 	"google.golang.org/grpc"
 	"os"
 )
@@ -33,6 +35,11 @@ func Start() {
 	err = createWorkDir()
 	utils.Bail("failed to create workdir", err)
 	utils.RecreateSafely(CompileEnv.ResultsDir())
+
+	ctx := authremote.Context()
+	err = store.Retrieve(ctx, CompileEnv.AllKnownProtosDir(), 0) // 0 == latest
+	utils.Bail("failed to retrieve latest version", err)
+
 	java.Start(CompileEnv, CompileEnv.ResultsDir())
 	server.SetHealth(common.Health_READY)
 	sd := server.NewServerDef()

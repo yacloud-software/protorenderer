@@ -9,6 +9,7 @@ import (
 	"golang.conradwood.net/go-easyops/server"
 	"golang.conradwood.net/go-easyops/utils"
 	"golang.conradwood.net/protorenderer/cmdline"
+	"golang.conradwood.net/protorenderer/v2/compilers/java"
 	ms "golang.conradwood.net/protorenderer/v2/meta-compiler/server"
 	"google.golang.org/grpc"
 	"os"
@@ -31,7 +32,8 @@ func Start() {
 	fmt.Printf("Creating workdir...\n")
 	err = createWorkDir()
 	utils.Bail("failed to create workdir", err)
-
+	utils.RecreateSafely(CompileEnv.ResultsDir())
+	java.Start(CompileEnv, CompileEnv.ResultsDir())
 	server.SetHealth(common.Health_READY)
 	sd := server.NewServerDef()
 	sd.SetPort(cmdline.GetRPCPort())

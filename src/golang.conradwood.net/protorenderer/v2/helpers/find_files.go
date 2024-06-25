@@ -7,8 +7,9 @@ import (
 	"strings"
 )
 
-func FindFiles(dir string, extensions ...string) ([]interfaces.ProtoFile, error) {
+func FindProtoFiles(dir string) ([]interfaces.ProtoFile, error) {
 	var filenames []string
+	extensions := []string{".proto"}
 	utils.DirWalk(dir, func(root, relfil string) error {
 		for _, ext := range extensions {
 			if strings.HasSuffix(relfil, ext) {
@@ -28,6 +29,26 @@ func FindFiles(dir string, extensions ...string) ([]interfaces.ProtoFile, error)
 		}
 		spf := &StandardProtoFile{filename: fn, content: b}
 		res = append(res, spf)
+	}
+	return res, nil
+}
+
+// returns filenames relative to 'dir'
+func FindFiles(dir string, extensions ...string) ([]string, error) {
+	var filenames []string
+	utils.DirWalk(dir, func(root, relfil string) error {
+		for _, ext := range extensions {
+			if strings.HasSuffix(relfil, ext) {
+				filenames = append(filenames, relfil)
+				break
+			}
+		}
+		return nil
+	},
+	)
+	var res []string
+	for _, fn := range filenames {
+		res = append(res, fn)
 	}
 	return res, nil
 }

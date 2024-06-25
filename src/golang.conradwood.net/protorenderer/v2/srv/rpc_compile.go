@@ -34,7 +34,7 @@ func (pr *protoRenderer) Compile(srv pb.ProtoRenderer2_CompileServer) error {
 	scr := &StandardCompileResult{}
 	ctx := srv.Context()
 
-	pfs, err := helpers.FindFiles(ce.WorkDir()+"/"+ce.NewProtosDir(), ".proto")
+	pfs, err := helpers.FindProtoFiles(ce.WorkDir() + "/" + ce.NewProtosDir())
 	if err != nil {
 		return err
 	}

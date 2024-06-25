@@ -15,3 +15,6 @@ func (sce *StandardCompilerEnvironment) NewProtosDir() string {
 func (sce *StandardCompilerEnvironment) WorkDir() string {
 	return sce.workdir
 }
+func (sce *StandardCompilerEnvironment) ResultsDir() string {
+	return sce.workdir + "/store"
+}

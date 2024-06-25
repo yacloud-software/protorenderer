@@ -2,7 +2,6 @@ package java
 
 import (
 	"context"
-	//	"flag"
 	"fmt"
 	gocmdline "golang.conradwood.net/go-easyops/cmdline"
 	"golang.conradwood.net/go-easyops/linux"
@@ -11,13 +10,7 @@ import (
 	"golang.conradwood.net/protorenderer/v2/helpers"
 	"golang.conradwood.net/protorenderer/v2/interfaces"
 	"path/filepath"
-)
-
-var (
-// java_compiler_bin   = flag.String("java_compiler", "/usr/bin/javac", "path to javac binary")
-// java_release        = flag.String("java_release", "11", "flag --target [java_release] for javac: build for specific target version")
-// java_use_std_protoc = flag.Bool("java_std_protoc", true, "if set use standard protoc compiler (the one with the OS rather than shipped in this repo")
-// java_plugin_name = flag.String("java_plugin_name", "protoc-gen-grpc-java-1.13.1-linux-x86_64.exe", "the name of the java gprc plugin in extra/compilers")
+	"strings"
 )
 
 /*
@@ -41,9 +34,16 @@ type JavaCompiler struct {
 }
 
 func New() interfaces.Compiler {
+	cp, _ := classpath()
+	fmt.Printf("CLASSPATH=%s\n", strings.Join(cp, ":"))
 	return &JavaCompiler{}
 }
+
 func (gc JavaCompiler) ShortName() string { return "java" }
+
+// compiles new .proto files to .java and to .class
+// assumes that _all_ existing .proto files are already compiled to .java and .class files
+// (otherwise the imports won't work)
 func (gc *JavaCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnvironment, files []interfaces.ProtoFile, outdir string, cr interfaces.CompileResult) error {
 	dir := ce.WorkDir() + "/" + ce.NewProtosDir()
 	targetdir := outdir + "/" + gc.ShortName()
@@ -60,20 +60,16 @@ func (gc *JavaCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnvir
 	for _, pf := range files {
 		proto_file_names = append(proto_file_names, pf.GetFilename())
 	}
+
 	fmt.Printf("Start java (.proto->.java) compilation...\n")
 	l := linux.New()
 	//	j.javaSrc = j.WorkDir + "/java/src"
-	//	j.javaClasses = j.WorkDir + "/java/classes"
 	javaSrc := targetdir + "/src"
-	javaclasses := targetdir + "/classes"
 	err = helpers.Mkdir(javaSrc)
 	if err != nil {
 		return err
 	}
-	err = helpers.Mkdir(javaclasses)
-	if err != nil {
-		return err
-	}
+
 	compiler_exe := gocmdline.GetYACloudDir() + "/ctools/dev/go/current/protoc/protoc"
 
 	if !cmdline.GetJavaStdProtoC() {
@@ -107,28 +103,111 @@ func (gc *JavaCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnvir
 	for _, id := range import_dirs {
 		cmd = append(cmd, fmt.Sprintf("-I%s", id))
 	}
+	nf := helpers.NewFileFinder(javaSrc)
+	nf.FindNew() // build internal list
+	fmt.Printf("Compiling files: \"%s\"\n", strings.Join(proto_file_names, " "))
 	cmdandfile := append(cmd, proto_file_names...)
 	out, err := l.SafelyExecuteWithDir(cmdandfile, dir, nil)
 	if err != nil {
 		fmt.Printf("Output:\n%s\n", out)
 		return err
 	}
-	/*
-	   	cmd = []string{
-	   		compiler_exe,
-	   		"--proto_path=.",
-	   		fmt.Sprintf("--plugin=protoc-gen-grpc-java=%s", plugin_exe),
-	   		fmt.Sprintf("--grpc-java_out=%s", javaSrc),
-	   	}
 
-	   cmdandfile = append(cmd, j.protofiles...)
-	   out, err = l.SafelyExecuteWithDir(cmdandfile, dir, nil)
+	// inject the custom headers to the .java files
+	new_files, err := nf.FindNew()
+	if err != nil {
+		return fmt.Errorf("(1) unable to find new files: %w", err)
+	}
 
-	   	if err != nil {
-	   		j.Printf("Java proto compilation failed: %s\n%s\n", out, err)
-	   		j.err = j.Errorf("gen_java_stubs", err)
-	   		return j.err
-	   	}
-	*/
+	for _, new_file := range new_files {
+		fm := helpers.NewFileModifierFromFilename(javaSrc + "/" + new_file)
+		fm.AddHeader(fmt.Sprintf("// created by protorenderer, run (sources: %s)\n", strings.Join(proto_file_names, " ")))
+		err = fm.Save()
+		if err != nil {
+			return fmt.Errorf("unable to save modified file: %w", err)
+		}
+	}
+
+	err = gc.compileJava2Class(ctx, ce, files, outdir, cr)
+	if err != nil {
+		return err
+	}
 	return nil
+}
+
+// this compiles .java files to .class
+func (gc *JavaCompiler) compileJava2Class(ctx context.Context, ce interfaces.CompilerEnvironment, files []interfaces.ProtoFile, outdir string, cr interfaces.CompileResult) error {
+	dir := outdir + "/" + gc.ShortName() + "/src"           // this is where the .java files are
+	targetdir := outdir + "/" + gc.ShortName() + "/classes" // this where the .class files go
+	err := helpers.Mkdir(targetdir)
+	if err != nil {
+		return err
+	}
+
+	java_files, err := helpers.FindFiles(dir, ".java")
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Start java (.java->.class) compilation (src=%s,target=%s)...\n", dir, targetdir)
+	javac := "/etc/java-home/bin/javac"
+	cmd := []string{
+		javac,
+		"-Xlint:none",
+		"-Xdoclint:none",
+		/*
+			"-J-Xmx200000000", // "heap space"
+			"-J-Xms5000000",
+			"-J-Xss1000000",
+		*/
+		"--source-path", "/tmp/pr/v2/compile_outdir/java/src",
+		"-d",
+		targetdir,
+		//		"-cp",
+		//		classpath,
+		"-encoding",
+		"UTF-8",
+		"-target",
+		cmdline.GetJavaRelease(),
+		"-source",
+		cmdline.GetJavaRelease(),
+	}
+	cp, err := classpath()
+	if err != nil {
+		return err
+	}
+	cmdandfile := append(cmd, java_files...)
+	l := linux.New()
+	env := []string{
+		"CLASSPATH=" + strings.Join(cp, ":"),
+	}
+	l.SetEnvironment(env)
+	out, err := l.SafelyExecuteWithDir(cmdandfile, dir, nil)
+	if err != nil {
+		fmt.Printf(".java->.class failed: %s\n", string(out))
+		return err
+	}
+	return nil
+}
+
+func classpath() ([]string, error) {
+	jars, err := utils.FindFile(fmt.Sprintf("extra/jars"))
+	//	jars, err := utils.FindFile(fmt.Sprintf("extra/%s/jars", cmdline.GetCompilerVersion()))
+	if err != nil {
+		return nil, err
+	}
+	jars, err = filepath.Abs(jars)
+	if err != nil {
+		return nil, err
+	}
+	jarfiles, err := helpers.FindFiles(jars, ".jar")
+	if err != nil {
+		return nil, err
+	}
+	var res []string
+	for _, j := range jarfiles {
+		jf := jars + "/" + j
+		res = append(res, jf)
+	}
+	return res, nil
 }

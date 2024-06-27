@@ -7,7 +7,7 @@ import (
 	pr "golang.conradwood.net/apis/protorenderer"
 	"golang.conradwood.net/go-easyops/authremote"
 	"golang.conradwood.net/go-easyops/cache"
-	"golang.conradwood.net/protorenderer/v1/db"
+	"golang.conradwood.net/protorenderer/db"
 	"sync"
 )
 
@@ -140,31 +140,3 @@ func (m *MetaCompiler) submitResult(result *Result) error {
 func (m *MetaCompiler) GetMostRecentResult() *Result {
 	return m.result
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

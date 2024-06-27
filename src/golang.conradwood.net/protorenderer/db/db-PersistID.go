@@ -19,7 +19,7 @@ Main Table:
  CREATE TABLE persistid (id integer primary key default nextval('persistid_seq'),key text not null  );
 
 Alter statements:
-ALTER TABLE persistid ADD COLUMN key text not null default '';
+ALTER TABLE persistid ADD COLUMN IF NOT EXISTS key text not null default '';
 
 
 Archive Table: (structs can be moved from main to archive using Archive() function)
@@ -95,7 +95,7 @@ func (a *DBPersistID) Archive(ctx context.Context, id uint64) error {
 // Save (and use database default ID generation)
 func (a *DBPersistID) Save(ctx context.Context, p *savepb.PersistID) (uint64, error) {
 	qn := "DBPersistID_Save"
-	rows, e := a.DB.QueryContext(ctx, qn, "insert into "+a.SQLTablename+" (key) values ($1) returning id", p.Key)
+	rows, e := a.DB.QueryContext(ctx, qn, "insert into "+a.SQLTablename+" (key) values ($1) returning id", a.get_Key(p))
 	if e != nil {
 		return 0, a.Error(ctx, qn, e)
 	}
@@ -121,7 +121,7 @@ func (a *DBPersistID) SaveWithID(ctx context.Context, p *savepb.PersistID) error
 
 func (a *DBPersistID) Update(ctx context.Context, p *savepb.PersistID) error {
 	qn := "DBPersistID_Update"
-	_, e := a.DB.ExecContext(ctx, qn, "update "+a.SQLTablename+" set key=$1 where id = $2", p.Key, p.ID)
+	_, e := a.DB.ExecContext(ctx, qn, "update "+a.SQLTablename+" set key=$1 where id = $2", a.get_Key(p), p.ID)
 
 	return a.Error(ctx, qn, e)
 }
@@ -147,6 +147,27 @@ func (a *DBPersistID) ByID(ctx context.Context, p uint64) (*savepb.PersistID, er
 	}
 	if len(l) == 0 {
 		return nil, a.Error(ctx, qn, fmt.Errorf("No PersistID with id %v", p))
+	}
+	if len(l) != 1 {
+		return nil, a.Error(ctx, qn, fmt.Errorf("Multiple (%d) PersistID with id %v", len(l), p))
+	}
+	return l[0], nil
+}
+
+// get it by primary id (nil if no such ID row, but no error either)
+func (a *DBPersistID) TryByID(ctx context.Context, p uint64) (*savepb.PersistID, error) {
+	qn := "DBPersistID_TryByID"
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,key from "+a.SQLTablename+" where id = $1", p)
+	if e != nil {
+		return nil, a.Error(ctx, qn, fmt.Errorf("TryByID: error querying (%s)", e))
+	}
+	defer rows.Close()
+	l, e := a.FromRows(ctx, rows)
+	if e != nil {
+		return nil, a.Error(ctx, qn, fmt.Errorf("TryByID: error scanning (%s)", e))
+	}
+	if len(l) == 0 {
+		return nil, nil
 	}
 	if len(l) != 1 {
 		return nil, a.Error(ctx, qn, fmt.Errorf("Multiple (%d) PersistID with id %v", len(l), p))
@@ -204,6 +225,20 @@ func (a *DBPersistID) ByLikeKey(ctx context.Context, p string) ([]*savepb.Persis
 }
 
 /**********************************************************************
+* The field getters
+**********************************************************************/
+
+// getter for field "ID" (ID) [uint64]
+func (a *DBPersistID) get_ID(p *savepb.PersistID) uint64 {
+	return uint64(p.ID)
+}
+
+// getter for field "Key" (Key) [string]
+func (a *DBPersistID) get_Key(p *savepb.PersistID) string {
+	return string(p.Key)
+}
+
+/**********************************************************************
 * Helper to convert from an SQL Query
 **********************************************************************/
 
@@ -230,7 +265,7 @@ func (a *DBPersistID) SelectColsQualified() string {
 	return "" + a.SQLTablename + ".id," + a.SQLTablename + ".key"
 }
 
-func (a *DBPersistID) FromRows(ctx context.Context, rows *gosql.Rows) ([]*savepb.PersistID, error) {
+func (a *DBPersistID) FromRowsOld(ctx context.Context, rows *gosql.Rows) ([]*savepb.PersistID, error) {
 	var res []*savepb.PersistID
 	for rows.Next() {
 		foo := savepb.PersistID{}
@@ -242,6 +277,25 @@ func (a *DBPersistID) FromRows(ctx context.Context, rows *gosql.Rows) ([]*savepb
 	}
 	return res, nil
 }
+func (a *DBPersistID) FromRows(ctx context.Context, rows *gosql.Rows) ([]*savepb.PersistID, error) {
+	var res []*savepb.PersistID
+	for rows.Next() {
+		// SCANNER:
+		foo := &savepb.PersistID{}
+		// create the non-nullable pointers
+		// create variables for scan results
+		scanTarget_0 := &foo.ID
+		scanTarget_1 := &foo.Key
+		err := rows.Scan(scanTarget_0, scanTarget_1)
+		// END SCANNER
+
+		if err != nil {
+			return nil, a.Error(ctx, "fromrow-scan", err)
+		}
+		res = append(res, foo)
+	}
+	return res, nil
+}
 
 /**********************************************************************
 * Helper to create table and columns
@@ -249,14 +303,29 @@ func (a *DBPersistID) FromRows(ctx context.Context, rows *gosql.Rows) ([]*savepb
 func (a *DBPersistID) CreateTable(ctx context.Context) error {
 	csql := []string{
 		`create sequence if not exists ` + a.SQLTablename + `_seq;`,
-		`CREATE TABLE if not exists ` + a.SQLTablename + ` (id integer primary key default nextval('` + a.SQLTablename + `_seq'),key text not null  );`,
-		`CREATE TABLE if not exists ` + a.SQLTablename + `_archive (id integer primary key default nextval('` + a.SQLTablename + `_seq'),key text not null  );`,
+		`CREATE TABLE if not exists ` + a.SQLTablename + ` (id integer primary key default nextval('` + a.SQLTablename + `_seq'),key text not null );`,
+		`CREATE TABLE if not exists ` + a.SQLTablename + `_archive (id integer primary key default nextval('` + a.SQLTablename + `_seq'),key text not null );`,
+		`ALTER TABLE ` + a.SQLTablename + ` ADD COLUMN IF NOT EXISTS key text not null default '';`,
+
+		`ALTER TABLE ` + a.SQLTablename + `_archive  ADD COLUMN IF NOT EXISTS key text not null  default '';`,
 	}
+
 	for i, c := range csql {
 		_, e := a.DB.ExecContext(ctx, fmt.Sprintf("create_"+a.SQLTablename+"_%d", i), c)
 		if e != nil {
 			return e
 		}
+	}
+
+	// these are optional, expected to fail
+	csql = []string{
+		// Indices:
+
+		// Foreign keys:
+
+	}
+	for i, c := range csql {
+		a.DB.ExecContextQuiet(ctx, fmt.Sprintf("create_"+a.SQLTablename+"_%d", i), c)
 	}
 	return nil
 }
@@ -270,31 +339,4 @@ func (a *DBPersistID) Error(ctx context.Context, q string, e error) error {
 	}
 	return fmt.Errorf("[table="+a.SQLTablename+", query=%s] Error: %s", q, e)
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

@@ -2,6 +2,7 @@ package interfaces
 
 import (
 	"context"
+	pb "golang.conradwood.net/apis/protorenderer2"
 )
 
 // a .proto file
@@ -29,6 +30,6 @@ type Compiler interface {
 }
 
 type CompileResult interface {
-	AddFailed(ProtoFile, error)
-	HasFailed(ProtoFile) bool
+	AddFailed(pf ProtoFile, err error, output []byte)
+	GetFailures(ProtoFile) []*pb.CompileFailure
 }

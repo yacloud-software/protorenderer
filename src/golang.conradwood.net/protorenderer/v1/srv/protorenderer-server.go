@@ -32,23 +32,14 @@ import (
 	"time"
 )
 
-const (
-	VERSIONOBJECT  = "protorenderer_version"
-	INDEX_FILENAME = "protorenderer_index_file"
-)
-
 var (
 	compile_count       = 0 // how many times did we compile stuff
 	osc                 ost.ObjectStoreClient
 	uosLock             sync.Mutex
 	start_update        = false
 	topdir              = flag.String("workdir", "/tmp/protos", "all directories maintained will be relative to this")
-	prefix_object_store = flag.String("prefix_object_store", "protorenderer-tmp", "a prefix to be used for objectstore put/get")
 	read_object_store   = flag.Bool("read_object_store", true, "if false no objects will be retrieved from objectstore and the index will not be updated")
 	update_object_store = flag.Bool("update_object_store", true, "if false index in objectstore will not be updated")
-	compile_python      = flag.Bool("compile_python", true, "if true compile python...")
-	compile_java        = flag.Bool("compile_java", true, "if true compile java...")
-	compile_nano        = flag.Bool("compile_nanopb", true, "if true compile with nanopb")
 	recreate_version    = flag.Bool("initialise_version", false, "if true will start version counting from 0 again. this will reshuffle proto/service ids (that is: it will break deep html links). intented use is ONCE for the first time protorenderer-server is started")
 	protocache          = pc.New()
 	updateChan          = make(chan *updateinfo, 10000)
@@ -88,11 +79,11 @@ func Start() {
 
 	lv := 0
 	for {
-		bs, err := client.Get(ar.Context(), VERSIONOBJECT)
+		bs, err := client.Get(ar.Context(), cmdline.VERSIONOBJECT)
 		if err != nil {
 			fmt.Printf("Failed to get version cache: %s\n", utils.ErrorString(err))
 			if *recreate_version {
-				err = client.PutWithID(ar.Context(), VERSIONOBJECT, []byte("1"))
+				err = client.PutWithID(ar.Context(), cmdline.VERSIONOBJECT, []byte("1"))
 				utils.Bail("failed to initialize version cache", err)
 				time.Sleep(1 * time.Second)
 				continue
@@ -180,7 +171,7 @@ func (e *protoRenderer) DeleteFile(ctx context.Context, req *pb.DeleteRequest) (
 	}
 	names[req.Name] = false
 	if updateObjectStore() {
-		pir := &ost.PutWithIDRequest{ID: *prefix_object_store + req.Name, Expiry: 1}
+		pir := &ost.PutWithIDRequest{ID: cmdline.GetPrefixObjectStore() + req.Name, Expiry: 1}
 		_, err := osclient().PutWithID(ctx, pir)
 		if err != nil {
 			return nil, err
@@ -239,14 +230,14 @@ func (e *protoRenderer) UpdateProto(ctx context.Context, req *pb.AddProtoRequest
 	fmt.Printf("  Java Package: %s\n", pp.JavaPackage)
 	if len(pp.JavaPackage) < 2 {
 		pp.JavaPackage = "no.javapackage.proto." + pp.GoPackage
-		if *compile_java {
+		if cmdline.GetCompilerEnabledJava() {
 			return nil, errors.InvalidArgs(ctx, "Invalid java package", "Invalid java package \"%s\" in file %s", pp.JavaPackage, req.Name)
 		}
 	}
 
 	names[req.Name] = true
 	if updateObjectStore() && start_update {
-		pir := &ost.PutWithIDRequest{ID: *prefix_object_store + req.Name, Content: []byte(req.Content)}
+		pir := &ost.PutWithIDRequest{ID: cmdline.GetPrefixObjectStore() + req.Name, Content: []byte(req.Content)}
 		_, err := osclient().PutWithID(ctx, pir)
 		if err != nil {
 			return nil, err
@@ -350,20 +341,20 @@ func updater() {
 			fmt.Printf("Error compiling go: %s\n", err)
 		}
 
-		if *compile_nano {
+		if cmdline.GetCompilerEnabledNanoPB() {
 			err = current.nanopbCompiler.Compile(current.failures)
 			if err != nil {
 				fmt.Printf("Error compiling nanopb: %s\n", err)
 			}
 		}
 
-		if *compile_java {
+		if cmdline.GetCompilerEnabledJava() {
 			err = current.javaCompiler.Compile(current.failures)
 			if err != nil {
 				fmt.Printf("Error compiling java: %s\n", err)
 			}
 		}
-		if *compile_python {
+		if cmdline.GetCompilerEnabledPython() {
 			err = current.pythonCompiler.Compile(current.failures)
 			if err != nil {
 				fmt.Printf("Error compiling python: %s\n", err)
@@ -377,7 +368,7 @@ func updater() {
 		ctx = ar.Context()
 		bs := fmt.Sprintf("%d", completeVersion.version)
 		if updateObjectStore() {
-			client.PutWithID(ctx, VERSIONOBJECT, []byte(bs))
+			client.PutWithID(ctx, cmdline.VERSIONOBJECT, []byte(bs))
 		}
 		compile_count++
 		if compile_count == 1 {
@@ -412,7 +403,7 @@ func rewriteIndexFile(ctx context.Context) error {
 			bf.WriteString(fmt.Sprintf("%s\n", k))
 		}
 	}
-	pir := &ost.PutWithIDRequest{ID: *prefix_object_store + INDEX_FILENAME, Content: bf.Bytes()}
+	pir := &ost.PutWithIDRequest{ID: cmdline.GetPrefixObjectStore() + cmdline.INDEX_FILENAME, Content: bf.Bytes()}
 	_, err := osclient().PutWithID(ctx, pir)
 	return err
 }

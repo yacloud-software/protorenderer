@@ -45,7 +45,8 @@ func (gc *golangCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnv
 		l := linux.New()
 		out, err := l.SafelyExecuteWithDir(cmdandfile, dir, nil)
 		if err != nil {
-			cr.AddFailed(pf, err)
+			err = fmt.Errorf("failed .proto->pb.go (%w)", err)
+			cr.AddFailed(pf, err, []byte(out))
 			fmt.Printf("Compiler working dir: %s\n", dir)
 			fmt.Printf("%s Failed to compile: %s: %s\n", pcfname, f, err)
 			fmt.Printf("Compiler output: %s\n", out)
@@ -71,7 +72,8 @@ func (gc *golangCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnv
 		l := linux.New()
 		out, err := l.SafelyExecuteWithDir(cmdandfile, dir, nil)
 		if err != nil {
-			cr.AddFailed(pf, err)
+			err = fmt.Errorf("failed .proto->create.go (%w)", err)
+			cr.AddFailed(pf, err, []byte(out))
 			fmt.Printf("%s Failed to compile: %s: %s\n", pcfname, f, err)
 			fmt.Printf("Compiler output: %s\n", out)
 		}

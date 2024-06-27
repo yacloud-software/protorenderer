@@ -5,6 +5,7 @@ import (
 	ost "golang.conradwood.net/apis/objectstore"
 	pb "golang.conradwood.net/apis/protorenderer"
 	ar "golang.conradwood.net/go-easyops/authremote"
+	"golang.conradwood.net/protorenderer/cmdline"
 	"strings"
 	"sync"
 	"time"
@@ -50,7 +51,7 @@ func startup() {
 	}
 
 	time.Sleep(time.Duration(2) * time.Second)
-	idxfilename := *prefix_object_store + INDEX_FILENAME
+	idxfilename := cmdline.GetPrefixObjectStore() + cmdline.INDEX_FILENAME
 	b, err := osclient().Get(ar.Context(), &ost.GetRequest{ID: idxfilename})
 	if err != nil {
 		fmt.Printf("No index file \"%s\": %s\n", idxfilename, err)
@@ -84,7 +85,7 @@ func startup_read_worker() {
 		if o.exit {
 			break
 		}
-		b, err := osclient().Get(ar.Context(), &ost.GetRequest{ID: *prefix_object_store + o.line})
+		b, err := osclient().Get(ar.Context(), &ost.GetRequest{ID: cmdline.GetPrefixObjectStore() + o.line})
 		if err != nil {
 			fmt.Printf("Failed to get file %s: %s\n", o.line, err)
 			continue
@@ -116,31 +117,3 @@ func startup_submit_worker() {
 	}
 	startup_submit_group.Done()
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

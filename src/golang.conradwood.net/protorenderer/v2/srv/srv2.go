@@ -37,10 +37,14 @@ func Start() {
 	utils.RecreateSafely(CompileEnv.ResultsDir())
 
 	ctx := authremote.Context()
-	err = store.Retrieve(ctx, CompileEnv.AllKnownProtosDir(), 0) // 0 == latest
+	err = store.Retrieve(ctx, CompileEnv.WorkDir()+"/"+CompileEnv.AllKnownProtosDir(), 0) // 0 == latest
 	utils.Bail("failed to retrieve latest version", err)
 
-	java.Start(CompileEnv, CompileEnv.ResultsDir())
+	//	os.Exit(0)
+
+	if false {
+		java.Start(CompileEnv, CompileEnv.ResultsDir())
+	}
 	server.SetHealth(common.Health_READY)
 	sd := server.NewServerDef()
 	sd.SetPort(cmdline.GetRPCPort())

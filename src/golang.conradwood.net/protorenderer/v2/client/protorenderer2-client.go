@@ -7,6 +7,7 @@ import (
 	"golang.conradwood.net/go-easyops/authremote"
 	"golang.conradwood.net/go-easyops/linux"
 	"golang.conradwood.net/go-easyops/utils"
+	"golang.conradwood.net/protorenderer/v2/common"
 	"golang.conradwood.net/protorenderer/v2/compilers/golang"
 	"io"
 	"os"
@@ -19,6 +20,12 @@ import (
 
 func main() {
 	flag.Parse()
+	if len(flag.Args()) != 0 {
+		for _, a := range flag.Args() {
+			submit_protos_with_dir(a)
+		}
+		os.Exit(0)
+	}
 	submit_protos()
 }
 func local_compile() {
@@ -34,7 +41,7 @@ func local_compile() {
 	for _, pf := range pfs {
 		fmt.Printf("Compiling file: %s\n", pf.GetFilename())
 	}
-	scr := &StandardCompileResult{}
+	scr := &common.StandardCompileResult{}
 	sce := &StandardCompilerEnvironment{workdir: "/tmp/pr/v2", knownprotosdir: "proto_files/protos", newprotosdir: "new_protos/protos"}
 
 	mkdir(sce.WorkDir())
@@ -85,6 +92,9 @@ func submit_protos() {
 	utils.Bail("no current dir", err)
 	gr, err := gitrepo.NewGitRepo(path)
 	proto_dir := gr.Path() + "/protos/"
+	submit_protos_with_dir(proto_dir)
+}
+func submit_protos_with_dir(proto_dir string) {
 	ctx := authremote.Context()
 	srv, err := pb.GetProtoRenderer2Client().Compile(ctx)
 	utils.Bail("failed to stream files to server", err)
@@ -114,11 +124,22 @@ func submit_protos() {
 	)
 	utils.Bail("failed to read proto files", err)
 	err = srv.Send(&pb.FileTransfer{TransferComplete: true}) // switching to recv mode now
+	// receiving the results now...
 	for {
 		recv, err := srv.Recv()
 		if recv != nil {
 			if recv.Filename != "" {
 				fmt.Printf("Receiving: filename=%s, bytes=%d\n", recv.Filename, len(recv.Data))
+			}
+			if recv.Result != nil {
+				fmt.Printf("Failure for %s: %v\n", recv.Result.Filename, recv.Result.Filename)
+				if recv.Result.Failed {
+					for _, result := range recv.Result.Failures {
+						fmt.Printf("    compiler: \"%s\"\n", result.CompilerName)
+						fmt.Printf("    error: %s\n", result.ErrorMessage)
+						fmt.Printf("    output: %s\n", result.Output)
+					}
+				}
 			}
 		}
 		if err != nil {

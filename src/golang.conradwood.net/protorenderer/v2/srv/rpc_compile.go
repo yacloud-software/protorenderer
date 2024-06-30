@@ -9,8 +9,10 @@ import (
 	"golang.conradwood.net/protorenderer/v2/compilers/java"
 	"golang.conradwood.net/protorenderer/v2/helpers"
 	"golang.conradwood.net/protorenderer/v2/interfaces"
+	"golang.conradwood.net/protorenderer/v2/store"
 	//	pb1 "golang.conradwood.net/apis/protorenderer"
 	pb "golang.conradwood.net/apis/protorenderer2"
+	//	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/go-easyops/utils"
 	"io"
 )
@@ -43,7 +45,7 @@ func compile(srv compile_serve_req, save_on_success bool) error {
 		return err
 	}
 
-	err = receive(ce, srv)
+	err = receive(ce, srv, save_on_success)
 	if err != nil {
 		return err
 	}
@@ -136,7 +138,8 @@ func send(ce interfaces.CompilerEnvironment, srv compile_serve_req, dir string) 
 	)
 	return err
 }
-func receive(ce interfaces.CompilerEnvironment, srv compile_serve_req) error {
+func receive(ce interfaces.CompilerEnvironment, srv compile_serve_req, do_persist_filename bool) error {
+	ctx := srv.Context()
 	bsr := utils.NewByteStreamReceiver(ce.WorkDir() + "/" + ce.NewProtosDir())
 	for {
 		rcv, err := srv.Recv()
@@ -144,6 +147,13 @@ func receive(ce interfaces.CompilerEnvironment, srv compile_serve_req) error {
 			if rcv.TransferComplete {
 				break
 			}
+			if rcv.Filename != "" && do_persist_filename {
+				_, err := store.GetFileID(ctx, rcv.Filename, uint64(rcv.RepositoryID))
+				if err != nil {
+					return err
+				}
+			}
+
 			err = bsr.NewData(rcv)
 			if err != nil {
 				return err

@@ -91,16 +91,26 @@ func submit_protos() {
 	path, err := os.Getwd()
 	utils.Bail("no current dir", err)
 	gr, err := gitrepo.NewGitRepo(path)
+	utils.Bail("not a yagitrepo", err)
 	proto_dir := gr.Path() + "/protos/"
 	submit_protos_with_dir(proto_dir)
 }
 func submit_protos_with_dir(proto_dir string) {
 	ctx := authremote.Context()
+
+	// repoid
+	repoid := uint32(0)
+	gr, err := gitrepo.NewYAGitRepo(proto_dir)
+	if err != nil {
+		fmt.Printf("Not a YAGitRepo: \"%s\"\n", proto_dir)
+	} else {
+		repoid = uint32(gr.RepositoryID())
+	}
 	srv, err := pb.GetProtoRenderer2Client().Compile(ctx)
 	utils.Bail("failed to stream files to server", err)
 	bs := utils.NewByteStreamSender(func(key, filename string) error {
 		// start new file
-		err := srv.Send(&pb.FileTransfer{Filename: filename})
+		err := srv.Send(&pb.FileTransfer{Filename: filename, RepositoryID: repoid})
 		return err
 	},
 		// send contents

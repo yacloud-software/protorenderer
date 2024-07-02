@@ -11,7 +11,7 @@ import (
 	"golang.conradwood.net/go-easyops/utils"
 	"golang.conradwood.net/protorenderer/cmdline"
 	"golang.conradwood.net/protorenderer/v2/compilers/java"
-	ms "golang.conradwood.net/protorenderer/v2/meta-compiler/server"
+	ms "golang.conradwood.net/protorenderer/v2/meta_compiler/server"
 	"golang.conradwood.net/protorenderer/v2/store"
 	"google.golang.org/grpc"
 	"os"
@@ -65,7 +65,8 @@ func Start() {
 type protoRenderer struct {
 }
 
-func (pr *protoRenderer) SubmitSource(ctx context.Context, req *pb.ProtocRequest) (*common.Void, error) {
+func (pr *protoRenderer) InternalMetaSubmit(ctx context.Context, req *pb.ProtocRequest) (*common.Void, error) {
+	fmt.Printf("[server] received request from protoc-gen-meta\n")
 	return ms.SubmitSource(ctx, req)
 }
 func mkdir(dir string) {

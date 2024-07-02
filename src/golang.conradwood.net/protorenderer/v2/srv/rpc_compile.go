@@ -9,6 +9,7 @@ import (
 	"golang.conradwood.net/protorenderer/v2/compilers/java"
 	"golang.conradwood.net/protorenderer/v2/helpers"
 	"golang.conradwood.net/protorenderer/v2/interfaces"
+	"golang.conradwood.net/protorenderer/v2/meta_compiler"
 	"golang.conradwood.net/protorenderer/v2/store"
 	//	pb1 "golang.conradwood.net/apis/protorenderer"
 	pb "golang.conradwood.net/apis/protorenderer2"
@@ -57,12 +58,28 @@ func compile(srv compile_serve_req, save_on_success bool) error {
 		return err
 	}
 
+	fmt.Printf("[compile] starting meta compiler\n")
+	rpc_token := "foobar"
+	rpc_port := cmdline.GetRPCPort()
+	meta_compiler := meta_compiler.New()
+	err = meta_compiler.Compile(ctx, rpc_token, rpc_port, ce, pfs, od, scr)
+	if err != nil {
+		return err
+	}
+
+	// after compiling with meta, we remove any proto files that failed compilation by meta
+	// it is not worth compiling them with any other compiles
+	pfs = remove_broken(pfs, scr)
+
+	fmt.Printf("[compile] starting golang compiler\n")
 	golang_compiler := golang.New()
 	scr.SetCompiler(golang_compiler) // to mark errors as such
+	fmt.Printf("[compile] starting golang compiler\n")
 	err = golang_compiler.Compile(ctx, ce, pfs, od, scr)
 	if err != nil {
 		return err
 	}
+
 	if cmdline.GetCompilerEnabledJava() {
 		java_compiler := java.New()
 		scr.SetCompiler(java_compiler) // to mark errors as such
@@ -171,4 +188,15 @@ func receive(ce interfaces.CompilerEnvironment, srv compile_serve_req, do_persis
 		return err
 	}
 	return nil
+}
+
+func remove_broken(pfs []interfaces.ProtoFile, scr interfaces.CompileResult) []interfaces.ProtoFile {
+	var res []interfaces.ProtoFile
+	for _, pf := range pfs {
+		if len(scr.GetFailures(pf)) != 0 {
+			continue
+		}
+		res = append(res, pf)
+	}
+	return res
 }

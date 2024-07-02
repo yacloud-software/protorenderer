@@ -1,4 +1,4 @@
-package meta
+package meta_compiler
 
 import (
 	"context"
@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+// TODO - instead of using gRPC use go-easyops IPC
+
 type MetaCompiler struct {
 }
 
@@ -22,7 +24,8 @@ func New() *MetaCompiler {
 the meta compilers works slightly different than the others. the protoc plugin is a small RPC stub, which then calls protorenderer
 */
 func (gc *MetaCompiler) Compile(ctx context.Context, token string, port int, ce interfaces.CompilerEnvironment, files []interfaces.ProtoFile, outdir string, cr interfaces.CompileResult) error {
-	pcfname := cc.FindCompiler("protoc-gen-meta")
+	pcfname := cc.FindCompiler("protoc-gen-meta2")
+	fmt.Printf("Using compiler: \"%s\"\n", pcfname)
 	dir := ce.WorkDir() + "/" + ce.NewProtosDir()
 
 	import_dirs := []string{
@@ -40,9 +43,9 @@ func (gc *MetaCompiler) Compile(ctx context.Context, token string, port int, ce 
 
 	cmd := []string{
 		cmdline.GetYACloudDir() + "/ctools/dev/go/current/protoc/protoc",
-		fmt.Sprintf("--plugin=protoc-gen-meta=%s", pcfname),
-		"--meta_out=/tmp", // has no output
-		fmt.Sprintf("--meta_opt=%s,%s,%d,%s", token, sctx, port, cmdline.GetClientRegistryAddress()),
+		fmt.Sprintf("--plugin=protoc-gen-meta2=%s", pcfname),
+		"--meta2_out=/tmp", // has no output
+		fmt.Sprintf("--meta2_opt=%s,%s,%d,%s", token, sctx, port, cmdline.GetClientRegistryAddress()),
 	}
 	for _, id := range import_dirs {
 		cmd = append(cmd, fmt.Sprintf("-I%s", id))
@@ -53,8 +56,9 @@ func (gc *MetaCompiler) Compile(ctx context.Context, token string, port int, ce 
 
 		out, err := l.SafelyExecuteWithDir(cmdfl, dir, nil)
 		if err != nil {
-			fmt.Printf("protoc output: %s\n", out)
-			fmt.Printf("Failed to compile: %s\n", err)
+			fmt.Printf("[metacompiler] protoc output: %s\n", out)
+			fmt.Printf("[metacompiler] Failed to compile: %s\n", err)
+			cr.AddFailed(pf, err, []byte(out))
 			continue
 		}
 	}

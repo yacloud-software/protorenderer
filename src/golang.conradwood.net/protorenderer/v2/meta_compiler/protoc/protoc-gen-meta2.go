@@ -38,7 +38,6 @@ func main() {
 		print_help()
 		os.Exit(0)
 	}
-
 	// oh we cannot use flag.Parse here..
 	// this gives us a problem with finding the registry...
 	data, err := ioutil.ReadAll(os.Stdin)
@@ -46,6 +45,7 @@ func main() {
 	request := &plugin.CodeGeneratorRequest{}
 	err = proto.Unmarshal(data, request)
 	utils.Bail("failed to unmarshal", err)
+	printf("Starting protoc-gen-meta2\n")
 
 	para := ""
 	if request.Parameter != nil {
@@ -87,7 +87,7 @@ func generate_remote(req *plugin.CodeGeneratorRequest) (*plugin.CodeGeneratorRes
 	ctx, err := auth.RecreateContextWithTimeout(time.Duration(5)*time.Minute, []byte(sctx))
 	if err != nil {
 		printf("Failed to create context: %s\n", err)
-		return nil, err
+		return nil, fmt.Errorf("context error: %w", err)
 	}
 	/*
 		if auth.GetUser(ctx) == nil && auth.GetService(ctx) == nil {
@@ -95,10 +95,10 @@ func generate_remote(req *plugin.CodeGeneratorRequest) (*plugin.CodeGeneratorRes
 		}
 	*/
 	pr := &pr.ProtocRequest{VerifyToken: VerifyToken, ProtoFiles: req.ProtoFile}
-	_, err = ps.SubmitSource(ctx, pr)
+	_, err = ps.InternalMetaSubmit(ctx, pr)
 	if err != nil {
-		printf("protoc-meta ERROR: %s\n", utils.ErrorString(err))
-		return nil, err
+		printf("protoc-meta InternalMetaSubmit(): %s\n", utils.ErrorString(err))
+		return nil, fmt.Errorf("InternalMetaSubmit() error: %w", err)
 	}
 	response := &plugin.CodeGeneratorResponse{}
 	return response, nil
@@ -115,7 +115,7 @@ func printf(format string, args ...interface{}) {
 }
 
 func print_help() {
-	h := `protoc meta compiler
+	h := `protoc meta compiler2
 
   Sourcecode: %s
 

@@ -40,9 +40,12 @@ func (scr *StandardCompileResult) GetFailures(pf interfaces.ProtoFile) []*pb.Com
 }
 func (scf *standard_compile_failure) getCompileFailure() *pb.CompileFailure {
 	res := &pb.CompileFailure{
-		CompilerName: scf.comp.ShortName(),
+		CompilerName: "no compiler",
 		ErrorMessage: fmt.Sprintf("%s", scf.err),
 		Output:       scf.out,
+	}
+	if scf.comp != nil {
+		res.CompilerName = scf.comp.ShortName()
 	}
 	return res
 }

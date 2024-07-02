@@ -134,6 +134,7 @@ func submit_protos_with_dir(proto_dir string) {
 	)
 	utils.Bail("failed to read proto files", err)
 	err = srv.Send(&pb.FileTransfer{TransferComplete: true}) // switching to recv mode now
+	utils.Bail("failed to send files", err)
 	// receiving the results now...
 	for {
 		recv, err := srv.Recv()

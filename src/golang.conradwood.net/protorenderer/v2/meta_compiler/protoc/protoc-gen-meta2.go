@@ -94,7 +94,7 @@ func generate_remote(req *plugin.CodeGeneratorRequest) (*plugin.CodeGeneratorRes
 			printf("Deserialised context has neither service nor user (%s)\n", sctx)
 		}
 	*/
-	pr := &pr.ProtocRequest{VerifyToken: VerifyToken, ProtoFiles: req.ProtoFile}
+	pr := &pr.ProtocRequest{MetaCompilerID: VerifyToken, ProtoFiles: req.ProtoFile}
 	_, err = ps.InternalMetaSubmit(ctx, pr)
 	if err != nil {
 		printf("protoc-meta InternalMetaSubmit(): %s\n", utils.ErrorString(err))

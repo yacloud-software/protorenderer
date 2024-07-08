@@ -2,7 +2,7 @@ package store
 
 import (
 	"context"
-	pb "golang.conradwood.net/apis/protorenderer"
+	pb2 "golang.conradwood.net/apis/protorenderer2"
 	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/protorenderer/db"
 	"strings"
@@ -20,7 +20,7 @@ func GetFileID(ctx context.Context, filename string, repoid uint64) (uint64, err
 	if len(files) != 0 {
 		return files[0].ID, nil
 	}
-	dd := &pb.DBProtoFile{Name: fname, RepositoryID: repoid}
+	dd := &pb2.DBProtoFile{Name: fname, RepositoryID: repoid}
 	_, err = db.DefaultDBDBProtoFile().Save(ctx, dd)
 	if err != nil {
 		return 0, err

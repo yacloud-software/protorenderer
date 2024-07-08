@@ -67,7 +67,7 @@ type protoRenderer struct {
 
 func (pr *protoRenderer) InternalMetaSubmit(ctx context.Context, req *pb.ProtocRequest) (*common.Void, error) {
 	fmt.Printf("[server] received request from protoc-gen-meta\n")
-	return ms.SubmitSource(ctx, req)
+	return ms.InternalMetaSubmit(ctx, req)
 }
 func mkdir(dir string) {
 	err := linux.CreateIfNotExists(dir, 0777)

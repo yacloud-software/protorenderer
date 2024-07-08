@@ -32,7 +32,7 @@ import (
 	"context"
 	gosql "database/sql"
 	"fmt"
-	savepb "golang.conradwood.net/apis/protorenderer"
+	savepb "golang.conradwood.net/apis/protorenderer2"
 	"golang.conradwood.net/go-easyops/sql"
 	"os"
 )

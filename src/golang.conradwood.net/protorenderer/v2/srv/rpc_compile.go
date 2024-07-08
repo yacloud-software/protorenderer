@@ -11,6 +11,7 @@ import (
 	"golang.conradwood.net/protorenderer/v2/interfaces"
 	"golang.conradwood.net/protorenderer/v2/meta_compiler"
 	"golang.conradwood.net/protorenderer/v2/store"
+	"strings"
 	//	pb1 "golang.conradwood.net/apis/protorenderer"
 	pb "golang.conradwood.net/apis/protorenderer2"
 	//	"golang.conradwood.net/go-easyops/errors"
@@ -59,10 +60,9 @@ func compile(srv compile_serve_req, save_on_success bool) error {
 	}
 
 	fmt.Printf("[compile] starting meta compiler\n")
-	rpc_token := "foobar"
 	rpc_port := cmdline.GetRPCPort()
 	meta_compiler := meta_compiler.New()
-	err = meta_compiler.Compile(ctx, rpc_token, rpc_port, ce, pfs, od, scr)
+	err = meta_compiler.Compile(ctx, rpc_port, ce, pfs, od, scr)
 	if err != nil {
 		return err
 	}
@@ -70,7 +70,9 @@ func compile(srv compile_serve_req, save_on_success bool) error {
 	// after compiling with meta, we remove any proto files that failed compilation by meta
 	// it is not worth compiling them with any other compiles
 	pfs = remove_broken(pfs, scr)
-
+	if len(pfs) == 0 {
+		return fmt.Errorf("meta compiler failed to compile any files")
+	}
 	fmt.Printf("[compile] starting golang compiler\n")
 	golang_compiler := golang.New()
 	scr.SetCompiler(golang_compiler) // to mark errors as such
@@ -148,7 +150,7 @@ func send(ce interfaces.CompilerEnvironment, srv compile_serve_req, dir string) 
 		if err != nil {
 			return err
 		}
-		fmt.Printf("Submitting %s (%d bytes)\n", "protos/"+relfil, len(ct))
+		fmt.Printf("Submitting %s (%d bytes)\n", relfil, len(ct))
 		err = bs.SendBytes("foo", relfil, ct)
 		return err
 	},
@@ -164,13 +166,20 @@ func receive(ce interfaces.CompilerEnvironment, srv compile_serve_req, do_persis
 			if rcv.TransferComplete {
 				break
 			}
-			if rcv.Filename != "" && do_persist_filename {
-				_, err := store.GetFileID(ctx, rcv.Filename, uint64(rcv.RepositoryID))
-				if err != nil {
-					return err
+			if rcv.Filename != "" {
+				if strings.HasPrefix(rcv.Filename, "protos/protos/") {
+					return fmt.Errorf("Invalid filename starting with two proto dirs (%s)", rcv.Filename)
+				}
+				if strings.HasPrefix(rcv.Filename, "protos/") {
+					return fmt.Errorf("Invalid filename starting with 'protos' (%s)", rcv.Filename)
+				}
+				if do_persist_filename {
+					_, err := store.GetFileID(ctx, rcv.Filename, uint64(rcv.RepositoryID))
+					if err != nil {
+						return err
+					}
 				}
 			}
-
 			err = bsr.NewData(rcv)
 			if err != nil {
 				return err

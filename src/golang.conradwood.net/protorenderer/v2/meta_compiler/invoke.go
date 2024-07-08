@@ -6,6 +6,7 @@ import (
 	"golang.conradwood.net/go-easyops/auth"
 	"golang.conradwood.net/go-easyops/cmdline"
 	"golang.conradwood.net/go-easyops/linux"
+	"golang.conradwood.net/go-easyops/utils"
 	cc "golang.conradwood.net/protorenderer/v2/compilers/common"
 	"golang.conradwood.net/protorenderer/v2/interfaces"
 	"time"
@@ -14,16 +15,27 @@ import (
 // TODO - instead of using gRPC use go-easyops IPC
 
 type MetaCompiler struct {
+	id    string
+	ce    interfaces.CompilerEnvironment
+	files []interfaces.ProtoFile
+	cr    interfaces.CompileResult
 }
 
 func New() *MetaCompiler {
-	return &MetaCompiler{}
+	mc := &MetaCompiler{id: utils.RandomString(64)}
+	meta_compilers.Put(mc.id, mc)
+	return mc
 }
 
 /*
-the meta compilers works slightly different than the others. the protoc plugin is a small RPC stub, which then calls protorenderer
+the meta compilers works slightly different than the others. the protoc plugin is a small RPC stub, which then calls protorenderer. this function invokes protoc and protoc-gen-meta2 plugin, which then will call this process via gRPC
 */
-func (gc *MetaCompiler) Compile(ctx context.Context, token string, port int, ce interfaces.CompilerEnvironment, files []interfaces.ProtoFile, outdir string, cr interfaces.CompileResult) error {
+func (gc *MetaCompiler) Compile(ctx context.Context, port int, ce interfaces.CompilerEnvironment, files []interfaces.ProtoFile, outdir string, cr interfaces.CompileResult) error {
+	// keep the variables, we need them for the callback (protoc plugin calls this process via gRPC)
+	gc.ce = ce
+	gc.files = files
+	gc.cr = cr
+
 	pcfname := cc.FindCompiler("protoc-gen-meta2")
 	fmt.Printf("Using compiler: \"%s\"\n", pcfname)
 	dir := ce.WorkDir() + "/" + ce.NewProtosDir()
@@ -45,7 +57,7 @@ func (gc *MetaCompiler) Compile(ctx context.Context, token string, port int, ce 
 		cmdline.GetYACloudDir() + "/ctools/dev/go/current/protoc/protoc",
 		fmt.Sprintf("--plugin=protoc-gen-meta2=%s", pcfname),
 		"--meta2_out=/tmp", // has no output
-		fmt.Sprintf("--meta2_opt=%s,%s,%d,%s", token, sctx, port, cmdline.GetClientRegistryAddress()),
+		fmt.Sprintf("--meta2_opt=%s,%s,%d,%s", gc.id, sctx, port, cmdline.GetClientRegistryAddress()),
 	}
 	for _, id := range import_dirs {
 		cmd = append(cmd, fmt.Sprintf("-I%s", id))

@@ -67,7 +67,7 @@ func (m *MetaCompiler) generate(req *pr.ProtocRequest) error {
 		}
 	}
 
-	// run through all copmlex fields
+	// run through all complex fields
 	debugf("Complex types..\n")
 	for _, pf := range req.ProtoFiles {
 		fqdn := filepath.Dir(*pf.Name)
@@ -181,31 +181,3 @@ func ResolveMessage(msgs []*Message, fqdn string) *Message {
 	}
 	return nil
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

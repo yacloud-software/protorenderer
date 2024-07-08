@@ -1,4 +1,4 @@
-package meta
+package server
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ const (
 	CNW_OPTION_KEYWORD = "CNW_OPTION: "
 )
 
-func parseCNWOptionsFromFile(fdp *descriptor.FileDescriptorProto) map[string]string {
+func (smc *ServerMetaCompiler) parseCNWOptionsFromFile(fdp *descriptor.FileDescriptorProto) map[string]string {
 	res := make(map[string]string)
 	sci := fdp.SourceCodeInfo
 	if sci == nil {
@@ -22,16 +22,16 @@ func parseCNWOptionsFromFile(fdp *descriptor.FileDescriptorProto) map[string]str
 		tc := ""
 		if l.LeadingComments != nil {
 			lc = *l.LeadingComments
-			handle_cnw_option_string(res, lc)
+			smc.handle_cnw_option_string(res, lc)
 		}
 		if l.TrailingComments != nil {
 			tc = *l.TrailingComments
-			handle_cnw_option_string(res, tc)
+			smc.handle_cnw_option_string(res, tc)
 		}
 		//		debugf("Leading Comments: \"%s\"\n", lc)
 		//		debugf("Trailing Comments: \"%s\"\n", tc)
 		for _, ldc := range l.LeadingDetachedComments {
-			handle_cnw_option_string(res, ldc)
+			smc.handle_cnw_option_string(res, ldc)
 		}
 	}
 	return res
@@ -40,7 +40,7 @@ func loc_to_string(l []int32) string {
 	return fmt.Sprintf("%v", l)
 
 }
-func handle_cnw_option_string(res map[string]string, opt string) {
+func (smc *ServerMetaCompiler) handle_cnw_option_string(res map[string]string, opt string) {
 	if !strings.Contains(opt, CNW_OPTION_KEYWORD) {
 		return
 	}
@@ -50,5 +50,5 @@ func handle_cnw_option_string(res map[string]string, opt string) {
 		return
 	}
 	opt = strings.TrimPrefix(opt, CNW_OPTION_KEYWORD)
-	debugf("Cnw option: \"%s\"\n", opt)
+	smc.debugf("Cnw option: \"%s\"\n", opt)
 }

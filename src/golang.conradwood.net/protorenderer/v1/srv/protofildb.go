@@ -3,6 +3,7 @@ package srv
 import (
 	"context"
 	pb "golang.conradwood.net/apis/protorenderer"
+	pb2 "golang.conradwood.net/apis/protorenderer2"
 	"golang.conradwood.net/go-easyops/cache"
 	"time"
 )
@@ -12,14 +13,14 @@ var (
 )
 
 // for now, we're treating files with the same name the same, regardless of repo
-func findOrUpdateProtoInDB(ctx context.Context, req *pb.AddProtoRequest) (*pb.DBProtoFile, error) {
+func findOrUpdateProtoInDB(ctx context.Context, req *pb.AddProtoRequest) (*pb2.DBProtoFile, error) {
 
 	res, err := FindByName(ctx, req.Name)
 	if err != nil {
 		return nil, err
 	}
 	if res == nil {
-		res = &pb.DBProtoFile{Name: req.Name, RepositoryID: req.RepositoryID}
+		res = &pb2.DBProtoFile{Name: req.Name, RepositoryID: req.RepositoryID}
 		_, err = dbproto.Save(ctx, res)
 		if err != nil {
 			return nil, err
@@ -37,10 +38,10 @@ func findOrUpdateProtoInDB(ctx context.Context, req *pb.AddProtoRequest) (*pb.DB
 	return res, nil
 }
 
-func FindByName(ctx context.Context, name string) (*pb.DBProtoFile, error) {
+func FindByName(ctx context.Context, name string) (*pb2.DBProtoFile, error) {
 	p := pcache.Get(name)
 	if p != nil {
-		return p.(*pb.DBProtoFile), nil
+		return p.(*pb2.DBProtoFile), nil
 	}
 	dbp, err := dbproto.ByName(ctx, name)
 	if err != nil {
@@ -53,31 +54,3 @@ func FindByName(ctx context.Context, name string) (*pb.DBProtoFile, error) {
 	}
 	return nil, nil
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

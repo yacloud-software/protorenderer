@@ -8,8 +8,20 @@ import "golang.conradwood.net/apis/common/common.proto";
 import "golang.conradwood.net/apis/h2gproxy/h2gproxy.proto";
 import "google/protobuf/descriptor.proto";
 
+  // keeping a file in database with metadata
+message DBProtoFile {
+  uint64 ID=1;
+  string Name=2; //  e.g. "golang.conradwood.net/apis/protorenderer/protorenderer.proto" 
+  uint64 RepositoryID=3; // a repo id, if submitted
+}
+
+message SQLMessage {
+  uint64 ID=1;
+  DBProtoFile ProtoFile=2 [(common.sql_type)="uint64",(common.sql_reference)="dbprotofile.id"];
+  string Name=3;
+}
 message ProtocRequest {
-  string VerifyToken = 1;
+  string MetaCompilerID = 1;
   repeated google.protobuf.FileDescriptorProto ProtoFiles = 2;
 }
 

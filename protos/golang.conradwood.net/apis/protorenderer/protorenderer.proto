@@ -19,7 +19,7 @@ enum CompilerType {
   // keeping a file in database with metadata
 message DBProtoFile {
   uint64 ID=1;
-  string Name=2; // as 'submitted', e.g. "protos/golang.conradwood.net/apis/protorenderer/protorenderer.proto"
+  string Name=2; //  e.g. "golang.conradwood.net/apis/protorenderer/protorenderer.proto" 
   uint64 RepositoryID=3; // a repo id, if submitted
 }
 

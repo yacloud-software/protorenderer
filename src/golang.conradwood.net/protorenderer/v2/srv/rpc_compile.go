@@ -174,7 +174,7 @@ func receive(ce interfaces.CompilerEnvironment, srv compile_serve_req, do_persis
 					return fmt.Errorf("Invalid filename starting with 'protos' (%s)", rcv.Filename)
 				}
 				if do_persist_filename {
-					_, err := store.GetFileID(ctx, rcv.Filename, uint64(rcv.RepositoryID))
+					_, err := store.GetOrCreateFile(ctx, rcv.Filename, uint64(rcv.RepositoryID))
 					if err != nil {
 						return err
 					}

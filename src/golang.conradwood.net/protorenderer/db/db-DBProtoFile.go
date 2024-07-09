@@ -16,16 +16,17 @@ package db
 
 Main Table:
 
- CREATE TABLE dbprotofile (id integer primary key default nextval('dbprotofile_seq'),name text not null  ,repositoryid bigint not null  );
+ CREATE TABLE dbprotofile (id integer primary key default nextval('dbprotofile_seq'),name text not null  ,repositoryid bigint not null  ,package text not null  );
 
 Alter statements:
 ALTER TABLE dbprotofile ADD COLUMN IF NOT EXISTS name text not null default '';
 ALTER TABLE dbprotofile ADD COLUMN IF NOT EXISTS repositoryid bigint not null default 0;
+ALTER TABLE dbprotofile ADD COLUMN IF NOT EXISTS package text not null default '';
 
 
 Archive Table: (structs can be moved from main to archive using Archive() function)
 
- CREATE TABLE dbprotofile_archive (id integer unique not null,name text not null,repositoryid bigint not null);
+ CREATE TABLE dbprotofile_archive (id integer unique not null,name text not null,repositoryid bigint not null,package text not null);
 */
 
 import (
@@ -83,7 +84,7 @@ func (a *DBDBProtoFile) Archive(ctx context.Context, id uint64) error {
 	}
 
 	// now save it to archive:
-	_, e := a.DB.ExecContext(ctx, "archive_DBDBProtoFile", "insert into "+a.SQLArchivetablename+" (id,name, repositoryid) values ($1,$2, $3) ", p.ID, p.Name, p.RepositoryID)
+	_, e := a.DB.ExecContext(ctx, "archive_DBDBProtoFile", "insert into "+a.SQLArchivetablename+" (id,name, repositoryid, package) values ($1,$2, $3, $4) ", p.ID, p.Name, p.RepositoryID, p.Package)
 	if e != nil {
 		return e
 	}
@@ -96,7 +97,7 @@ func (a *DBDBProtoFile) Archive(ctx context.Context, id uint64) error {
 // Save (and use database default ID generation)
 func (a *DBDBProtoFile) Save(ctx context.Context, p *savepb.DBProtoFile) (uint64, error) {
 	qn := "DBDBProtoFile_Save"
-	rows, e := a.DB.QueryContext(ctx, qn, "insert into "+a.SQLTablename+" (name, repositoryid) values ($1, $2) returning id", a.get_Name(p), a.get_RepositoryID(p))
+	rows, e := a.DB.QueryContext(ctx, qn, "insert into "+a.SQLTablename+" (name, repositoryid, package) values ($1, $2, $3) returning id", a.get_Name(p), a.get_RepositoryID(p), a.get_Package(p))
 	if e != nil {
 		return 0, a.Error(ctx, qn, e)
 	}
@@ -116,13 +117,13 @@ func (a *DBDBProtoFile) Save(ctx context.Context, p *savepb.DBProtoFile) (uint64
 // Save using the ID specified
 func (a *DBDBProtoFile) SaveWithID(ctx context.Context, p *savepb.DBProtoFile) error {
 	qn := "insert_DBDBProtoFile"
-	_, e := a.DB.ExecContext(ctx, qn, "insert into "+a.SQLTablename+" (id,name, repositoryid) values ($1,$2, $3) ", p.ID, p.Name, p.RepositoryID)
+	_, e := a.DB.ExecContext(ctx, qn, "insert into "+a.SQLTablename+" (id,name, repositoryid, package) values ($1,$2, $3, $4) ", p.ID, p.Name, p.RepositoryID, p.Package)
 	return a.Error(ctx, qn, e)
 }
 
 func (a *DBDBProtoFile) Update(ctx context.Context, p *savepb.DBProtoFile) error {
 	qn := "DBDBProtoFile_Update"
-	_, e := a.DB.ExecContext(ctx, qn, "update "+a.SQLTablename+" set name=$1, repositoryid=$2 where id = $3", a.get_Name(p), a.get_RepositoryID(p), p.ID)
+	_, e := a.DB.ExecContext(ctx, qn, "update "+a.SQLTablename+" set name=$1, repositoryid=$2, package=$3 where id = $4", a.get_Name(p), a.get_RepositoryID(p), a.get_Package(p), p.ID)
 
 	return a.Error(ctx, qn, e)
 }
@@ -137,7 +138,7 @@ func (a *DBDBProtoFile) DeleteByID(ctx context.Context, p uint64) error {
 // get it by primary id
 func (a *DBDBProtoFile) ByID(ctx context.Context, p uint64) (*savepb.DBProtoFile, error) {
 	qn := "DBDBProtoFile_ByID"
-	rows, e := a.DB.QueryContext(ctx, qn, "select id,name, repositoryid from "+a.SQLTablename+" where id = $1", p)
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,name, repositoryid, package from "+a.SQLTablename+" where id = $1", p)
 	if e != nil {
 		return nil, a.Error(ctx, qn, fmt.Errorf("ByID: error querying (%s)", e))
 	}
@@ -158,7 +159,7 @@ func (a *DBDBProtoFile) ByID(ctx context.Context, p uint64) (*savepb.DBProtoFile
 // get it by primary id (nil if no such ID row, but no error either)
 func (a *DBDBProtoFile) TryByID(ctx context.Context, p uint64) (*savepb.DBProtoFile, error) {
 	qn := "DBDBProtoFile_TryByID"
-	rows, e := a.DB.QueryContext(ctx, qn, "select id,name, repositoryid from "+a.SQLTablename+" where id = $1", p)
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,name, repositoryid, package from "+a.SQLTablename+" where id = $1", p)
 	if e != nil {
 		return nil, a.Error(ctx, qn, fmt.Errorf("TryByID: error querying (%s)", e))
 	}
@@ -179,7 +180,7 @@ func (a *DBDBProtoFile) TryByID(ctx context.Context, p uint64) (*savepb.DBProtoF
 // get all rows
 func (a *DBDBProtoFile) All(ctx context.Context) ([]*savepb.DBProtoFile, error) {
 	qn := "DBDBProtoFile_all"
-	rows, e := a.DB.QueryContext(ctx, qn, "select id,name, repositoryid from "+a.SQLTablename+" order by id")
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,name, repositoryid, package from "+a.SQLTablename+" order by id")
 	if e != nil {
 		return nil, a.Error(ctx, qn, fmt.Errorf("All: error querying (%s)", e))
 	}
@@ -198,7 +199,7 @@ func (a *DBDBProtoFile) All(ctx context.Context) ([]*savepb.DBProtoFile, error) 
 // get all "DBDBProtoFile" rows with matching Name
 func (a *DBDBProtoFile) ByName(ctx context.Context, p string) ([]*savepb.DBProtoFile, error) {
 	qn := "DBDBProtoFile_ByName"
-	rows, e := a.DB.QueryContext(ctx, qn, "select id,name, repositoryid from "+a.SQLTablename+" where name = $1", p)
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,name, repositoryid, package from "+a.SQLTablename+" where name = $1", p)
 	if e != nil {
 		return nil, a.Error(ctx, qn, fmt.Errorf("ByName: error querying (%s)", e))
 	}
@@ -213,7 +214,7 @@ func (a *DBDBProtoFile) ByName(ctx context.Context, p string) ([]*savepb.DBProto
 // the 'like' lookup
 func (a *DBDBProtoFile) ByLikeName(ctx context.Context, p string) ([]*savepb.DBProtoFile, error) {
 	qn := "DBDBProtoFile_ByLikeName"
-	rows, e := a.DB.QueryContext(ctx, qn, "select id,name, repositoryid from "+a.SQLTablename+" where name ilike $1", p)
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,name, repositoryid, package from "+a.SQLTablename+" where name ilike $1", p)
 	if e != nil {
 		return nil, a.Error(ctx, qn, fmt.Errorf("ByName: error querying (%s)", e))
 	}
@@ -228,7 +229,7 @@ func (a *DBDBProtoFile) ByLikeName(ctx context.Context, p string) ([]*savepb.DBP
 // get all "DBDBProtoFile" rows with matching RepositoryID
 func (a *DBDBProtoFile) ByRepositoryID(ctx context.Context, p uint64) ([]*savepb.DBProtoFile, error) {
 	qn := "DBDBProtoFile_ByRepositoryID"
-	rows, e := a.DB.QueryContext(ctx, qn, "select id,name, repositoryid from "+a.SQLTablename+" where repositoryid = $1", p)
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,name, repositoryid, package from "+a.SQLTablename+" where repositoryid = $1", p)
 	if e != nil {
 		return nil, a.Error(ctx, qn, fmt.Errorf("ByRepositoryID: error querying (%s)", e))
 	}
@@ -243,7 +244,7 @@ func (a *DBDBProtoFile) ByRepositoryID(ctx context.Context, p uint64) ([]*savepb
 // the 'like' lookup
 func (a *DBDBProtoFile) ByLikeRepositoryID(ctx context.Context, p uint64) ([]*savepb.DBProtoFile, error) {
 	qn := "DBDBProtoFile_ByLikeRepositoryID"
-	rows, e := a.DB.QueryContext(ctx, qn, "select id,name, repositoryid from "+a.SQLTablename+" where repositoryid ilike $1", p)
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,name, repositoryid, package from "+a.SQLTablename+" where repositoryid ilike $1", p)
 	if e != nil {
 		return nil, a.Error(ctx, qn, fmt.Errorf("ByRepositoryID: error querying (%s)", e))
 	}
@@ -251,6 +252,36 @@ func (a *DBDBProtoFile) ByLikeRepositoryID(ctx context.Context, p uint64) ([]*sa
 	l, e := a.FromRows(ctx, rows)
 	if e != nil {
 		return nil, a.Error(ctx, qn, fmt.Errorf("ByRepositoryID: error scanning (%s)", e))
+	}
+	return l, nil
+}
+
+// get all "DBDBProtoFile" rows with matching Package
+func (a *DBDBProtoFile) ByPackage(ctx context.Context, p string) ([]*savepb.DBProtoFile, error) {
+	qn := "DBDBProtoFile_ByPackage"
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,name, repositoryid, package from "+a.SQLTablename+" where package = $1", p)
+	if e != nil {
+		return nil, a.Error(ctx, qn, fmt.Errorf("ByPackage: error querying (%s)", e))
+	}
+	defer rows.Close()
+	l, e := a.FromRows(ctx, rows)
+	if e != nil {
+		return nil, a.Error(ctx, qn, fmt.Errorf("ByPackage: error scanning (%s)", e))
+	}
+	return l, nil
+}
+
+// the 'like' lookup
+func (a *DBDBProtoFile) ByLikePackage(ctx context.Context, p string) ([]*savepb.DBProtoFile, error) {
+	qn := "DBDBProtoFile_ByLikePackage"
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,name, repositoryid, package from "+a.SQLTablename+" where package ilike $1", p)
+	if e != nil {
+		return nil, a.Error(ctx, qn, fmt.Errorf("ByPackage: error querying (%s)", e))
+	}
+	defer rows.Close()
+	l, e := a.FromRows(ctx, rows)
+	if e != nil {
+		return nil, a.Error(ctx, qn, fmt.Errorf("ByPackage: error scanning (%s)", e))
 	}
 	return l, nil
 }
@@ -274,6 +305,11 @@ func (a *DBDBProtoFile) get_RepositoryID(p *savepb.DBProtoFile) uint64 {
 	return uint64(p.RepositoryID)
 }
 
+// getter for field "Package" (Package) [string]
+func (a *DBDBProtoFile) get_Package(p *savepb.DBProtoFile) string {
+	return string(p.Package)
+}
+
 /**********************************************************************
 * Helper to convert from an SQL Query
 **********************************************************************/
@@ -295,17 +331,17 @@ func (a *DBDBProtoFile) Tablename() string {
 }
 
 func (a *DBDBProtoFile) SelectCols() string {
-	return "id,name, repositoryid"
+	return "id,name, repositoryid, package"
 }
 func (a *DBDBProtoFile) SelectColsQualified() string {
-	return "" + a.SQLTablename + ".id," + a.SQLTablename + ".name, " + a.SQLTablename + ".repositoryid"
+	return "" + a.SQLTablename + ".id," + a.SQLTablename + ".name, " + a.SQLTablename + ".repositoryid, " + a.SQLTablename + ".package"
 }
 
 func (a *DBDBProtoFile) FromRowsOld(ctx context.Context, rows *gosql.Rows) ([]*savepb.DBProtoFile, error) {
 	var res []*savepb.DBProtoFile
 	for rows.Next() {
 		foo := savepb.DBProtoFile{}
-		err := rows.Scan(&foo.ID, &foo.Name, &foo.RepositoryID)
+		err := rows.Scan(&foo.ID, &foo.Name, &foo.RepositoryID, &foo.Package)
 		if err != nil {
 			return nil, a.Error(ctx, "fromrow-scan", err)
 		}
@@ -323,7 +359,8 @@ func (a *DBDBProtoFile) FromRows(ctx context.Context, rows *gosql.Rows) ([]*save
 		scanTarget_0 := &foo.ID
 		scanTarget_1 := &foo.Name
 		scanTarget_2 := &foo.RepositoryID
-		err := rows.Scan(scanTarget_0, scanTarget_1, scanTarget_2)
+		scanTarget_3 := &foo.Package
+		err := rows.Scan(scanTarget_0, scanTarget_1, scanTarget_2, scanTarget_3)
 		// END SCANNER
 
 		if err != nil {
@@ -340,13 +377,15 @@ func (a *DBDBProtoFile) FromRows(ctx context.Context, rows *gosql.Rows) ([]*save
 func (a *DBDBProtoFile) CreateTable(ctx context.Context) error {
 	csql := []string{
 		`create sequence if not exists ` + a.SQLTablename + `_seq;`,
-		`CREATE TABLE if not exists ` + a.SQLTablename + ` (id integer primary key default nextval('` + a.SQLTablename + `_seq'),name text not null ,repositoryid bigint not null );`,
-		`CREATE TABLE if not exists ` + a.SQLTablename + `_archive (id integer primary key default nextval('` + a.SQLTablename + `_seq'),name text not null ,repositoryid bigint not null );`,
+		`CREATE TABLE if not exists ` + a.SQLTablename + ` (id integer primary key default nextval('` + a.SQLTablename + `_seq'),name text not null ,repositoryid bigint not null ,package text not null );`,
+		`CREATE TABLE if not exists ` + a.SQLTablename + `_archive (id integer primary key default nextval('` + a.SQLTablename + `_seq'),name text not null ,repositoryid bigint not null ,package text not null );`,
 		`ALTER TABLE ` + a.SQLTablename + ` ADD COLUMN IF NOT EXISTS name text not null default '';`,
 		`ALTER TABLE ` + a.SQLTablename + ` ADD COLUMN IF NOT EXISTS repositoryid bigint not null default 0;`,
+		`ALTER TABLE ` + a.SQLTablename + ` ADD COLUMN IF NOT EXISTS package text not null default '';`,
 
 		`ALTER TABLE ` + a.SQLTablename + `_archive  ADD COLUMN IF NOT EXISTS name text not null  default '';`,
 		`ALTER TABLE ` + a.SQLTablename + `_archive  ADD COLUMN IF NOT EXISTS repositoryid bigint not null  default 0;`,
+		`ALTER TABLE ` + a.SQLTablename + `_archive  ADD COLUMN IF NOT EXISTS package text not null  default '';`,
 	}
 
 	for i, c := range csql {

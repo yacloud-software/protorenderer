@@ -26,7 +26,7 @@ func InternalMetaSubmit(ctx context.Context, req *pb.ProtocRequest) (*common.Voi
 
 	for _, pf := range req.ProtoFiles {
 		fmt.Printf("Protofile: %s\n", *pf.Name)
-		err := icm.handle_protofile(pf)
+		err := icm.handle_protofile(ctx, pf)
 		if err != nil {
 			return nil, err
 		}

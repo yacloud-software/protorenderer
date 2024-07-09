@@ -76,3 +76,12 @@ func (gc *MetaCompiler) Compile(ctx context.Context, port int, ce interfaces.Com
 	}
 	return nil
 }
+
+func (mc *MetaCompiler) FileByName(name string) (interfaces.ProtoFile, error) {
+	for _, pf := range mc.files {
+		if pf.GetFilename() == name {
+			return pf, nil
+		}
+	}
+	return nil, fmt.Errorf("File \"%s\" not part of the meta compiler", name)
+}

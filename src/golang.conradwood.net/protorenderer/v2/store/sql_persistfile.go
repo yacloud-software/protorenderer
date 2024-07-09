@@ -53,7 +53,6 @@ func FileByName(ctx context.Context, filename string) (*pb2.DBProtoFile, error) 
 		return nil, errors.NotFound(ctx, "file does not exist", "file %s does not exist", filename)
 	}
 	return files[0], nil
-
 }
 
 // update the package option in database

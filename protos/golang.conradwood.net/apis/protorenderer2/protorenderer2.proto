@@ -13,6 +13,7 @@ message DBProtoFile {
   uint64 ID=1;
   string Name=2; //  e.g. "golang.conradwood.net/apis/protorenderer/protorenderer.proto" 
   uint64 RepositoryID=3; // a repo id, if submitted
+  string Package=4; // the string provided by the "package" option
 }
 
 message SQLMessage {

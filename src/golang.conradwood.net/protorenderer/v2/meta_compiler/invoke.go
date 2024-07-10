@@ -85,3 +85,6 @@ func (mc *MetaCompiler) FileByName(name string) (interfaces.ProtoFile, error) {
 	}
 	return nil, fmt.Errorf("File \"%s\" not part of the meta compiler", name)
 }
+func (mc *MetaCompiler) CompilerEnvironment() interfaces.CompilerEnvironment {
+	return mc.ce
+}

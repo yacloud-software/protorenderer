@@ -50,7 +50,7 @@ func FileByName(ctx context.Context, filename string) (*pb2.DBProtoFile, error) 
 		return nil, err
 	}
 	if len(files) == 0 {
-		return nil, errors.NotFound(ctx, "file does not exist", "file %s does not exist", filename)
+		return nil, errors.NotFound(ctx, "file %s does not exist", filename)
 	}
 	return files[0], nil
 }

@@ -47,6 +47,7 @@ enum ProtoFieldPrimitive {
   FLOAT=9;
   INT64=10;
 }
+
 message ProtoFieldInfo {
   string Name=1;
   string Comment=2;
@@ -57,6 +58,16 @@ message ProtoFieldInfo {
   ProtoFieldPrimitive PrimitiveType2=7; // if type2 is primitive, then this is the type
   uint64 ObjectID1=8; // if type1 is object, this is the ID of the protobuf message it is referring to
   uint64 ObjectID2=9; // if type2 is object, this is the ID of the protobuf message it is referring to
+  ProtoFieldInfoText TextualRepresentation=10; // textual representation of the information in this proto
+}
+message ProtoFieldInfoText {
+  string ModifierString=1; // textual representation of field with same name
+  string Type1String=2; // textual representation of field with same name
+  string Type2String=3; // textual representation of field with same name
+  string PrimitiveType1String=4; // textual representation of field with same name
+  string PrimitiveType2String=5; // textual representation of field with same name
+  string ObjectID1String=6; // textual representation of field with same name
+  string ObjectID2String=7; // textual representation of field with same name
 }
 
 // keeping a file in database with metadata

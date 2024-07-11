@@ -10,9 +10,6 @@ import (
 
 // one may set a repoid, but once it is set (that is: not-zero), it may not be changed
 func GetOrCreateFile(ctx context.Context, filename string, repoid uint64) (*pb2.DBProtoFile, error) {
-	if repoid == 0 {
-		return nil, errors.InvalidArgs(ctx, "missing repositoryid", "missing repositoryid for file \"%s\"", filename)
-	}
 	fname := strings.TrimPrefix(filename, "protos/")
 	files, err := db.DefaultDBDBProtoFile().ByName(ctx, fname)
 	if err != nil {
@@ -50,7 +47,7 @@ func FileByName(ctx context.Context, filename string) (*pb2.DBProtoFile, error) 
 		return nil, err
 	}
 	if len(files) == 0 {
-		return nil, errors.NotFound(ctx, "file %s does not exist", filename)
+		return nil, errors.NotFound(ctx, "file %s does not exist in database table dbprotofile", filename)
 	}
 	return files[0], nil
 }

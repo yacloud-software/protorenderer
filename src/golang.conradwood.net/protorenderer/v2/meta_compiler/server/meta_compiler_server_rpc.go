@@ -9,6 +9,7 @@ import (
 	"golang.conradwood.net/go-easyops/utils"
 	"golang.conradwood.net/protorenderer/v2/helpers"
 	mcomp "golang.conradwood.net/protorenderer/v2/meta_compiler"
+	"golang.conradwood.net/protorenderer/v2/store"
 	"sort"
 	"strings"
 )
@@ -32,6 +33,13 @@ func InternalMetaSubmit(ctx context.Context, req *pb.ProtocRequest) (*common.Voi
 	icm := &ServerMetaCompiler{mc: mc, descriptors: make(map[string]*MessageDescriptor)}
 	for _, pf := range req.ProtoFiles {
 		fmt.Printf("meta compiler: %#v\n", pf)
+	}
+	// we want all protofiles in the database, to be able to refer to them by ID
+	for _, pf := range req.ProtoFiles {
+		_, err := store.GetOrCreateFile(ctx, *pf.Name, 0)
+		if err != nil {
+			return nil, err
+		}
 	}
 	// we need a map of all protobuf messages, because within a message we might reference another one
 	// this needs to be resolved first so that we can later resolve fields properly

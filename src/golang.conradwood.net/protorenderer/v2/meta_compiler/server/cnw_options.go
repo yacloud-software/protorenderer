@@ -51,4 +51,12 @@ func (smc *ServerMetaCompiler) handle_cnw_option_string(res map[string]string, o
 	}
 	opt = strings.TrimPrefix(opt, CNW_OPTION_KEYWORD)
 	smc.debugf("Cnw option: \"%s\"\n", opt)
+	kv := strings.SplitN(opt, "=", 2)
+	if len(kv) == 2 {
+		res[kv[0]] = kv[1]
+
+	} else {
+		res[opt] = ""
+	}
+
 }

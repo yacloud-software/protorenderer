@@ -27,6 +27,13 @@ func (smc *ServerMetaCompiler) handle_protofile(ctx context.Context, pf *google_
 		ProtoFile:  proto_file,
 		CNWOptions: cnwopts,
 	}
+	for _, imp := range pf.Dependency {
+		pf, err := store.FileByName(ctx, imp)
+		if err != nil {
+			return nil, err
+		}
+		res.Imports = append(res.Imports, pf)
+	}
 	comments, err := smc.dealWithComments(pf)
 	if err != nil {
 		return nil, err
@@ -91,28 +98,40 @@ func (smc *ServerMetaCompiler) createFieldInfo(m *pb.SQLMessage, fd *google_prot
 	}
 
 	msgfqdn := *fd.TypeName
-	msg := smc.GetMessageDescriptorByFQDN(msgfqdn)
-	if msg == nil {
-		return nil, fmt.Errorf("No descriptor for message \"%s\"", msgfqdn)
-	}
 
-	// handle _single_ complex types
 	if pfi.Modifier == pb.FieldModifier_SINGLE {
+		// is is a single (neither array nor map) field of complex type
+		msg := smc.GetMessageDescriptorByFQDN(msgfqdn)
+		if msg == nil {
+			return nil, fmt.Errorf("No descriptor for message \"%s\"", msgfqdn)
+		}
+		if msg.ID == 0 {
+			return nil, fmt.Errorf("message \"%s\" must not have ID 0", msgfqdn)
+		}
 		pfi.Type1 = pb.FieldType_OBJECT
-		pfi.ObjectID1 = 987123456
+		pfi.ObjectID1 = msg.ID
 		return pfi, nil
 	}
 	// it is either a array of messages or a map. to determine which one use getTypeName()
 	// https://github.com/protocolbuffers/protobuf-javascript/issues/13
 	// unknown stuff:
-
-	// handle _array_ of complex types
-	smc.debugf("Field %s.%s map or complex array (type=%v, typename=%v, label=%v)\n", m.Name, *fd.Name, *fd.Type, *fd.TypeName, *fd.Label)
+	// if the messagetype refers to an unresolvable protobuf we assume it is a map (it's a bit rubbish, but found no better way)
+	// could not find a way to resolve the typename to the internal MapEntry protobuf
+	// there is a protoc generator https://github.com/golang/protobuf/blob/master/protoc-gen-go/generator/generator.go#L68
+	// but it is deprecated.
 
 	ismap := false
+	msg := smc.GetMessageDescriptorByFQDN(msgfqdn)
+	if msg == nil {
+		ismap = true
+	}
+
+	smc.debugf("Field %s.%s map or complex array (type=%v, typename=%v, label=%v)\n", m.Name, *fd.Name, *fd.Type, *fd.TypeName, *fd.Label)
+
 	if !ismap {
+		// it is an _array_ of complex types (not a map)
 		pfi.Type1 = pb.FieldType_OBJECT
-		pfi.ObjectID1 = 987123456
+		pfi.ObjectID1 = msg.ID
 		return pfi, nil
 	}
 	if fd.TypeName != nil {
@@ -121,7 +140,15 @@ func (smc *ServerMetaCompiler) createFieldInfo(m *pb.SQLMessage, fd *google_prot
 	if fd.Type != nil {
 		smc.debugf("            Type    : %v\n", *fd.Type)
 	}
-	return nil, fmt.Errorf("Field %s.%s unparseable (type=%v, typename=%v, label=%v)", m.Name, *fd.Name, *fd.Type, *fd.Type, *fd.Label)
+
+	// it is a map.
+
+	// TODO: figure out who we can get to the elements of the map
+	// once that is figured out, the IDs of the messages need to be set in ObjectID1 and ObjectID2
+	pfi.Modifier = pb.FieldModifier_MAP
+	pfi.Type1 = pb.FieldType_ft_UNDEFINED
+	pfi.Type2 = pb.FieldType_ft_UNDEFINED
+	return pfi, nil
 }
 func protoc_type_to_protorenderer_type(typ *google_protobuf.FieldDescriptorProto_Type) (pb.ProtoFieldPrimitive, error) {
 	t := *typ

@@ -25,7 +25,9 @@ func GetOrCreateMessage(ctx context.Context, fileid uint64, name string) (*pb2.S
 		msgs2 = append(msgs2, m)
 	}
 	if len(msgs2) != 0 {
-		return msgs2[0], nil
+		res := msgs2[0]
+		res.ProtoFile = protofile
+		return res, nil
 	}
 	dd := &pb2.SQLMessage{ProtoFile: protofile, Name: name}
 	_, err = db.DefaultDBSQLMessage().Save(ctx, dd)

@@ -19,7 +19,7 @@ type ServerMetaCompiler struct {
 	descriptors map[string]*MessageDescriptor
 }
 type MessageDescriptor struct {
-	id        uint64
+	ID        uint64
 	descproto *google_protobuf.DescriptorProto
 }
 
@@ -35,19 +35,10 @@ func InternalMetaSubmit(ctx context.Context, req *pb.ProtocRequest) (*common.Voi
 		fmt.Printf("meta compiler: %#v\n", pf)
 	}
 	// we want all protofiles in the database, to be able to refer to them by ID
-	for _, pf := range req.ProtoFiles {
-		_, err := store.GetOrCreateFile(ctx, *pf.Name, 0)
-		if err != nil {
-			return nil, err
-		}
-	}
-	// we need a map of all protobuf messages, because within a message we might reference another one
-	// this needs to be resolved first so that we can later resolve fields properly
-	for _, pf := range req.ProtoFiles {
-		for _, ms := range pf.MessageType {
-			fqdn := fmt.Sprintf(".%v.%v", *pf.Package, *ms.Name)
-			icm.descriptors[fqdn] = &MessageDescriptor{descproto: ms}
-		}
+	// we also need a map of all protobuf messages, because within a message we might reference another one
+	err = icm.save_request_to_db(ctx, req)
+	if err != nil {
+		return nil, err
 	}
 	for _, pf := range req.ProtoFiles {
 		fmt.Printf("Protofile: %s\n", *pf.Name)
@@ -55,6 +46,12 @@ func InternalMetaSubmit(ctx context.Context, req *pb.ProtocRequest) (*common.Voi
 		if err != nil {
 			return nil, err
 		}
+		// create the ProtoFieldInfoText
+		err = icm.add_info_text(ctx, info)
+		if err != nil {
+			return nil, err
+		}
+
 		y, err := utils.MarshalYaml(info)
 		if err != nil {
 			return nil, err
@@ -72,7 +69,37 @@ func InternalMetaSubmit(ctx context.Context, req *pb.ProtocRequest) (*common.Voi
 
 	return &common.Void{}, nil
 }
-
+func (smc *ServerMetaCompiler) add_info_text(ctx context.Context, info *pb.ProtoFileInfo) error {
+	for _, msg := range info.Messages {
+		for _, field := range msg.Fields {
+			pft := &pb.ProtoFieldInfoText{
+				ModifierString:       fmt.Sprintf("%v", field.Modifier),
+				Type1String:          fmt.Sprintf("%v", field.Type1),
+				Type2String:          fmt.Sprintf("%v", field.Type2),
+				PrimitiveType1String: fmt.Sprintf("%v", field.PrimitiveType1),
+				PrimitiveType2String: fmt.Sprintf("%v", field.PrimitiveType2),
+			}
+			msg := smc.GetMessageDescriptorByID(field.ObjectID1)
+			if msg != nil {
+				pft.ObjectID1String = *msg.descproto.Name
+			}
+			msg = smc.GetMessageDescriptorByID(field.ObjectID2)
+			if msg != nil {
+				pft.ObjectID2String = *msg.descproto.Name
+			}
+			field.TextualRepresentation = pft
+		}
+	}
+	return nil
+}
+func (smc *ServerMetaCompiler) GetMessageDescriptorByID(id uint64) *MessageDescriptor {
+	for _, msg := range smc.descriptors {
+		if msg.ID == id {
+			return msg
+		}
+	}
+	return nil
+}
 func (smc *ServerMetaCompiler) GetMessageDescriptorByFQDN(fqdn string) *MessageDescriptor {
 	msg, found := smc.descriptors[fqdn]
 	if found {
@@ -88,6 +115,26 @@ func (smc *ServerMetaCompiler) GetMessageDescriptorByFQDN(fqdn string) *MessageD
 	fmt.Printf("Known proto messages:\n")
 	for _, n := range names {
 		fmt.Printf(" \"%s\"\n", n)
+	}
+	return nil
+}
+func (icm *ServerMetaCompiler) save_request_to_db(ctx context.Context, req *pb.ProtocRequest) error {
+	for _, pf := range req.ProtoFiles {
+		// save the protofile
+		proto_file, err := store.GetOrCreateFile(ctx, *pf.Name, 0)
+		if err != nil {
+			return err
+		}
+
+		// save the messages
+		for _, ms := range pf.MessageType {
+			msg, err := store.GetOrCreateMessage(ctx, proto_file.ID, *ms.Name)
+			if err != nil {
+				return err
+			}
+			fqdn := fmt.Sprintf(".%v.%v", *pf.Package, *ms.Name)
+			icm.descriptors[fqdn] = &MessageDescriptor{ID: msg.ID, descproto: ms}
+		}
 	}
 	return nil
 }

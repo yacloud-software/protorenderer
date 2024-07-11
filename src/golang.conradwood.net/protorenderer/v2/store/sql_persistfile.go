@@ -34,7 +34,7 @@ func GetOrCreateFile(ctx context.Context, filename string, repoid uint64) (*pb2.
 			return nil, err
 		}
 	} else {
-		if repoid != res.RepositoryID {
+		if repoid != 0 && repoid != res.RepositoryID {
 			return nil, errors.InvalidArgs(ctx, "repoid mismatch", "mismatch of repository id. file \"%s\" has repository id %d previously, but changed to %d", fname, res.RepositoryID, repoid)
 		}
 	}

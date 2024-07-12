@@ -45,7 +45,7 @@ func compile(srv compile_serve_req, save_on_success bool) error {
 	if err != nil {
 		return err
 	}
-	od := ce.WorkDir() + "/compile_outdir"
+	od := ce.CompilerOutDir()
 	err = utils.RecreateSafely(od)
 	if err != nil {
 		return err
@@ -58,7 +58,7 @@ func compile(srv compile_serve_req, save_on_success bool) error {
 	scr := &common.StandardCompileResult{}
 	ctx := srv.Context()
 
-	pfs, err := helpers.FindProtoFiles(ce.WorkDir() + "/" + ce.NewProtosDir())
+	pfs, err := helpers.FindProtoFiles(ce.NewProtosDir())
 	if err != nil {
 		return err
 	}
@@ -163,7 +163,7 @@ func send(ce interfaces.CompilerEnvironment, srv compile_serve_req, dir string) 
 }
 func receive(ce interfaces.CompilerEnvironment, srv compile_serve_req, do_persist_filename bool) error {
 	ctx := srv.Context()
-	bsr := utils.NewByteStreamReceiver(ce.WorkDir() + "/" + ce.NewProtosDir())
+	bsr := utils.NewByteStreamReceiver(ce.NewProtosDir())
 	for {
 		rcv, err := srv.Recv()
 		if rcv != nil {

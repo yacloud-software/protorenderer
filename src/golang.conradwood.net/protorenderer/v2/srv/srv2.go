@@ -26,10 +26,9 @@ func Start() {
 
 	server.SetHealth(common.Health_STARTING)
 
-	CompileEnv = &StandardCompilerEnvironment{workdir: "/tmp/pr/v2", knownprotosdir: "known_protos/protos", newprotosdir: "new_protos/protos"}
+	CompileEnv = &StandardCompilerEnvironment{workdir: "/tmp/pr/v2", knownprotosdir: "known_protos/protos"}
 	//scr := &StandardCompileResult{}
 	mkdir(CompileEnv.WorkDir() + "/" + CompileEnv.AllKnownProtosDir())
-	mkdir(CompileEnv.WorkDir() + "/" + CompileEnv.NewProtosDir())
 
 	fmt.Printf("Creating workdir...\n")
 	err = createWorkDir()

@@ -33,7 +33,7 @@ func Start() {
 	fmt.Printf("Creating workdir...\n")
 	err = createWorkDir()
 	utils.Bail("failed to create workdir", err)
-	utils.RecreateSafely(CompileEnv.ResultsDir())
+	utils.RecreateSafely(CompileEnv.CompilerOutDir())
 
 	ctx := authremote.Context()
 	err = store.Retrieve(ctx, CompileEnv.WorkDir()+"/"+CompileEnv.AllKnownProtosDir(), 0) // 0 == latest
@@ -42,7 +42,7 @@ func Start() {
 	//	os.Exit(0)
 
 	if false {
-		java.Start(CompileEnv, CompileEnv.ResultsDir())
+		java.Start(CompileEnv, CompileEnv.CompilerOutDir())
 	}
 	server.SetHealth(common.Health_READY)
 	sd := server.NewServerDef()

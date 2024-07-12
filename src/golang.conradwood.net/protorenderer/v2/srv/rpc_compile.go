@@ -41,8 +41,12 @@ func compile(srv compile_serve_req, save_on_success bool) error {
 	defer compile_lock.Unlock()
 	ce := CompileEnv
 
+	err := utils.RecreateSafely(ce.NewProtosDir())
+	if err != nil {
+		return err
+	}
 	od := ce.WorkDir() + "/compile_outdir"
-	err := utils.RecreateSafely(od)
+	err = utils.RecreateSafely(od)
 	if err != nil {
 		return err
 	}
@@ -59,7 +63,7 @@ func compile(srv compile_serve_req, save_on_success bool) error {
 		return err
 	}
 
-	fmt.Printf("[compile] starting meta compiler\n")
+	fmt.Printf("[compile] starting meta compiler with %d files\n", len(pfs))
 	rpc_port := cmdline.GetRPCPort()
 	meta_compiler := meta_compiler.New()
 	err = meta_compiler.Compile(ctx, rpc_port, ce, pfs, od, scr)
@@ -73,7 +77,7 @@ func compile(srv compile_serve_req, save_on_success bool) error {
 	if len(pfs) == 0 {
 		return fmt.Errorf("meta compiler failed to compile any files")
 	}
-	fmt.Printf("[compile] starting golang compiler\n")
+	fmt.Printf("[compile] starting golang compiler with %d files\n", len(pfs))
 	golang_compiler := golang.New()
 	scr.SetCompiler(golang_compiler) // to mark errors as such
 	fmt.Printf("[compile] starting golang compiler\n")

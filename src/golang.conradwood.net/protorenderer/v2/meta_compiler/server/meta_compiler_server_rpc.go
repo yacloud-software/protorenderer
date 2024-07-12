@@ -7,6 +7,7 @@ import (
 	"golang.conradwood.net/apis/common"
 	pb "golang.conradwood.net/apis/protorenderer2"
 	"golang.conradwood.net/go-easyops/utils"
+	"golang.conradwood.net/protorenderer/cmdline"
 	"golang.conradwood.net/protorenderer/v2/helpers"
 	mcomp "golang.conradwood.net/protorenderer/v2/meta_compiler"
 	"golang.conradwood.net/protorenderer/v2/store"
@@ -31,9 +32,6 @@ func InternalMetaSubmit(ctx context.Context, req *pb.ProtocRequest) (*common.Voi
 		return nil, err
 	}
 	icm := &ServerMetaCompiler{mc: mc, descriptors: make(map[string]*MessageDescriptor)}
-	for _, pf := range req.ProtoFiles {
-		fmt.Printf("meta compiler: %#v\n", pf)
-	}
 	// we want all protofiles in the database, to be able to refer to them by ID
 	// we also need a map of all protobuf messages, because within a message we might reference another one
 	err = icm.save_request_to_db(ctx, req)
@@ -41,7 +39,7 @@ func InternalMetaSubmit(ctx context.Context, req *pb.ProtocRequest) (*common.Voi
 		return nil, err
 	}
 	for _, pf := range req.ProtoFiles {
-		fmt.Printf("Protofile: %s\n", *pf.Name)
+		fmt.Printf("[metacompiler] Protofile request received: %s\n", *pf.Name)
 		info, err := icm.handle_protofile(ctx, pf)
 		if err != nil {
 			return nil, err
@@ -57,7 +55,7 @@ func InternalMetaSubmit(ctx context.Context, req *pb.ProtocRequest) (*common.Voi
 			return nil, err
 		}
 		//fmt.Println(string(y))
-		save_dir := mc.CompilerEnvironment().CompilerOutDir() + "/info"
+		save_dir := mc.CompilerEnvironment().ResultsDir() + "/info"
 		fname := save_dir + "/" + *pf.Name
 		fname = strings.TrimSuffix(fname, ".proto")
 		fname = fname + ".info"
@@ -105,16 +103,19 @@ func (smc *ServerMetaCompiler) GetMessageDescriptorByFQDN(fqdn string) *MessageD
 	if found {
 		return msg
 	}
-	var names []string
-	for k, _ := range smc.descriptors {
-		names = append(names, k)
-	}
-	sort.Slice(names, func(i, j int) bool {
-		return names[i] < names[j]
-	})
-	fmt.Printf("Known proto messages:\n")
-	for _, n := range names {
-		fmt.Printf(" \"%s\"\n", n)
+	if cmdline.GetDebugMeta() {
+		var names []string
+		for k, _ := range smc.descriptors {
+			names = append(names, k)
+		}
+		sort.Slice(names, func(i, j int) bool {
+			return names[i] < names[j]
+		})
+		fmt.Printf("Known proto messages:\n")
+		for _, n := range names {
+			fmt.Printf(" \"%s\"\n", n)
+		}
+		fmt.Printf("Not found: \"%s\"\n", fqdn)
 	}
 	return nil
 }

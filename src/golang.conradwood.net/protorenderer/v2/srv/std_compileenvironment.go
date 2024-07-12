@@ -18,6 +18,3 @@ func (sce *StandardCompilerEnvironment) WorkDir() string {
 func (sce *StandardCompilerEnvironment) ResultsDir() string {
 	return sce.workdir + "/store"
 }
-func (sce *StandardCompilerEnvironment) CompilerOutDir() string {
-	return sce.workdir + "/compile_outdir"
-}

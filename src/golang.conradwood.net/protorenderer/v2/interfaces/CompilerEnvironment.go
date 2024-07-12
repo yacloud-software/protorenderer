@@ -6,5 +6,4 @@ type CompilerEnvironment interface {
 	ResultsDir() string        // directory containing all compiled things, e.g. java/classes and java/src files
 	NewProtosDir() string      // directory containing .proto files which are meant to be compiled
 	WorkDir() string
-	CompilerOutDir() string // directory where to place artefacts from the compilers
 }

@@ -20,8 +20,12 @@ var (
 	compile_java        = flag.Bool("compile_java", false, "if true compile java classes")
 	compile_python      = flag.Bool("compile_python", false, "if true compile python...")
 	compile_nano        = flag.Bool("compile_nanopb", false, "if true compile with nanopb")
+	debug_meta          = flag.Bool("debug_meta", false, "debug meta compiler")
 )
 
+func GetDebugMeta() bool {
+	return *debug_meta
+}
 func GetCompilerEnabledPython() bool {
 	return *compile_python
 }

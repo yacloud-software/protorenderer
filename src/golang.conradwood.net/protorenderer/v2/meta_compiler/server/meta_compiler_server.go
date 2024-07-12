@@ -5,6 +5,7 @@ import (
 	"fmt"
 	google_protobuf "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	pb "golang.conradwood.net/apis/protorenderer2"
+	"golang.conradwood.net/protorenderer/cmdline"
 	"golang.conradwood.net/protorenderer/v2/store"
 )
 
@@ -177,6 +178,9 @@ func protoc_type_to_protorenderer_type(typ *google_protobuf.FieldDescriptorProto
 	}
 }
 func (smc *ServerMetaCompiler) debugf(format string, args ...interface{}) {
+	if !cmdline.GetDebugMeta() {
+		return
+	}
 	prefix := fmt.Sprintf("[servermetacompiler] ")
 	text := fmt.Sprintf(format, args...)
 	fmt.Printf("%s%s", prefix, text)

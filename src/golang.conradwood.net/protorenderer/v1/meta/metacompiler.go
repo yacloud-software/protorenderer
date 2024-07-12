@@ -14,6 +14,7 @@ import (
 	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/go-easyops/linux"
 	"golang.conradwood.net/go-easyops/utils"
+	pcmd "golang.conradwood.net/protorenderer/cmdline"
 	"golang.conradwood.net/protorenderer/v1/filelayouter"
 	"os"
 	"path/filepath"
@@ -22,7 +23,6 @@ import (
 )
 
 var (
-	debug             = flag.Bool("debug_meta", false, "debug mode of meta compiler")
 	accept_all_tokens = flag.Bool("accept_all_tokens_by_protoc", false, "do not use in production. disables verification between protoc and this service")
 	//mostRecent        *Result
 )
@@ -104,7 +104,7 @@ func (m *MetaCompiler) Compile(myport int) error {
 	return nil
 }
 func debugf(format string, args ...interface{}) {
-	if !*debug {
+	if !pcmd.GetDebugMeta() {
 		return
 	}
 	fmt.Fprintf(os.Stderr, format, args...)
@@ -170,31 +170,3 @@ func (m *MetaCompiler) PackageByID(pkgid string) *Package {
 	}
 	return nil
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

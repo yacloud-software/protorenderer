@@ -55,7 +55,7 @@ func InternalMetaSubmit(ctx context.Context, req *pb.ProtocRequest) (*common.Voi
 			return nil, err
 		}
 		//fmt.Println(string(y))
-		save_dir := mc.CompilerEnvironment().ResultsDir() + "/info"
+		save_dir := mc.CompilerEnvironment().CompilerOutDir() + "/info"
 		fname := save_dir + "/" + *pf.Name
 		fname = strings.TrimSuffix(fname, ".proto")
 		fname = fname + ".info"

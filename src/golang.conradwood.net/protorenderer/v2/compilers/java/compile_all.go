@@ -11,7 +11,7 @@ import (
 // compile all "known protos" to .java and .class files
 // then copy them to storedir
 func Start(ce interfaces.CompilerEnvironment, outdir string) error {
-	srcdir := ce.WorkDir() + "/" + ce.AllKnownProtosDir()
+	srcdir := ce.AllKnownProtosDir()
 	fmt.Printf("Compiling all java files from %s into %s...\n", srcdir, outdir)
 	targetdir := outdir
 	files, err := helpers.FindProtoFiles(srcdir)

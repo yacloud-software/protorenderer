@@ -38,11 +38,11 @@ func (gc *MetaCompiler) Compile(ctx context.Context, port int, ce interfaces.Com
 
 	pcfname := cc.FindCompiler("protoc-gen-meta2")
 	fmt.Printf("Using compiler: \"%s\"\n", pcfname)
-	dir := ce.WorkDir() + "/" + ce.NewProtosDir()
+	dir := ce.NewProtosDir()
 
 	import_dirs := []string{
 		dir,
-		ce.WorkDir() + "/" + ce.AllKnownProtosDir(),
+		ce.AllKnownProtosDir(),
 	}
 
 	l := linux.New()

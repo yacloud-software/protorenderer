@@ -15,6 +15,7 @@ import (
 	"golang.conradwood.net/protorenderer/v2/store"
 	"google.golang.org/grpc"
 	"os"
+	"time"
 )
 
 var (
@@ -26,17 +27,17 @@ func Start() {
 
 	server.SetHealth(common.Health_STARTING)
 
-	CompileEnv = &StandardCompilerEnvironment{workdir: "/tmp/pr/v2", knownprotosdir: "known_protos/protos"}
+	CompileEnv = &StandardCompilerEnvironment{workdir: "/tmp/pr/v2"}
 	//scr := &StandardCompileResult{}
-	mkdir(CompileEnv.WorkDir() + "/" + CompileEnv.AllKnownProtosDir())
+	mkdir(CompileEnv.AllKnownProtosDir())
 
 	fmt.Printf("Creating workdir...\n")
 	err = createWorkDir()
 	utils.Bail("failed to create workdir", err)
 	utils.RecreateSafely(CompileEnv.CompilerOutDir())
 
-	ctx := authremote.Context()
-	err = store.Retrieve(ctx, CompileEnv.WorkDir()+"/"+CompileEnv.AllKnownProtosDir(), 0) // 0 == latest
+	ctx := authremote.ContextWithTimeout(time.Duration(90) * time.Second)
+	err = store.Retrieve(ctx, CompileEnv.AllKnownProtosDir(), 0) // 0 == latest
 	utils.Bail("failed to retrieve latest version", err)
 
 	//	os.Exit(0)

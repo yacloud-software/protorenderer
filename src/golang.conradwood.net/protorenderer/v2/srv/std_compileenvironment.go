@@ -1,12 +1,11 @@
 package srv
 
 type StandardCompilerEnvironment struct {
-	knownprotosdir string
-	workdir        string
+	workdir string
 }
 
 func (sce *StandardCompilerEnvironment) AllKnownProtosDir() string {
-	return sce.knownprotosdir
+	return sce.workdir + "/known_protos"
 }
 func (sce *StandardCompilerEnvironment) NewProtosDir() string {
 	return sce.workdir + "/new_protos"

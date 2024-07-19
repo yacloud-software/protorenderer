@@ -53,7 +53,7 @@ func (gc *JavaCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnvir
 	}
 	import_dirs := []string{
 		dir,
-		ce.WorkDir() + "/" + ce.AllKnownProtosDir(),
+		ce.AllKnownProtosDir(),
 	}
 
 	var proto_file_names []string

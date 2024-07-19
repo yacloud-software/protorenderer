@@ -22,7 +22,7 @@ func createWorkDir() error {
 		return err
 	}
 
-	proto_dir := CompileEnv.WorkDir() + "/" + CompileEnv.AllKnownProtosDir()
+	proto_dir := CompileEnv.AllKnownProtosDir()
 	fmt.Printf("Copying \"%s\" -> \"%s\"...\n", test_proto_dir, proto_dir)
 	err = linux.CopyDir(test_proto_dir, proto_dir)
 	utils.Bail("failed to copy new protos", err)

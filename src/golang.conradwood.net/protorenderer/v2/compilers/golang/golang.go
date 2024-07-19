@@ -21,7 +21,7 @@ func New() interfaces.Compiler {
 }
 func (gc *golangCompiler) ShortName() string { return "golang" }
 func (gc *golangCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnvironment, files []interfaces.ProtoFile, outdir string, cr interfaces.CompileResult) error {
-	dir := ce.WorkDir() + "/" + ce.NewProtosDir()
+	dir := ce.NewProtosDir()
 	targetdir := outdir + "/" + gc.ShortName()
 	err := helpers.Mkdir(targetdir)
 	if err != nil {
@@ -29,7 +29,7 @@ func (gc *golangCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnv
 	}
 	import_dirs := []string{
 		dir,
-		ce.WorkDir() + "/" + ce.AllKnownProtosDir(),
+		ce.AllKnownProtosDir(),
 	}
 	/***************************** compile .proto -> .pb.go ******************************/
 	pcfname := cc.FindCompiler("protoc-gen-go")

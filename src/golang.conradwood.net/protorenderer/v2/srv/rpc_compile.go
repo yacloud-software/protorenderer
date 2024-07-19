@@ -40,6 +40,9 @@ func compile(srv compile_serve_req, save_on_success bool) error {
 	compile_lock.Lock()
 	defer compile_lock.Unlock()
 	ce := CompileEnv
+	fmt.Printf("Compile directories:\n")
+	fmt.Printf("  NewProtosDir   : %s\n", ce.NewProtosDir())
+	fmt.Printf("  CompilerOutDir : %s\n", ce.CompilerOutDir())
 
 	err := utils.RecreateSafely(ce.NewProtosDir())
 	if err != nil {

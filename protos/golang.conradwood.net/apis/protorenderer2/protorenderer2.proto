@@ -46,6 +46,8 @@ enum ProtoFieldPrimitive {
   DOUBLE=8;
   FLOAT=9;
   INT64=10;
+  SINT32=11;
+  SINT64=12;
 }
 
 message ProtoFieldInfo {

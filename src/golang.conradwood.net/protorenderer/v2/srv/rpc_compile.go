@@ -11,6 +11,7 @@ import (
 	"golang.conradwood.net/protorenderer/v2/interfaces"
 	"golang.conradwood.net/protorenderer/v2/meta_compiler"
 	"golang.conradwood.net/protorenderer/v2/store"
+	"golang.conradwood.net/protorenderer/v2/versioninfo"
 	"strings"
 	//	pb1 "golang.conradwood.net/apis/protorenderer"
 	pb "golang.conradwood.net/apis/protorenderer2"
@@ -80,6 +81,8 @@ func compile(srv compile_serve_req, save_on_success bool) error {
 	if len(pfs) == 0 {
 		return fmt.Errorf("meta compiler failed to compile any files")
 	}
+	versioninfo.New()
+
 	fmt.Printf("[compile] starting golang compiler with %d files\n", len(pfs))
 	golang_compiler := golang.New()
 	scr.SetCompiler(golang_compiler) // to mark errors as such

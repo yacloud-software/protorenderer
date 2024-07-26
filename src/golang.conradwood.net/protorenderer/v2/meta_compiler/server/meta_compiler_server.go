@@ -157,6 +157,10 @@ func protoc_type_to_protorenderer_type(typ *google_protobuf.FieldDescriptorProto
 		return pb.ProtoFieldPrimitive_STRING, nil
 	} else if t == google_protobuf.FieldDescriptorProto_TYPE_INT32 {
 		return pb.ProtoFieldPrimitive_INT32, nil
+	} else if t == google_protobuf.FieldDescriptorProto_TYPE_SINT32 {
+		return pb.ProtoFieldPrimitive_SINT32, nil
+	} else if t == google_protobuf.FieldDescriptorProto_TYPE_SINT64 {
+		return pb.ProtoFieldPrimitive_SINT64, nil
 	} else if t == google_protobuf.FieldDescriptorProto_TYPE_ENUM {
 		return pb.ProtoFieldPrimitive_ENUM, nil
 	} else if t == google_protobuf.FieldDescriptorProto_TYPE_UINT64 {

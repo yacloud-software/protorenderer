@@ -50,7 +50,8 @@ func InternalMetaSubmit(ctx context.Context, req *pb.ProtocRequest) (*common.Voi
 			return nil, err
 		}
 
-		y, err := utils.MarshalYaml(info)
+		// save the meta information to disk
+		y, err := utils.MarshalBytes(info)
 		if err != nil {
 			return nil, err
 		}

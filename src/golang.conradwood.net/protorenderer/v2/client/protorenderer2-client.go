@@ -42,7 +42,7 @@ func local_compile() {
 		fmt.Printf("Compiling file: %s\n", pf.GetFilename())
 	}
 	scr := &common.StandardCompileResult{}
-	sce := &StandardCompilerEnvironment{workdir: "/tmp/pr/v2", knownprotosdir: "proto_files/protos", newprotosdir: "new_protos/protos"}
+	sce := &StandardCompilerEnvironment{workdir: "/tmp/pr/v2", newprotosdir: "new_protos/protos"}
 
 	mkdir(sce.WorkDir())
 	mkdir(sce.WorkDir() + "/" + outdir)

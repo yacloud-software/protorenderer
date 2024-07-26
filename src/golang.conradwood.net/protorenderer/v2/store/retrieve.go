@@ -20,11 +20,12 @@ const (
 func Retrieve(ctx context.Context, dir string, version uint64) error {
 
 	berr := binaryversions.Download("protorenderer", dir, dir)
-	err := retrieve_from_object_store(ctx, dir, version)
-	if err != nil {
-		return err
-	}
-
+	/*
+		err := retrieve_from_object_store(ctx, dir, version)
+		if err != nil {
+			return err
+		}
+	*/
 	return berr
 
 }

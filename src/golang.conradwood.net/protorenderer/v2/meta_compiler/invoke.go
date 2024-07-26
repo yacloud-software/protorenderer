@@ -8,6 +8,7 @@ import (
 	"golang.conradwood.net/go-easyops/linux"
 	"golang.conradwood.net/go-easyops/utils"
 	cc "golang.conradwood.net/protorenderer/v2/compilers/common"
+	"golang.conradwood.net/protorenderer/v2/helpers"
 	"golang.conradwood.net/protorenderer/v2/interfaces"
 	"time"
 )
@@ -35,7 +36,8 @@ func (gc *MetaCompiler) Compile(ctx context.Context, port int, ce interfaces.Com
 	gc.ce = ce
 	gc.files = files
 	gc.cr = cr
-
+	helpers.Mkdir(ce.CompilerOutDir() + "/info")
+	helpers.Mkdir(ce.StoreDir() + "/info")
 	pcfname := cc.FindCompiler("protoc-gen-meta2")
 	fmt.Printf("Using compiler: \"%s\"\n", pcfname)
 	dir := ce.NewProtosDir()

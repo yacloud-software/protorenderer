@@ -41,6 +41,7 @@ require (
 	golang.org/x/sys v0.22.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	golang.yacloud.eu/apis/autodeployer2 v1.1.2945 // indirect
+	golang.yacloud.eu/apis/binaryversions v1.1.2950 // indirect
 	golang.yacloud.eu/apis/fscache v1.1.2945 // indirect
 	golang.yacloud.eu/apis/session v1.1.2945 // indirect
 	golang.yacloud.eu/apis/unixipc v1.1.2945 // indirect

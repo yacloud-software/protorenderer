@@ -8,6 +8,7 @@ import (
 	"golang.conradwood.net/go-easyops/client"
 	"golang.conradwood.net/protorenderer/cmdline"
 	"golang.conradwood.net/protorenderer/v2/helpers"
+	"golang.conradwood.net/protorenderer/v2/store/binaryversions"
 	"strings"
 	"sync"
 )
@@ -17,11 +18,15 @@ const (
 )
 
 func Retrieve(ctx context.Context, dir string, version uint64) error {
+
+	berr := binaryversions.Download("protorenderer", dir, dir)
 	err := retrieve_from_object_store(ctx, dir, version)
 	if err != nil {
 		return err
 	}
-	return nil
+
+	return berr
+
 }
 
 func retrieve_from_object_store(ctx context.Context, dir string, version uint64) error {

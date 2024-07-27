@@ -12,10 +12,14 @@ import (
 	"time"
 )
 
+const (
+	PROTORENDERER_STORE_DIR_NAME = "protorenderer-store"
+)
+
 func Upload(dname string) error {
 	c := pb.GetBinaryVersionsClient()
 	ctx := authremote.ContextWithTimeout(time.Duration(3) * time.Minute) // long upload
-	dir, err := c.MkOrGetDir(ctx, &pb.MkDirRequest{DirName: dname})
+	dir, err := c.MkOrGetDir(ctx, &pb.MkDirRequest{DirName: PROTORENDERER_STORE_DIR_NAME})
 	if err != nil {
 		return err
 	}

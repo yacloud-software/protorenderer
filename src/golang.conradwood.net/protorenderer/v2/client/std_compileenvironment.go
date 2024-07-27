@@ -1,8 +1,7 @@
 package main
 
 type StandardCompilerEnvironment struct {
-	newprotosdir string
-	workdir      string
+	workdir string
 }
 
 func (sce *StandardCompilerEnvironment) StoreDir() string {
@@ -13,7 +12,7 @@ func (sce *StandardCompilerEnvironment) AllKnownProtosDir() string {
 }
 
 func (sce *StandardCompilerEnvironment) NewProtosDir() string {
-	return sce.newprotosdir
+	return sce.workdir + "/new_protos"
 }
 func (sce *StandardCompilerEnvironment) WorkDir() string {
 	return sce.workdir

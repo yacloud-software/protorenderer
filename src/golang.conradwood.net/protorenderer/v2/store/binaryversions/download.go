@@ -10,23 +10,24 @@ import (
 	"path/filepath"
 )
 
-func Download(realm, dirname, destination string) error {
-	fmt.Printf("Downloading \"%s\" to \"%s\"\n", dirname, destination)
+func Download(realm, destination string) error {
+	fmt.Printf("Downloading \"%s\" to \"%s\"\n", PROTORENDERER_STORE_DIR_NAME, destination)
 	ctx := authremote.Context()
 	c := pb.GetBinaryVersionsClient()
-	dir, err := c.MkOrGetDir(ctx, &pb.MkDirRequest{DirName: dirname, Realm: &pb.Realm{Name: realm}})
+	dir, err := c.MkOrGetDir(ctx, &pb.MkDirRequest{DirName: PROTORENDERER_STORE_DIR_NAME, Realm: &pb.Realm{Name: realm}})
 	if err != nil {
-		fmt.Printf("failed to mkdir %s: %s\n", dirname, err)
+		fmt.Printf("failed to mkdir %s: %s\n", PROTORENDERER_STORE_DIR_NAME, err)
 		return err
 	}
 
-	dvl, err := c.DirVersions(ctx, &pb.DirVersionRequest{DirName: dirname})
+	dvl, err := c.DirVersions(ctx, &pb.DirVersionRequest{DirName: PROTORENDERER_STORE_DIR_NAME})
 	if err != nil {
 		return err
 	}
 	if len(dvl.Version) == 0 {
 		// empty
-		err = utils.RecreateSafely(dirname)
+		fmt.Printf("No previous version of \"%s\"\n", PROTORENDERER_STORE_DIR_NAME)
+		err = utils.RecreateSafely(destination)
 		return err
 	}
 

@@ -68,9 +68,8 @@ func compile(srv compile_serve_req, save_on_success bool) error {
 	}
 
 	fmt.Printf("[compile] starting meta compiler with %d files\n", len(pfs))
-	rpc_port := cmdline.GetRPCPort()
 	meta_compiler := meta_compiler.New()
-	err = meta_compiler.Compile(ctx, rpc_port, ce, pfs, od, scr)
+	err = meta_compiler.Compile(ctx, ce, pfs, od, scr)
 	if err != nil {
 		return err
 	}
@@ -83,11 +82,33 @@ func compile(srv compile_serve_req, save_on_success bool) error {
 	}
 	versioninfo.New()
 
+	// compile protos
+	err = compile_all_compilers(ctx, ce, scr, pfs)
+	if err != nil {
+		return err
+	}
+
+	// now send return
+	err = send(ce, srv, od)
+	if err != nil {
+		return err
+	}
+
+	err = send_failures(srv, scr, pfs)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// compile all files with all enabled compilers and place results in ce.CompilerOutDir()
+func compile_all_compilers(ctx context.Context, ce interfaces.CompilerEnvironment, scr *common.StandardCompileResult, pfs []interfaces.ProtoFile) error {
+	od := ce.CompilerOutDir()
 	fmt.Printf("[compile] starting golang compiler with %d files\n", len(pfs))
 	golang_compiler := golang.New()
 	scr.SetCompiler(golang_compiler) // to mark errors as such
 	fmt.Printf("[compile] starting golang compiler\n")
-	err = golang_compiler.Compile(ctx, ce, pfs, od, scr)
+	err := golang_compiler.Compile(ctx, ce, pfs, od, scr)
 	if err != nil {
 		return err
 	}
@@ -100,18 +121,9 @@ func compile(srv compile_serve_req, save_on_success bool) error {
 			return err
 		}
 	}
-
-	err = send(ce, srv, od)
-	if err != nil {
-		return err
-	}
-
-	err = send_failures(srv, scr, pfs)
-	if err != nil {
-		return err
-	}
 	return nil
 }
+
 func send_failures(srv compile_serve_req, scr *common.StandardCompileResult, pfs []interfaces.ProtoFile) error {
 	// build the compile result
 	result := make(map[string]*pb.FileResult) // filename->result (only failed files)

@@ -18,15 +18,24 @@ import (
 	"strings"
 )
 
+var (
+	edit_store = flag.Bool("edit_store", false, "if true, checkout store, wait for key and save it again (needs -token and -ge_disable_user_token)")
+)
+
 func main() {
 	flag.Parse()
-	if len(flag.Args()) != 0 {
-		for _, a := range flag.Args() {
-			submit_protos_with_dir(a)
+	if *edit_store {
+		utils.Bail("failed to edit store", EditStore())
+	} else {
+		if len(flag.Args()) != 0 {
+			for _, a := range flag.Args() {
+				submit_protos_with_dir(a)
+			}
+			os.Exit(0)
 		}
-		os.Exit(0)
+		submit_protos()
 	}
-	submit_protos()
+	fmt.Printf("Done\n")
 }
 func local_compile() {
 	outdir := "compile_result/protos"
@@ -42,7 +51,7 @@ func local_compile() {
 		fmt.Printf("Compiling file: %s\n", pf.GetFilename())
 	}
 	scr := &common.StandardCompileResult{}
-	sce := &StandardCompilerEnvironment{workdir: "/tmp/pr/v2", newprotosdir: "new_protos/protos"}
+	sce := &StandardCompilerEnvironment{workdir: "/tmp/pr/v2"}
 
 	mkdir(sce.WorkDir())
 	mkdir(sce.WorkDir() + "/" + outdir)

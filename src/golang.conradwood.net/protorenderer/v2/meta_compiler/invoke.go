@@ -7,6 +7,7 @@ import (
 	"golang.conradwood.net/go-easyops/cmdline"
 	"golang.conradwood.net/go-easyops/linux"
 	"golang.conradwood.net/go-easyops/utils"
+	pcmd "golang.conradwood.net/protorenderer/cmdline"
 	cc "golang.conradwood.net/protorenderer/v2/compilers/common"
 	"golang.conradwood.net/protorenderer/v2/helpers"
 	"golang.conradwood.net/protorenderer/v2/interfaces"
@@ -31,7 +32,8 @@ func New() *MetaCompiler {
 /*
 the meta compilers works slightly different than the others. the protoc plugin is a small RPC stub, which then calls protorenderer. this function invokes protoc and protoc-gen-meta2 plugin, which then will call this process via gRPC
 */
-func (gc *MetaCompiler) Compile(ctx context.Context, port int, ce interfaces.CompilerEnvironment, files []interfaces.ProtoFile, outdir string, cr interfaces.CompileResult) error {
+func (gc *MetaCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnvironment, files []interfaces.ProtoFile, outdir string, cr interfaces.CompileResult) error {
+	port := pcmd.GetRPCPort()
 	// keep the variables, we need them for the callback (protoc plugin calls this process via gRPC)
 	gc.ce = ce
 	gc.files = files

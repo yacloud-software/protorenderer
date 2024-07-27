@@ -10,14 +10,9 @@ import (
 	"golang.conradwood.net/go-easyops/server"
 	"golang.conradwood.net/go-easyops/utils"
 	"golang.conradwood.net/protorenderer/cmdline"
-	"golang.conradwood.net/protorenderer/v2/common"
 	"golang.conradwood.net/protorenderer/v2/compilers/java"
-	"golang.conradwood.net/protorenderer/v2/helpers"
-	"golang.conradwood.net/protorenderer/v2/interfaces"
-	"golang.conradwood.net/protorenderer/v2/meta_compiler"
 	ms "golang.conradwood.net/protorenderer/v2/meta_compiler/server"
 	"golang.conradwood.net/protorenderer/v2/store"
-	"golang.conradwood.net/protorenderer/v2/versioninfo"
 	"google.golang.org/grpc"
 	"os"
 	"time"
@@ -70,51 +65,9 @@ func Start() {
 }
 
 func server_started() {
-	err := build_version_info()
+	err := RecompileStore(CompileEnv)
 	utils.Bail("failed to build versioninfo", err)
 	server.SetHealth(cma.Health_READY)
-}
-
-// get all meta info for all protos we have in our store.
-// rebuild as/if/when necessary all meta information
-func build_version_info() error {
-	vi := versioninfo.New()
-	ce := CompileEnv
-	pfs, err := helpers.FindProtoFiles(ce.AllKnownProtosDir())
-	if err != nil {
-		return err
-	}
-	store_required := false
-	ctx := context.Background()
-	for _, pf := range pfs {
-		mi, err := meta_compiler.GetMetaInfo(ctx, ce, pf.GetFilename())
-		if err != nil {
-			fmt.Printf("Failed to get meta info for %s: %s - compile triggered\n", pf.GetFilename(), utils.ErrorString(err))
-			scr := &common.StandardCompileResult{}
-			rpc_port := cmdline.GetRPCPort()
-			mc := meta_compiler.New()
-			ctx = authremote.ContextWithTimeout(time.Duration(90) * time.Second)
-			meta_needed := []interfaces.ProtoFile{pf}
-			err = mc.Compile(ctx, rpc_port, ce, meta_needed, ce.CompilerOutDir()+"/meta", scr)
-			if err != nil {
-				fmt.Printf("Failed to compile meta info for %s: %s\n", pf.GetFilename(), utils.ErrorString(err))
-				continue
-			}
-			mi, err = meta_compiler.GetMetaInfo(ctx, ce, pf.GetFilename())
-			if err != nil {
-				fmt.Printf("Failed to get meta info for %s: %s - compile unsuccessful\n", pf.GetFilename(), utils.ErrorString(err))
-				continue
-			}
-			store_required = true
-		}
-		vi.GetOrAddFile(pf.GetFilename(), mi)
-	}
-	utils.Bail("failed to merge compiler env", helpers.MergeCompilerEnvironment(ce, true))
-	if store_required {
-		err = store.Store(ctx, CompileEnv.StoreDir()) // 0 == latest
-		utils.Bail("failed to store", err)
-	}
-	return nil
 }
 
 type protoRenderer struct {

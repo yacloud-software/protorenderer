@@ -1,3 +1,16 @@
+/*
+   VersionInfo contains information about a specific version.
+   A Version is a specific set of files, source (.proto) as well as artefacts.
+   For each version we keep the following information, in addition to the artefacts:
+   * which files compiled successfully with which compiler
+   * which files failed to compile with which compiler
+   * dependencies for each file (extracted by meta compiler)
+
+   A Versioninfo only covers files in store, not new_protos
+
+   A Version info may be serialised as part of binaryversions in the store.
+*/
+
 package versioninfo
 
 import (

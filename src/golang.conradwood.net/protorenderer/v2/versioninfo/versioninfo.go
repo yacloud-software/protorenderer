@@ -24,32 +24,87 @@ import (
 	//	"golang.conradwood.net/protorenderer/v2/common"
 	"golang.conradwood.net/protorenderer/v2/interfaces"
 	"sync"
+	"time"
 )
 
 type VersionInfo struct {
 	sync.Mutex
 	files          map[string]*VersionFile
 	compile_result *compileresult
+	isclean        bool // true if it identical to the version uploaded to binary versions (and has not changed since)
+	created        time.Time
 }
 
+func NewFromProto(vi *pb.VersionInfo) *VersionInfo {
+	vin := New()
+	vin.fromProto(vi)
+	vin.isclean = true
+	return vin
+}
 func New() *VersionInfo {
 	return &VersionInfo{
 		files:          make(map[string]*VersionFile),
 		compile_result: &compileresult{},
+		created:        time.Now(),
+	}
+}
+func (vi *VersionInfo) SetDirty() {
+	fmt.Printf("[versioninfo] marking as dirty\n")
+	vi.isclean = false
+}
+func (vi *VersionInfo) IsDirty() bool {
+	return !vi.isclean
+}
+func (vi *VersionInfo) ToProto() *pb.VersionInfo {
+	res := &pb.VersionInfo{
+		Created: uint32(vi.created.Unix()),
+	}
+	vi.Lock()
+	defer vi.Unlock()
+	for _, vf := range vi.files {
+		pbvf := vf.ToProto()
+		res.Files = append(res.Files, pbvf)
+	}
+	return res
+}
+func (vi *VersionInfo) fromProto(pvi *pb.VersionInfo) {
+	vi.Lock()
+	defer vi.Unlock()
+	vi.created = time.Unix(int64(pvi.Created), 0)
+	for _, pvf := range pvi.Files {
+		vf := &VersionFile{}
+		vf.fromProto(pvf)
+		vi.files[pvf.Filename] = vf
 	}
 }
 
 type VersionFile struct {
 	meta              *pb.ProtoFileInfo
 	filename          string
-	LastCompileResult *pb.FileResult // includes error messages for each compiler
+	lastCompileResult *pb.FileResult // includes error messages for each compiler (as []pb.CompileFailure)
 }
 
+func (vf *VersionFile) ToProto() *pb.VersionFile {
+	res := &pb.VersionFile{
+		Filename: vf.filename,
+		Result:   vf.lastCompileResult,
+	}
+	if res.Result == nil {
+		res.Result = &pb.FileResult{Filename: res.Filename}
+	}
+	return res
+}
+func (vf *VersionFile) fromProto(pvf *pb.VersionFile) {
+	vf.filename = pvf.Filename
+	vf.lastCompileResult = pvf.Result
+}
 func (vi *VersionInfo) GetOrAddFile(file string, mi *pb.ProtoFileInfo) *VersionFile {
 	vi.Lock()
 	vf, ok := vi.files[file]
 	if !ok {
-		vf = &VersionFile{filename: file, meta: mi}
+		vf = &VersionFile{filename: file, meta: mi,
+			lastCompileResult: &pb.FileResult{Filename: file},
+		}
 		vi.files[file] = vf
 		fmt.Printf("Adding \"%s\"\n", file)
 	}

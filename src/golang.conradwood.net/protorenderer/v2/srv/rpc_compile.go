@@ -104,21 +104,21 @@ func compile(srv compile_serve_req, save_on_success bool) error {
 // compile all files with all enabled compilers and place results in ce.CompilerOutDir()
 func compile_all_compilers(ctx context.Context, ce interfaces.CompilerEnvironment, scr interfaces.CompileResult, pfs []interfaces.ProtoFile) error {
 	od := ce.CompilerOutDir()
-	fmt.Printf("[compile] starting golang compiler with %d files\n", len(pfs))
-	golang_compiler := golang.New()
-	fmt.Printf("[compile] starting golang compiler\n")
-	err := golang_compiler.Compile(ctx, ce, pfs, od, scr)
-	if err != nil {
-		return err
+	compilers := []interfaces.Compiler{golang.New()}
+	if cmdline.GetCompilerEnabledJava() {
+		compilers = append(compilers, java.New())
 	}
 
-	if cmdline.GetCompilerEnabledJava() {
-		java_compiler := java.New()
-		err = java_compiler.Compile(ctx, ce, pfs, od, scr)
+	for _, comp := range compilers {
+		fmt.Printf("[compile] starting \"%s\" compiler with %d files\n", comp.ShortName(), len(pfs))
+		fmt.Printf("[compile] starting golang compiler\n")
+		err := comp.Compile(ctx, ce, pfs, od, scr)
 		if err != nil {
 			return err
 		}
+
 	}
+
 	return nil
 }
 

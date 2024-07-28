@@ -1,8 +1,8 @@
 package binaryversions
 
 import (
+	"context"
 	"fmt"
-	"golang.conradwood.net/go-easyops/authremote"
 	"golang.conradwood.net/go-easyops/utils"
 	pb "golang.yacloud.eu/apis/binaryversions"
 	"io"
@@ -10,9 +10,9 @@ import (
 	"path/filepath"
 )
 
-func Download(realm, destination string) error {
+// version 0 == default
+func Download(ctx context.Context, realm, destination string, version uint64) error {
 	fmt.Printf("[store] Downloading \"%s\" to \"%s\"\n", PROTORENDERER_STORE_DIR_NAME, destination)
-	ctx := authremote.Context()
 	c := pb.GetBinaryVersionsClient()
 	dir, err := c.MkOrGetDir(ctx, &pb.MkDirRequest{DirName: PROTORENDERER_STORE_DIR_NAME, Realm: &pb.Realm{Name: realm}})
 	if err != nil {
@@ -31,7 +31,7 @@ func Download(realm, destination string) error {
 		return err
 	}
 
-	ov := &pb.OpenDirVersionRequest{Directory: dir}
+	ov := &pb.OpenDirVersionRequest{Directory: dir, Version: version}
 	v, err := c.OpenDirVersion(ctx, ov)
 	if err != nil {
 		return err
@@ -67,7 +67,9 @@ func Download(realm, destination string) error {
 		fname := fmt.Sprintf("%s/%s", destination, fdata.FileName)
 		dname := filepath.Dir(fname)
 		os.MkdirAll(dname, 0777)
-		fmt.Printf("[store] Writing to disk (%s)\n", fdata.FileName)
+		if *debug {
+			fmt.Printf("[store] Writing to disk (%s)\n", fdata.FileName)
+		}
 		fd, err := os.Create(fname)
 		if err != nil {
 			return err

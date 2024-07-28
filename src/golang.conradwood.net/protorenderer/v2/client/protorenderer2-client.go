@@ -19,6 +19,7 @@ import (
 )
 
 var (
+	version    = flag.Uint64("version", 0, "work on this version, 0 (default) is latest")
 	edit_store = flag.Bool("edit_store", false, "if true, checkout store, wait for key and save it again (needs -token and -ge_disable_user_token)")
 )
 

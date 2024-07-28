@@ -9,7 +9,12 @@ import (
 	"os"
 	"path/filepath"
 	//	"strings"
+	"flag"
 	"time"
+)
+
+var (
+	debug = flag.Bool("debug_binaryversions", false, "debug download/upload")
 )
 
 const (
@@ -23,7 +28,7 @@ func Upload(dname string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Dir: #%d (%s) in Realm #%d \"%s\"\n", dir.ID, dir.DirName, dir.Realm.ID, dir.Realm.Name)
+	fmt.Printf("Uploading to Dir: #%d (%s) in Realm #%d \"%s\"\n", dir.ID, dir.DirName, dir.Realm.ID, dir.Realm.Name)
 
 	u := &Uploader{root: dname}
 	//	ctx := authremote.Context()
@@ -41,15 +46,16 @@ func Upload(dname string) error {
 	if err != nil {
 		return err
 	}
-	_, err = u.srv.CloseAndRecv()
+	dv, err := u.srv.CloseAndRecv()
 	if err != nil {
 		fmt.Printf("Closerecv failed\n")
 		return err
 	}
+	fmt.Printf("Created version %d (%s)\n", dv.ID, dv.UniqueReference)
 	return nil
 }
 func (u *Uploader) Walker(root string, rel string) error {
-	fmt.Printf("[store] uploading file: %s,%s\n", root, rel)
+	//	fmt.Printf("[store] uploading file: %s,%s\n", root, rel)
 	err := u.uploadFile(root, rel)
 	return err
 }
@@ -79,7 +85,7 @@ type Uploader struct {
 
 func (u *Uploader) uploadFile(npath string, filename string) error {
 	fname := npath + "/" + filename
-	fmt.Printf("[store] uploading \"%s\"\n", fname)
+	//	fmt.Printf("[store] uploading \"%s\"\n", fname)
 	buf := make([]byte, 8192)
 	fd, err := os.Open(fmt.Sprintf("%s", fname))
 	if err != nil {
@@ -112,6 +118,8 @@ func (u *Uploader) uploadFile(npath string, filename string) error {
 			return err
 		}
 	}
-	fmt.Printf("[store] uploaded \"%s/%s\"\n", npath, filename)
+	if *debug {
+		fmt.Printf("[store] uploaded \"%s/%s\"\n", npath, filename)
+	}
 	return nil
 }

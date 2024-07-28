@@ -38,7 +38,7 @@ func Start() {
 	utils.RecreateSafely(CompileEnv.CompilerOutDir())
 	mkdir(CompileEnv.NewProtosDir())
 
-	ctx := authremote.ContextWithTimeout(time.Duration(90) * time.Second)
+	ctx := authremote.ContextWithTimeout(time.Duration(180) * time.Second)
 	err = store.Retrieve(ctx, CompileEnv.StoreDir(), 0) // 0 == latest
 	utils.Bail("failed to retrieve latest version", err)
 

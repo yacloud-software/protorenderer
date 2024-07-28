@@ -9,6 +9,11 @@
    A Versioninfo only covers files in store, not new_protos
 
    A Version info may be serialised as part of binaryversions in the store.
+
+   It serves two main purposes:
+
+   1. Provide data for an algorithm to determine which existing .proto files need to be recompiled upon submission of a new .proto (its dependencies)
+   2. Provide data for a renderer to indicate which files failed and why
 */
 
 package versioninfo

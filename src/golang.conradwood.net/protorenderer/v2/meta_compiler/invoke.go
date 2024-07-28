@@ -74,11 +74,14 @@ func (gc *MetaCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnvir
 		if err != nil {
 			fmt.Printf("[metacompiler] protoc output: %s\n", out)
 			fmt.Printf("[metacompiler] Failed to compile: %s\n", err)
-			cr.AddFailed(pf, err, []byte(out))
+			cr.AddFailed(gc, pf, err, []byte(out))
 			continue
 		}
 	}
 	return nil
+}
+func (mc *MetaCompiler) ShortName() string {
+	return "meta"
 }
 
 func (mc *MetaCompiler) FileByName(name string) (interfaces.ProtoFile, error) {

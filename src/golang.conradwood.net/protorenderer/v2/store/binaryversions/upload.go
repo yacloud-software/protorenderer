@@ -49,7 +49,7 @@ func Upload(dname string) error {
 	return nil
 }
 func (u *Uploader) Walker(root string, rel string) error {
-	fmt.Printf("File: %s,%s\n", root, rel)
+	fmt.Printf("[store] uploading file: %s,%s\n", root, rel)
 	err := u.uploadFile(root, rel)
 	return err
 }
@@ -79,7 +79,7 @@ type Uploader struct {
 
 func (u *Uploader) uploadFile(npath string, filename string) error {
 	fname := npath + "/" + filename
-	fmt.Printf("uploading \"%s\"\n", fname)
+	fmt.Printf("[store] uploading \"%s\"\n", fname)
 	buf := make([]byte, 8192)
 	fd, err := os.Open(fmt.Sprintf("%s", fname))
 	if err != nil {
@@ -112,6 +112,6 @@ func (u *Uploader) uploadFile(npath string, filename string) error {
 			return err
 		}
 	}
-	fmt.Printf("uploaded \"%s/%s\"\n", npath, filename)
+	fmt.Printf("[store] uploaded \"%s/%s\"\n", npath, filename)
 	return nil
 }

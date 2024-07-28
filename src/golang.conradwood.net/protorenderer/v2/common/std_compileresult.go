@@ -7,8 +7,7 @@ import (
 )
 
 type StandardCompileResult struct {
-	cur_compiler interfaces.Compiler
-	errors       []*standard_compile_failure
+	errors []*standard_compile_failure
 }
 
 type standard_compile_failure struct {
@@ -18,13 +17,10 @@ type standard_compile_failure struct {
 	out  []byte
 }
 
-func (scr *StandardCompileResult) SetCompiler(c interfaces.Compiler) {
-	scr.cur_compiler = c
-}
-func (scr *StandardCompileResult) AddFailed(pf interfaces.ProtoFile, err error, output []byte) {
+func (scr *StandardCompileResult) AddFailed(c interfaces.Compiler, pf interfaces.ProtoFile, err error, output []byte) {
 	scr.errors = append(scr.errors, &standard_compile_failure{
 		out:  output,
-		comp: scr.cur_compiler,
+		comp: c,
 		pf:   pf,
 		err:  err,
 	})

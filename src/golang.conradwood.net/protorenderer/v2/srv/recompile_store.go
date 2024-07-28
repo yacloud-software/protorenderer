@@ -40,6 +40,7 @@ func RecompileStore(ce interfaces.CompilerEnvironment) error {
 	if must_save {
 		err = store.Store(ctx, CompileEnv.StoreDir()) // 0 == latest
 		utils.Bail("failed to store", err)
+		fmt.Printf("Saved store\n")
 	}
 
 	return nil

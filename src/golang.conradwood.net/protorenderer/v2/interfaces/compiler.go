@@ -30,6 +30,6 @@ type Compiler interface {
 }
 
 type CompileResult interface {
-	AddFailed(pf ProtoFile, err error, output []byte)
+	AddFailed(c Compiler, pf ProtoFile, err error, output []byte)
 	GetFailures(ProtoFile) []*pb.CompileFailure
 }

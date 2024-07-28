@@ -21,26 +21,28 @@ package versioninfo
 import (
 	"fmt"
 	pb "golang.conradwood.net/apis/protorenderer2"
-	"golang.conradwood.net/protorenderer/v2/common"
+	//	"golang.conradwood.net/protorenderer/v2/common"
+	"golang.conradwood.net/protorenderer/v2/interfaces"
 	"sync"
 )
 
 type VersionInfo struct {
 	sync.Mutex
 	files          map[string]*VersionFile
-	compile_result *common.StandardCompileResult
+	compile_result *compileresult
 }
 
 func New() *VersionInfo {
 	return &VersionInfo{
 		files:          make(map[string]*VersionFile),
-		compile_result: &common.StandardCompileResult{},
+		compile_result: &compileresult{},
 	}
 }
 
 type VersionFile struct {
-	meta     *pb.ProtoFileInfo
-	filename string
+	meta              *pb.ProtoFileInfo
+	filename          string
+	LastCompileResult *pb.FileResult // includes error messages for each compiler
 }
 
 func (vi *VersionInfo) GetOrAddFile(file string, mi *pb.ProtoFileInfo) *VersionFile {
@@ -66,6 +68,6 @@ func (vi *VersionInfo) GetVersionFile(file string) *VersionFile {
 	return vf
 }
 
-func (vi *VersionInfo) CompileResult() *common.StandardCompileResult {
+func (vi *VersionInfo) CompileResult() interfaces.CompileResult {
 	return vi.compile_result
 }

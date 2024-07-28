@@ -11,7 +11,7 @@ import (
 )
 
 func Download(realm, destination string) error {
-	fmt.Printf("Downloading \"%s\" to \"%s\"\n", PROTORENDERER_STORE_DIR_NAME, destination)
+	fmt.Printf("[store] Downloading \"%s\" to \"%s\"\n", PROTORENDERER_STORE_DIR_NAME, destination)
 	ctx := authremote.Context()
 	c := pb.GetBinaryVersionsClient()
 	dir, err := c.MkOrGetDir(ctx, &pb.MkDirRequest{DirName: PROTORENDERER_STORE_DIR_NAME, Realm: &pb.Realm{Name: realm}})
@@ -67,7 +67,7 @@ func Download(realm, destination string) error {
 		fname := fmt.Sprintf("%s/%s", destination, fdata.FileName)
 		dname := filepath.Dir(fname)
 		os.MkdirAll(dname, 0777)
-		fmt.Printf("Writing (%s)\n", fdata.FileName)
+		fmt.Printf("[store] Writing to disk (%s)\n", fdata.FileName)
 		fd, err := os.Create(fname)
 		if err != nil {
 			return err

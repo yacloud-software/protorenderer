@@ -86,7 +86,7 @@ func retrieve_worker(ch chan *retrieve_request, wg *sync.WaitGroup) {
 		}
 		line := rr.line
 		dir := rr.dir
-		fmt.Printf("Reading \"%s\"\n", line)
+		fmt.Printf("[store] Reading \"%s\"\n", line)
 		ctx := authremote.Context()
 		filecontent, err := client.Get(ctx, cmdline.GetPrefixObjectStore()+line)
 		if err != nil {
@@ -94,7 +94,7 @@ func retrieve_worker(ch chan *retrieve_request, wg *sync.WaitGroup) {
 			continue
 		}
 		filename := dir + "/" + line
-		fmt.Printf("Writing \"%s\"\n", filename)
+		fmt.Printf("[store] Writing \"%s\"\n", filename)
 		err = helpers.WriteFileWithDir(filename, filecontent)
 		if err != nil {
 			continue

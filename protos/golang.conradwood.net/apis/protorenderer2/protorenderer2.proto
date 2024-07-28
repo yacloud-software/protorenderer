@@ -8,7 +8,7 @@ import "golang.conradwood.net/apis/common/common.proto";
 import "golang.conradwood.net/apis/h2gproxy/h2gproxy.proto";
 import "google/protobuf/descriptor.proto";
 
-// information parsed out of a .proto file, enriched with references to database IDs
+// information parsed out of a .proto file, enriched with references to database IDs, created by meta
 message ProtoFileInfo {
   DBProtoFile ProtoFile=1; // which file this was parsed from
   repeated DBProtoFile Imports=2; // which files this file imports
@@ -108,7 +108,14 @@ message CompileFailure {
   string ErrorMessage=2;
   bytes Output=3; // compiler output
 }
-
+message VersionInfo {
+  repeated VersionFile Files=1;
+  uint32 Created=2;
+}
+message VersionFile {
+  string Filename=1;
+  FileResult Result=2;
+}
 service ProtoRenderer2 {
   // protoc-gen-meta2 submits files to protorenderer server for analysis. not intented to be used by clients other than protoc-gen-meta2
   rpc InternalMetaSubmit(ProtocRequest) returns (common.Void);

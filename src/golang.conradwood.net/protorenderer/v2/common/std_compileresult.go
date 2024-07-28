@@ -17,6 +17,9 @@ type standard_compile_failure struct {
 	out  []byte
 }
 
+func (cr *StandardCompileResult) AddSuccess(c interfaces.Compiler, pf interfaces.ProtoFile) {
+}
+
 func (scr *StandardCompileResult) AddFailed(c interfaces.Compiler, pf interfaces.ProtoFile, err error, output []byte) {
 	scr.errors = append(scr.errors, &standard_compile_failure{
 		out:  output,
@@ -28,7 +31,7 @@ func (scr *StandardCompileResult) AddFailed(c interfaces.Compiler, pf interfaces
 func (scr *StandardCompileResult) GetFailures(pf interfaces.ProtoFile) []*pb.CompileFailure {
 	var res []*pb.CompileFailure
 	for _, cf := range scr.errors {
-		if cf.pf.GetFilename() == pf.GetFilename() {
+		if cf.pf.GetFilename() == pf.GetFilename() && cf.err != nil {
 			res = append(res, cf.getCompileFailure())
 		}
 	}

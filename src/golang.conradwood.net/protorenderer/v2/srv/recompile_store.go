@@ -62,7 +62,7 @@ func RecompileStore(ce interfaces.CompilerEnvironment) error {
 	if err != nil {
 		return err
 	}
-
+	fmt.Printf("[recompilestore] Merging result to store\n")
 	ce.(*StandardCompilerEnvironment).new_protos_same_as_store = false
 	err = helpers.MergeCompilerEnvironment(ce, true)
 	if err != nil {
@@ -84,7 +84,7 @@ func RecompileStore(ce interfaces.CompilerEnvironment) error {
 		}
 		fmt.Printf("Saved store\n")
 	}
-
+	fmt.Printf("[recompilestore] Completed\n")
 	return nil
 }
 

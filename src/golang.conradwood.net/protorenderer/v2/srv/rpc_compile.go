@@ -111,12 +111,16 @@ func compile_all_compilers(ctx context.Context, ce interfaces.CompilerEnvironmen
 
 	for _, comp := range compilers {
 		fmt.Printf("[compile] starting \"%s\" compiler with %d files\n", comp.ShortName(), len(pfs))
-		fmt.Printf("[compile] starting golang compiler\n")
 		err := comp.Compile(ctx, ce, pfs, od, scr)
 		if err != nil {
 			return err
 		}
-
+		for _, pf := range pfs {
+			if len(scr.GetFailures(pf)) == 0 {
+				scr.AddSuccess(comp, pf)
+			}
+		}
+		fmt.Printf("[compile] compiler \"%s\" completed\n", comp.ShortName())
 	}
 
 	return nil

@@ -42,20 +42,27 @@ func NewFromProto(vi *pb.VersionInfo) *VersionInfo {
 	return vin
 }
 func New() *VersionInfo {
-	return &VersionInfo{
+	vi := &VersionInfo{
 		files:          make(map[string]*VersionFile),
 		compile_result: &compileresult{},
 		created:        time.Now(),
 	}
+	vi.compile_result.vi = vi
+	return vi
 }
 func (vi *VersionInfo) SetDirty() {
+	if vi.isclean == false {
+		return
+	}
 	fmt.Printf("[versioninfo] marking as dirty\n")
 	vi.isclean = false
 }
 func (vi *VersionInfo) IsDirty() bool {
+	vi.update_version_files_from_compile_result()
 	return !vi.isclean
 }
 func (vi *VersionInfo) ToProto() *pb.VersionInfo {
+	vi.update_version_files_from_compile_result()
 	res := &pb.VersionInfo{
 		Created: uint32(vi.created.Unix()),
 	}
@@ -89,14 +96,14 @@ func (vf *VersionFile) ToProto() *pb.VersionFile {
 		Filename: vf.filename,
 		Result:   vf.lastCompileResult,
 	}
-	if res.Result == nil {
-		res.Result = &pb.FileResult{Filename: res.Filename}
-	}
 	return res
 }
 func (vf *VersionFile) fromProto(pvf *pb.VersionFile) {
 	vf.filename = pvf.Filename
 	vf.lastCompileResult = pvf.Result
+	if vf.lastCompileResult == nil {
+		vf.lastCompileResult = &pb.FileResult{Filename: vf.filename}
+	}
 }
 func (vi *VersionInfo) GetOrAddFile(file string, mi *pb.ProtoFileInfo) *VersionFile {
 	vi.Lock()
@@ -107,7 +114,9 @@ func (vi *VersionInfo) GetOrAddFile(file string, mi *pb.ProtoFileInfo) *VersionF
 		}
 		vi.files[file] = vf
 		fmt.Printf("Adding \"%s\"\n", file)
+		vi.SetDirty()
 	}
+
 	vi.Unlock()
 	return vf
 }
@@ -125,4 +134,91 @@ func (vi *VersionInfo) GetVersionFile(file string) *VersionFile {
 
 func (vi *VersionInfo) CompileResult() interfaces.CompileResult {
 	return vi.compile_result
+}
+
+// this reads the compile result and updates the versionfiles. if necessary sets the dirty flag
+func (vi *VersionInfo) update_version_files_from_compile_result() {
+	vi.Lock()
+	defer vi.Unlock()
+
+	cr := vi.compile_result
+
+	// Step #1 - see if we have proto files we did not have yet, add them if so
+	for _, crf := range cr.results {
+		file := crf.pf.GetFilename()
+		_, f := vi.files[file]
+		if f {
+			continue
+		}
+		vf := &VersionFile{filename: file,
+			lastCompileResult: &pb.FileResult{Filename: file},
+		}
+		vi.files[file] = vf
+		fmt.Printf("Adding \"%s\"\n", file)
+		vi.SetDirty()
+	}
+
+	// Step #2 - replace results with results from compile result
+	for _, vf := range vi.files {
+		change := vi.merge_result(vf, cr.getresultsforfile(vf.filename))
+		if change != 0 {
+			fmt.Printf("File compile result changed: %s\n", vf.filename)
+			vi.SetDirty()
+		}
+	}
+}
+
+// return what sort of change it is
+func (vi *VersionInfo) merge_result(vf *VersionFile, crfa []*compileresult_file) int {
+	res := 0
+	for _, crf := range crfa { // crf is the latest compile result for a given compiler
+		new_cf := crf.toCompileFailureProto()      // into pb.CompileFailure
+		cur_cf := vf.result_for_compiler(crf.comp) // get the pb.CompileFailure for what is currently recorded in versioninfo
+
+		// Check #1: recorded status is NIL, either add failure or, if new compile was ok, do nothing
+		if cur_cf == nil {
+			if crf.fail {
+				vf.lastCompileResult.Failures = append(vf.lastCompileResult.Failures, new_cf)
+				res = 1
+			}
+			continue
+		}
+
+		// at this point recordede status is a fail
+		// Check #2: recorded status is fail, new status is OK
+		if !crf.fail {
+			vf.removeCompilerFailure(crf.comp)
+			res = 1
+			continue
+		}
+	}
+	return res
+}
+
+// might return nil
+func (vf *VersionFile) result_for_compiler(c interfaces.Compiler) *pb.CompileFailure {
+	if vf.lastCompileResult == nil {
+		return nil
+	}
+	for _, cf := range vf.lastCompileResult.Failures {
+		if cf.CompilerName == c.ShortName() {
+			return cf
+		}
+	}
+	return nil
+}
+
+// remove the entry for this compiler
+func (vf *VersionFile) removeCompilerFailure(c interfaces.Compiler) {
+	var n []*pb.CompileFailure
+	if vf.lastCompileResult == nil {
+		return
+	}
+	for _, f := range vf.lastCompileResult.Failures {
+		if f.CompilerName == c.ShortName() {
+			continue
+		}
+		n = append(n, f)
+	}
+	vf.lastCompileResult.Failures = n
 }

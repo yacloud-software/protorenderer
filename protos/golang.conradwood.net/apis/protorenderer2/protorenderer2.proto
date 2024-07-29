@@ -9,6 +9,7 @@ import "golang.conradwood.net/apis/h2gproxy/h2gproxy.proto";
 import "google/protobuf/descriptor.proto";
 
 // information parsed out of a .proto file, enriched with references to database IDs, created by meta
+// saved under info/... .info
 message ProtoFileInfo {
   DBProtoFile ProtoFile=1; // which file this was parsed from
   repeated DBProtoFile Imports=2; // which files this file imports
@@ -89,13 +90,17 @@ message ProtocRequest {
   string MetaCompilerID = 1;
   repeated google.protobuf.FileDescriptorProto ProtoFiles = 2;
 }
-
+message SubmitOption {
+  bool Save=1;
+  bool IncludeMeta=2;
+}
 message FileTransfer {
   string Filename=1;
   bytes Data=2;
   bool TransferComplete=3;
   uint32 RepositoryID=4; // if we are submitting a filename, then this is the repository ID where the file comes from (if any)
   FileResult Result=5; // send by server as response to a compile
+  SubmitOption SubmitOption=6; 
 }
 
 message FileResult {
@@ -107,7 +112,7 @@ message CompileResult {
   string CompilerName=1;
   bool Success=2;
   string ErrorMessage=3;
-  bytes Output=4; // compiler output
+  string Output=4; // compiler output
 }
 message VersionInfo {
   repeated VersionFile Files=1;
@@ -117,11 +122,23 @@ message VersionFile {
   string Filename=1;
   FileResult FileResult=2;
 }
+message ReverseDependenciesRequest {
+  uint32 MaxDepth=1; // 0==maximum, 1==immediate dependencies only
+  string Filename=2; // filename for which we want dependencies
+  
+}
+message ReverseDependenciesResponse {
+  repeated string Filenames=1; // the name of files which directly or indirectly  depend on the file
+}
+
 service ProtoRenderer2 {
   // protoc-gen-meta2 submits files to protorenderer server for analysis. not intented to be used by clients other than protoc-gen-meta2
   rpc InternalMetaSubmit(ProtocRequest) returns (common.Void);
-  // compile
-  rpc Compile(stream FileTransfer) returns (stream FileTransfer);
-  // add or update a ".proto" file in the renderers database
-  rpc UpdateProto(protorenderer.AddProtoRequest) returns (protorenderer.AddProtoResponse);
+  // compile on-the-fly, if option "Save" is true, and the compilation suceeds, it will be stored in protorenderes database
+  rpc Submit(stream FileTransfer) returns (stream FileTransfer);
+  // get the current versioninfo (that, what files are available and what their compile results are)
+  rpc GetVersionInfo(common.Void) returns (VersionInfo);
+  // get reverse depdencies, that is which files depend on the file submitted.
+  rpc GetReverseDependencies(ReverseDependenciesRequest) returns (ReverseDependenciesResponse);
+
 }

@@ -3,7 +3,7 @@ package srv
 import (
 	"context"
 	"fmt"
-	pb "golang.conradwood.net/apis/protorenderer2"
+	//	pb "golang.conradwood.net/apis/protorenderer2"
 	"golang.conradwood.net/go-easyops/authremote"
 	"golang.conradwood.net/go-easyops/utils"
 	"golang.conradwood.net/protorenderer/v2/helpers"
@@ -22,26 +22,9 @@ func RecompileStore(ce interfaces.CompilerEnvironment) error {
 			ce.(*StandardCompilerEnvironment).new_protos_same_as_store = false
 		}()
 	*/
-
-	fmt.Printf("[recompilestore] Start\n")
-	vi := versioninfo.New()
-
 	fname := ce.StoreDir() + "/versioninfo.pbbin"
-	b, err := utils.ReadFile(fname)
-	if err != nil {
-		// cannot load, then make sure we write later
-		vi.SetDirty() // must be stored later
-		fmt.Printf("[recompilestore] Failed to load versioninfo: %s\n", err)
-	} else {
-		pbvi := &pb.VersionInfo{}
-		err = utils.UnmarshalBytes(b, pbvi)
-		if err != nil {
-			return err
-		}
-		vi = versioninfo.NewFromProto(pbvi)
-		fmt.Printf("[recompilestore] Loaded versioninfo from %s\n", fname)
-	}
-
+	fmt.Printf("[recompilestore] Start\n")
+	vi := currentVersionInfo
 	fmt.Printf("[recompilestore] building missing meta (.info) files\n")
 
 	must_save, err := build_version_info(ce, vi)
@@ -83,7 +66,7 @@ func RecompileStore(ce interfaces.CompilerEnvironment) error {
 	}
 	if vi.IsDirty() {
 		fmt.Printf("[recompilestore] Storing\n")
-		b, err = utils.MarshalBytes(vi.ToProto())
+		b, err := utils.MarshalBytes(vi.ToProto())
 		if err != nil {
 			return err
 		}

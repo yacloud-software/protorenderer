@@ -27,7 +27,7 @@ func FindProtoFiles(dir string) ([]interfaces.ProtoFile, error) {
 		if err != nil {
 			return nil, fmt.Errorf("File %s read error: %s", fname, err)
 		}
-		spf := &StandardProtoFile{filename: fn, content: b}
+		spf := &StandardProtoFile{Filename: fn, content: b}
 		res = append(res, spf)
 	}
 	return res, nil

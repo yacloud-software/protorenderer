@@ -38,8 +38,20 @@ func InternalMetaSubmit(ctx context.Context, req *pb.ProtocRequest) (*common.Voi
 	if err != nil {
 		return nil, err
 	}
+	fmt.Printf("[metacompiler] request with %d protofiles\n", len(req.ProtoFiles))
+	files_written := 0
 	for _, pf := range req.ProtoFiles {
-		fmt.Printf("[metacompiler] Protofile request received: %s\n", *pf.Name)
+		was_submitted := icm.mc.WasFilenameSubmitted(*pf.Name)
+		was_processed := icm.mc.WasProcessed(*pf.Name)
+		fmt.Printf("[metacompiler] Protofile request received: %s (submitted=%v,processed=%v)\n", *pf.Name, was_submitted, was_processed)
+		if !was_submitted {
+			// don't re-run the meta-compiler for a dependency
+			continue
+		}
+		if was_processed {
+			// don't re-run meta for any one file twice
+			continue
+		}
 		info, err := icm.handle_protofile(ctx, pf)
 		if err != nil {
 			return nil, err
@@ -64,7 +76,10 @@ func InternalMetaSubmit(ctx context.Context, req *pb.ProtocRequest) (*common.Voi
 		if err != nil {
 			return nil, err
 		}
+		icm.mc.AddProcessed(*pf.Name)
+		files_written++
 	}
+	fmt.Printf("[metacompiler] files written: %d\n", files_written)
 
 	return &common.Void{}, nil
 }
@@ -122,6 +137,9 @@ func (smc *ServerMetaCompiler) GetMessageDescriptorByFQDN(fqdn string) *MessageD
 }
 func (icm *ServerMetaCompiler) save_request_to_db(ctx context.Context, req *pb.ProtocRequest) error {
 	for _, pf := range req.ProtoFiles {
+		if icm.mc.WasProcessed(*pf.Name) {
+			continue
+		}
 		// save the protofile
 		proto_file, err := store.GetOrCreateFile(ctx, *pf.Name, 0)
 		if err != nil {

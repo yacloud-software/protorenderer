@@ -10,7 +10,7 @@ import (
 	"golang.conradwood.net/protorenderer/v2/helpers"
 	"golang.conradwood.net/protorenderer/v2/interfaces"
 	"golang.conradwood.net/protorenderer/v2/meta_compiler"
-	"golang.conradwood.net/protorenderer/v2/store"
+	//	"golang.conradwood.net/protorenderer/v2/store"
 	"golang.conradwood.net/protorenderer/v2/versioninfo"
 	"strings"
 	//	pb1 "golang.conradwood.net/apis/protorenderer"
@@ -18,9 +18,11 @@ import (
 	//	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/go-easyops/utils"
 	"io"
+	"sync"
 )
 
 var (
+	compile_lock sync.Mutex
 	IGNORE_FILES = []string{".goeasyops-dir"}
 )
 
@@ -30,7 +32,7 @@ type compile_serve_req interface {
 	Send(*pb.FileTransfer) error
 }
 
-func (pr *protoRenderer) Compile(srv pb.ProtoRenderer2_CompileServer) error {
+func (pr *protoRenderer) Submit(srv pb.ProtoRenderer2_SubmitServer) error {
 	err := compile(srv, false)
 	if err != nil {
 		fmt.Printf("Error compiling: %s\n", err)
@@ -55,9 +57,14 @@ func compile(srv compile_serve_req, save_on_success bool) error {
 		return err
 	}
 
-	err = receive(ce, srv, save_on_success)
+	opt, err := receive(ce, srv)
 	if err != nil {
 		return err
+	}
+	if opt != nil {
+		fmt.Printf("[compile] Options: %#v\n", opt)
+	} else {
+		opt = &pb.SubmitOption{}
 	}
 	scr := &common.StandardCompileResult{}
 	ctx := srv.Context()
@@ -67,13 +74,14 @@ func compile(srv compile_serve_req, save_on_success bool) error {
 		return err
 	}
 
-	fmt.Printf("[compile] starting meta compiler with %d files\n", len(pfs))
-	meta_compiler := meta_compiler.New()
-	err = meta_compiler.Compile(ctx, ce, pfs, od, scr)
-	if err != nil {
-		return err
+	if opt.Save || opt.IncludeMeta {
+		fmt.Printf("[compile] starting meta compiler with %d files\n", len(pfs))
+		meta_compiler := meta_compiler.New()
+		err = meta_compiler.Compile(ctx, ce, pfs, od, scr)
+		if err != nil {
+			return err
+		}
 	}
-
 	// after compiling with meta, we remove any proto files that failed compilation by meta
 	// it is not worth compiling them with any other compiles
 	pfs = remove_broken(pfs, scr)
@@ -98,6 +106,23 @@ func compile(srv compile_serve_req, save_on_success bool) error {
 	if err != nil {
 		return err
 	}
+	for _, pf := range pfs {
+		if helpers.ContainsFailure(scr.GetResults(pf)) {
+			return fmt.Errorf("at least one error occured")
+		}
+	}
+
+	if opt.Save {
+		err = recompile_dependencies_with_err(ctx, ce, pfs)
+		if err != nil {
+			fmt.Printf("Recompiling dependencies: %s\n", err)
+			return fmt.Errorf("failed to recompile dependencies: %s\n", err)
+		}
+		fmt.Printf("[compile] saving new protos to store...\n")
+		//helpers.MergeCompilerEnvironment(ce, true)
+	}
+	fmt.Printf("[compile] completed\n")
+
 	return nil
 }
 
@@ -174,53 +199,60 @@ func send(ce interfaces.CompilerEnvironment, srv compile_serve_req, dir string) 
 		if err != nil {
 			return err
 		}
-		fmt.Printf("Submitting %s (%d bytes)\n", relfil, len(ct))
+		fmt.Printf("Sending %s (%d bytes)\n", relfil, len(ct))
 		err = bs.SendBytes("foo", relfil, ct)
 		return err
 	},
 	)
 	return err
 }
-func receive(ce interfaces.CompilerEnvironment, srv compile_serve_req, do_persist_filename bool) error {
-	ctx := srv.Context()
+func receive(ce interfaces.CompilerEnvironment, srv compile_serve_req) (*pb.SubmitOption, error) {
+	//	ctx := srv.Context()
 	bsr := utils.NewByteStreamReceiver(ce.NewProtosDir())
+	var opt *pb.SubmitOption
 	for {
 		rcv, err := srv.Recv()
 		if rcv != nil {
 			if rcv.TransferComplete {
 				break
 			}
+			if rcv.SubmitOption != nil {
+				opt = rcv.SubmitOption
+				continue
+			}
 			if rcv.Filename != "" {
 				if strings.HasPrefix(rcv.Filename, "protos/protos/") {
-					return fmt.Errorf("Invalid filename starting with two proto dirs (%s)", rcv.Filename)
+					return nil, fmt.Errorf("Invalid filename starting with two proto dirs (%s)", rcv.Filename)
 				}
 				if strings.HasPrefix(rcv.Filename, "protos/") {
-					return fmt.Errorf("Invalid filename starting with 'protos' (%s)", rcv.Filename)
+					return nil, fmt.Errorf("Invalid filename starting with 'protos' (%s)", rcv.Filename)
 				}
-				if do_persist_filename {
-					_, err := store.GetOrCreateFile(ctx, rcv.Filename, uint64(rcv.RepositoryID))
-					if err != nil {
-						return err
+				/*
+					if do_persist_filename {
+						_, err := store.GetOrCreateFile(ctx, rcv.Filename, uint64(rcv.RepositoryID))
+						if err != nil {
+							return nil, err
+						}
 					}
-				}
+				*/
 			}
 			err = bsr.NewData(rcv)
 			if err != nil {
-				return err
+				return nil, err
 			}
 		}
 		if err != nil {
 			if err == io.EOF {
 				break
 			}
-			return err
+			return nil, err
 		}
 	}
 	err := bsr.Close()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return opt, nil
 }
 
 func remove_broken(pfs []interfaces.ProtoFile, scr interfaces.CompileResult) []interfaces.ProtoFile {
@@ -232,4 +264,44 @@ func remove_broken(pfs []interfaces.ProtoFile, scr interfaces.CompileResult) []i
 		res = append(res, pf)
 	}
 	return res
+}
+
+// recompile all the dependencies on the given file(s)...
+func recompile_dependencies_with_err(ctx context.Context, ce interfaces.CompilerEnvironment, pfs []interfaces.ProtoFile) error {
+	err := MetaCache.readAllIfNecessary()
+	if err != nil {
+		return err
+	}
+	scr := &common.StandardCompileResult{}
+	for _, pf := range pfs {
+		err := recompile_dependencies(ctx, ce, scr, pf)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// recompile any files that directly or indirectly import "pf"
+func recompile_dependencies(ctx context.Context, ce interfaces.CompilerEnvironment, scr interfaces.CompileResult, pf interfaces.ProtoFile) error {
+	pfs, err := MetaCache.AllWithDependencyOn(pf.GetFilename(), 0)
+	if err != nil {
+		return err
+	}
+	var cpfs []interfaces.ProtoFile
+	for _, npf := range pfs {
+		spf := &helpers.StandardProtoFile{Filename: npf.ProtoFile.Name}
+		cpfs = append(cpfs, spf)
+	}
+
+	err = compile_all_compilers(ctx, ce, scr, cpfs)
+	if err != nil {
+		return err
+	}
+	for _, cpf := range cpfs {
+		if helpers.ContainsFailure(scr.GetResults(cpf)) {
+			return fmt.Errorf("failed to compile dependency \"%s\"\n", pf.GetFilename())
+		}
+	}
+	return nil
 }

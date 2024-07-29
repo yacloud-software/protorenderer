@@ -179,18 +179,19 @@ func (vi *VersionInfo) merge_result(vf *VersionFile, crfa []*compileresult_file)
 	for _, crf := range crfa { // crf is the latest compile result for a given compiler
 		new_cf := crf.toCompileResultProto()       // into pb.CompileResult
 		cur_cf := vf.result_for_compiler(crf.comp) // get the pb.CompileResult for what is currently recorded in versioninfo
-		fmt.Printf("[versioninfo] merging recorded (%v) and new (%v)\n", cur_cf, new_cf)
+		//		fmt.Printf("[versioninfo] merging recorded (%v) and new (%v)\n", cur_cf, new_cf)
 		// Check #1: recorded status is NIL, add latest result
 		if cur_cf == nil {
+			fmt.Printf("[versioninfo] adding new result (%v)\n", new_cf)
 			vf.lastCompileResult.CompileResults = append(vf.lastCompileResult.CompileResults, new_cf)
 			res = 1
 			continue
 		}
 
-		// at this point recorded status is a fail
-		// Check #2: recorded status is fail, new status is OK
-		if !crf.fail {
-			vf.removeCompilerFailure(crf.comp)
+		// Check #2: check if new result is different from recorded
+		if cur_cf.Success != new_cf.Success {
+			fmt.Printf("[versioninfo] merging new status of recorded (%v) and new (%v)\n", cur_cf.Success, new_cf.Success)
+			vf.replaceCompilerResult(new_cf)
 			res = 1
 			continue
 		}
@@ -212,17 +213,18 @@ func (vf *VersionFile) result_for_compiler(c interfaces.Compiler) *pb.CompileRes
 }
 
 // remove the entry for this compiler
-func (vf *VersionFile) removeCompilerFailure(c interfaces.Compiler) {
+func (vf *VersionFile) replaceCompilerResult(cr *pb.CompileResult) {
 	var n []*pb.CompileResult
 	if vf.lastCompileResult == nil {
-		return
+		panic("lastcompile result is nil and should not be")
 	}
 	for _, f := range vf.lastCompileResult.CompileResults {
-		if f.CompilerName == c.ShortName() {
+		if f.CompilerName == cr.CompilerName {
 			continue
 		}
 		n = append(n, f)
 	}
+	n = append(n, cr)
 	vf.lastCompileResult.CompileResults = n
 }
 

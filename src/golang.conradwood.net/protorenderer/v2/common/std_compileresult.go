@@ -41,7 +41,7 @@ func (scf *standard_compile_failure) getCompileFailure() *pb.CompileResult {
 	res := &pb.CompileResult{
 		CompilerName: "no compiler",
 		ErrorMessage: fmt.Sprintf("%s", scf.err),
-		Output:       scf.out,
+		Output:       string(scf.out),
 	}
 	if scf.comp != nil {
 		res.CompilerName = scf.comp.ShortName()

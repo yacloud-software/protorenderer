@@ -2,7 +2,7 @@ package helpers
 
 type StandardProtoFile struct {
 	id       uint64
-	filename string
+	Filename string
 	content  []byte
 }
 
@@ -10,7 +10,7 @@ func (spf *StandardProtoFile) GetID() uint64 {
 	return spf.id
 }
 func (spf *StandardProtoFile) GetFilename() string {
-	return spf.filename
+	return spf.Filename
 }
 func (spf *StandardProtoFile) Content() []byte {
 	return spf.content

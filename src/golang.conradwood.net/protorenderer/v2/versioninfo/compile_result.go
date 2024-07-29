@@ -62,7 +62,7 @@ func (cr *compileresult) getresultsforfile(filename string) []*compileresult_fil
 func (cr *compileresult_file) toCompileResultProto() *pb.CompileResult {
 	cf := &pb.CompileResult{
 		CompilerName: cr.comp.ShortName(),
-		Output:       cr.output,
+		Output:       string(cr.output),
 		Success:      !cr.fail,
 	}
 	if cr.err != nil {

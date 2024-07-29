@@ -2,6 +2,7 @@ package srv
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	cma "golang.conradwood.net/apis/common"
 	pb "golang.conradwood.net/apis/protorenderer2"
@@ -11,15 +12,19 @@ import (
 	"golang.conradwood.net/go-easyops/utils"
 	"golang.conradwood.net/protorenderer/cmdline"
 	"golang.conradwood.net/protorenderer/v2/compilers/java"
+	"golang.conradwood.net/protorenderer/v2/interfaces"
 	ms "golang.conradwood.net/protorenderer/v2/meta_compiler/server"
 	"golang.conradwood.net/protorenderer/v2/store"
+	"golang.conradwood.net/protorenderer/v2/versioninfo"
 	"google.golang.org/grpc"
 	"os"
 	"time"
 )
 
 var (
-	CompileEnv *StandardCompilerEnvironment
+	recompile_on_startup = flag.Bool("recompile_on_startup", false, "if true recompile store on startup")
+	CompileEnv           *StandardCompilerEnvironment
+	currentVersionInfo   *versioninfo.VersionInfo
 )
 
 func Start() {
@@ -65,8 +70,15 @@ func Start() {
 }
 
 func server_started() {
-	err := RecompileStore(CompileEnv)
-	utils.Bail("failed to build versioninfo", err)
+	reloadVersionInfo(CompileEnv)
+	b := *recompile_on_startup
+	if !utils.FileExists(CompileEnv.StoreDir() + "/versioninfo.pbbin") {
+		b = true
+	}
+	if b {
+		err := RecompileStore(CompileEnv)
+		utils.Bail("failed to build versioninfo", err)
+	}
 	server.SetHealth(cma.Health_READY)
 }
 
@@ -81,4 +93,31 @@ func mkdir(dir string) {
 	err := linux.CreateIfNotExists(dir, 0777)
 	utils.Bail("failed to create dir", err)
 	fmt.Printf("Created dir %s\n", dir)
+}
+
+func (pr *protoRenderer) GetVersionInfo(ctx context.Context, req *cma.Void) (*pb.VersionInfo, error) {
+	return currentVersionInfo.ToProto(), nil
+}
+
+func reloadVersionInfo(ce interfaces.CompilerEnvironment) {
+	vi := versioninfo.New()
+
+	fname := ce.StoreDir() + "/versioninfo.pbbin"
+	b, err := utils.ReadFile(fname)
+	if err != nil {
+		// cannot load, then make sure we write later
+		vi.SetDirty() // must be stored later
+		fmt.Printf("[recompilestore] Failed to load versioninfo: %s\n", err)
+	} else {
+		pbvi := &pb.VersionInfo{}
+		err = utils.UnmarshalBytes(b, pbvi)
+		if err != nil {
+			fmt.Printf("failed to marshal versioninfo: %s!!!\n", err)
+			panic("failed to marshal versioninfo")
+		}
+		vi = versioninfo.NewFromProto(pbvi)
+		fmt.Printf("[recompilestore] Loaded versioninfo from %s\n", fname)
+	}
+	currentVersionInfo = vi
+
 }

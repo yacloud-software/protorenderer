@@ -11,20 +11,23 @@ import (
 	cc "golang.conradwood.net/protorenderer/v2/compilers/common"
 	"golang.conradwood.net/protorenderer/v2/helpers"
 	"golang.conradwood.net/protorenderer/v2/interfaces"
+	"sync"
 	"time"
 )
 
 // TODO - instead of using gRPC use go-easyops IPC
 
 type MetaCompiler struct {
-	id    string
-	ce    interfaces.CompilerEnvironment
-	files []interfaces.ProtoFile
-	cr    interfaces.CompileResult
+	sync.Mutex
+	id        string
+	ce        interfaces.CompilerEnvironment
+	files     []interfaces.ProtoFile
+	cr        interfaces.CompileResult
+	processed map[string]bool
 }
 
 func New() *MetaCompiler {
-	mc := &MetaCompiler{id: utils.RandomString(64)}
+	mc := &MetaCompiler{processed: make(map[string]bool), id: utils.RandomString(64)}
 	meta_compilers.Put(mc.id, mc)
 	return mc
 }
@@ -92,6 +95,28 @@ func (mc *MetaCompiler) FileByName(name string) (interfaces.ProtoFile, error) {
 	}
 	return nil, fmt.Errorf("File \"%s\" not part of the meta compiler", name)
 }
+
+func (mc *MetaCompiler) WasFilenameSubmitted(filename string) bool {
+	for _, pf := range mc.files {
+		if pf.GetFilename() == filename {
+			return true
+		}
+	}
+	return false
+}
+
 func (mc *MetaCompiler) CompilerEnvironment() interfaces.CompilerEnvironment {
 	return mc.ce
+}
+
+func (mc *MetaCompiler) AddProcessed(filename string) {
+	mc.Lock()
+	defer mc.Unlock()
+	mc.processed[filename] = true
+}
+func (mc *MetaCompiler) WasProcessed(filename string) bool {
+	mc.Lock()
+	defer mc.Unlock()
+	_, b := mc.processed[filename]
+	return b
 }

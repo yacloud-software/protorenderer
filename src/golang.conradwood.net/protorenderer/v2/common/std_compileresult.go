@@ -28,8 +28,8 @@ func (scr *StandardCompileResult) AddFailed(c interfaces.Compiler, pf interfaces
 		err:  err,
 	})
 }
-func (scr *StandardCompileResult) GetFailures(pf interfaces.ProtoFile) []*pb.CompileFailure {
-	var res []*pb.CompileFailure
+func (scr *StandardCompileResult) GetResults(pf interfaces.ProtoFile) []*pb.CompileResult {
+	var res []*pb.CompileResult
 	for _, cf := range scr.errors {
 		if cf.pf.GetFilename() == pf.GetFilename() && cf.err != nil {
 			res = append(res, cf.getCompileFailure())
@@ -37,8 +37,8 @@ func (scr *StandardCompileResult) GetFailures(pf interfaces.ProtoFile) []*pb.Com
 	}
 	return res
 }
-func (scf *standard_compile_failure) getCompileFailure() *pb.CompileFailure {
-	res := &pb.CompileFailure{
+func (scf *standard_compile_failure) getCompileFailure() *pb.CompileResult {
+	res := &pb.CompileResult{
 		CompilerName: "no compiler",
 		ErrorMessage: fmt.Sprintf("%s", scf.err),
 		Output:       scf.out,

@@ -154,12 +154,10 @@ func submit_protos_with_dir(proto_dir string) {
 			}
 			if recv.Result != nil {
 				fmt.Printf("Failure for %s: %v\n", recv.Result.Filename, recv.Result.Filename)
-				if recv.Result.Failed {
-					for _, result := range recv.Result.Failures {
-						fmt.Printf("    compiler: \"%s\"\n", result.CompilerName)
-						fmt.Printf("    error: %s\n", result.ErrorMessage)
-						fmt.Printf("    output: %s\n", result.Output)
-					}
+				for _, result := range recv.Result.CompileResults {
+					fmt.Printf("    compiler: \"%s\" (success=%v)\n", result.CompilerName, result.Success)
+					fmt.Printf("    error: %s\n", result.ErrorMessage)
+					fmt.Printf("    output: %s\n", result.Output)
 				}
 			}
 		}

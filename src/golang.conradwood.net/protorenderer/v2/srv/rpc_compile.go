@@ -116,7 +116,7 @@ func compile_all_compilers(ctx context.Context, ce interfaces.CompilerEnvironmen
 			return err
 		}
 		for _, pf := range pfs {
-			if len(scr.GetFailures(pf)) == 0 {
+			if !helpers.ContainsFailure(scr.GetResults(pf)) {
 				scr.AddSuccess(comp, pf)
 			}
 		}
@@ -130,16 +130,16 @@ func send_failures(srv compile_serve_req, scr *common.StandardCompileResult, pfs
 	// build the compile result
 	result := make(map[string]*pb.FileResult) // filename->result (only failed files)
 	for _, pf := range pfs {                  // send result for every file that failed
-		if len(scr.GetFailures(pf)) == 0 {
+		if !helpers.ContainsFailure(scr.GetResults(pf)) {
 			continue
 		}
 
 		fr := result[pf.GetFilename()]
 		if fr == nil {
-			fr = &pb.FileResult{Filename: pf.GetFilename(), Failed: true}
+			fr = &pb.FileResult{Filename: pf.GetFilename()}
 			result[pf.GetFilename()] = fr
 		}
-		fr.Failures = append(fr.Failures, scr.GetFailures(pf)...)
+		fr.CompileResults = append(fr.CompileResults, scr.GetResults(pf)...)
 	}
 	fmt.Printf("%d failures\n", len(result))
 	for _, failure := range result {
@@ -226,7 +226,7 @@ func receive(ce interfaces.CompilerEnvironment, srv compile_serve_req, do_persis
 func remove_broken(pfs []interfaces.ProtoFile, scr interfaces.CompileResult) []interfaces.ProtoFile {
 	var res []interfaces.ProtoFile
 	for _, pf := range pfs {
-		if len(scr.GetFailures(pf)) != 0 {
+		if helpers.ContainsFailure(scr.GetResults(pf)) {
 			continue
 		}
 		res = append(res, pf)

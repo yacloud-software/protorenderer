@@ -36,13 +36,13 @@ func (cr *compileresult) AddFailed(c interfaces.Compiler, pf interfaces.ProtoFil
 		output: output,
 	})
 }
-func (cr *compileresult) GetFailures(pf interfaces.ProtoFile) []*pb.CompileFailure {
+func (cr *compileresult) GetResults(pf interfaces.ProtoFile) []*pb.CompileResult {
 	cr.Lock()
 	defer cr.Unlock()
-	var res []*pb.CompileFailure
+	var res []*pb.CompileResult
 	for _, crf := range cr.results {
-		if (crf.pf.GetFilename() == pf.GetFilename()) && crf.fail {
-			cf := crf.toCompileFailureProto()
+		if crf.pf.GetFilename() == pf.GetFilename() {
+			cf := crf.toCompileResultProto()
 			res = append(res, cf)
 		}
 	}
@@ -59,10 +59,11 @@ func (cr *compileresult) getresultsforfile(filename string) []*compileresult_fil
 	}
 	return res
 }
-func (cr *compileresult_file) toCompileFailureProto() *pb.CompileFailure {
-	cf := &pb.CompileFailure{
+func (cr *compileresult_file) toCompileResultProto() *pb.CompileResult {
+	cf := &pb.CompileResult{
 		CompilerName: cr.comp.ShortName(),
 		Output:       cr.output,
+		Success:      !cr.fail,
 	}
 	if cr.err != nil {
 		cf.ErrorMessage = fmt.Sprintf("%s", cr.err)

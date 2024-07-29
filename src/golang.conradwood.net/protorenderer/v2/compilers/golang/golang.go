@@ -33,7 +33,7 @@ func (gc *golangCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnv
 	}
 	/***************************** compile .proto -> .pb.go ******************************/
 	pcfname := cc.FindCompiler("protoc-gen-go")
-	fmt.Printf("Using: %s\n", pcfname)
+	Debugf("Using: %s\n", pcfname)
 	cmd := []string{
 		cmdline.GetYACloudDir() + "/ctools/dev/go/current/protoc/protoc",
 		fmt.Sprintf("--plugin=protoc-gen-go=%s", pcfname),
@@ -60,7 +60,7 @@ func (gc *golangCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnv
 	if CREATE_GO_MIGRATED_TO_META_COMPILER {
 		/***************************** compile create.go ******************************/
 		pcfname = cc.FindCompiler("protoc-gen-cnw")
-		fmt.Printf("Using: %s\n", pcfname)
+		Debugf("Using: %s\n", pcfname)
 		cmd = []string{
 			cmdline.GetYACloudDir() + "/ctools/dev/go/current/protoc/protoc",
 			fmt.Sprintf("--plugin=protoc-gen-cnw=%s", pcfname),
@@ -85,6 +85,6 @@ func (gc *golangCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnv
 			}
 		}
 	}
-	fmt.Printf("Compiling go completed\n")
+	Debugf("Compiling go completed\n")
 	return nil
 }

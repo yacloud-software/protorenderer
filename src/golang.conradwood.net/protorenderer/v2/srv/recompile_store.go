@@ -31,7 +31,7 @@ func RecompileStore(ce interfaces.CompilerEnvironment) error {
 	if err != nil {
 		// cannot load, then make sure we write later
 		vi.SetDirty() // must be stored later
-		fmt.Printf("Failed to load versioninfo: %s\n", err)
+		fmt.Printf("[recompilestore] Failed to load versioninfo: %s\n", err)
 	} else {
 		pbvi := &pb.VersionInfo{}
 		err = utils.UnmarshalBytes(b, pbvi)
@@ -39,6 +39,7 @@ func RecompileStore(ce interfaces.CompilerEnvironment) error {
 			return err
 		}
 		vi = versioninfo.NewFromProto(pbvi)
+		fmt.Printf("[recompilestore] Loaded versioninfo from %s\n", fname)
 	}
 
 	fmt.Printf("[recompilestore] building missing meta (.info) files\n")
@@ -55,6 +56,18 @@ func RecompileStore(ce interfaces.CompilerEnvironment) error {
 	if err != nil {
 		return err
 	}
+
+	fmt.Printf("[recompilestore] total of %d protofiles found in store\n", len(pfs))
+	// remove protofiles which are marked as "successful"
+	var n_pfs []interfaces.ProtoFile
+	for _, pf := range pfs {
+		//		vf := vi.GetVersionFile(pf.GetFilename())
+		//		if vf == nil { // TODO: || vf.HasAtLeastOneCompilerFailed() {
+		n_pfs = append(n_pfs, pf)
+		//		}
+	}
+	pfs = n_pfs
+	fmt.Printf("[recompilestore] recompiling %d protofiles\n", len(pfs))
 
 	fmt.Printf("[recompilestore] recompiling %d .proto files from %s\n", len(pfs), ce.AllKnownProtosDir())
 	ctx := authremote.ContextWithTimeout(time.Duration(15) * time.Minute)
@@ -83,6 +96,14 @@ func RecompileStore(ce interfaces.CompilerEnvironment) error {
 			return err
 		}
 		fmt.Printf("Saved store\n")
+	}
+	vpb := vi.ToProto()
+	fname = "/tmp/versioninfo.yaml"
+	err = helpers.WriteYaml(fname, vpb)
+	if err != nil {
+		fmt.Printf("[recompilestore] write failure: %s", err)
+	} else {
+		fmt.Printf("[recompilestore] versioninfo written as debug output to %s\n", fname)
 	}
 	fmt.Printf("[recompilestore] Completed\n")
 	return nil

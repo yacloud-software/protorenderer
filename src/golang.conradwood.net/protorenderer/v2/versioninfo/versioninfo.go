@@ -23,6 +23,7 @@ import (
 	pb "golang.conradwood.net/apis/protorenderer2"
 	//	"golang.conradwood.net/protorenderer/v2/common"
 	"golang.conradwood.net/protorenderer/v2/interfaces"
+	"sort"
 	"sync"
 	"time"
 )
@@ -72,6 +73,9 @@ func (vi *VersionInfo) ToProto() *pb.VersionInfo {
 		pbvf := vf.ToProto()
 		res.Files = append(res.Files, pbvf)
 	}
+	sort.Slice(res.Files, func(i, j int) bool {
+		return res.Files[i].Filename < res.Files[j].Filename
+	})
 	return res
 }
 func (vi *VersionInfo) fromProto(pvi *pb.VersionInfo) {
@@ -93,14 +97,14 @@ type VersionFile struct {
 
 func (vf *VersionFile) ToProto() *pb.VersionFile {
 	res := &pb.VersionFile{
-		Filename: vf.filename,
-		Result:   vf.lastCompileResult,
+		Filename:   vf.filename,
+		FileResult: vf.lastCompileResult,
 	}
 	return res
 }
 func (vf *VersionFile) fromProto(pvf *pb.VersionFile) {
 	vf.filename = pvf.Filename
-	vf.lastCompileResult = pvf.Result
+	vf.lastCompileResult = pvf.FileResult
 	if vf.lastCompileResult == nil {
 		vf.lastCompileResult = &pb.FileResult{Filename: vf.filename}
 	}
@@ -140,8 +144,9 @@ func (vi *VersionInfo) CompileResult() interfaces.CompileResult {
 func (vi *VersionInfo) update_version_files_from_compile_result() {
 	vi.Lock()
 	defer vi.Unlock()
-
 	cr := vi.compile_result
+
+	fmt.Printf("[versioninfo] updating version files from compile_result (%d files,%d results))\n", len(vi.files), len(cr.results))
 
 	// Step #1 - see if we have proto files we did not have yet, add them if so
 	for _, crf := range cr.results {
@@ -172,19 +177,17 @@ func (vi *VersionInfo) update_version_files_from_compile_result() {
 func (vi *VersionInfo) merge_result(vf *VersionFile, crfa []*compileresult_file) int {
 	res := 0
 	for _, crf := range crfa { // crf is the latest compile result for a given compiler
-		new_cf := crf.toCompileFailureProto()      // into pb.CompileFailure
-		cur_cf := vf.result_for_compiler(crf.comp) // get the pb.CompileFailure for what is currently recorded in versioninfo
-
-		// Check #1: recorded status is NIL, either add failure or, if new compile was ok, do nothing
+		new_cf := crf.toCompileResultProto()       // into pb.CompileResult
+		cur_cf := vf.result_for_compiler(crf.comp) // get the pb.CompileResult for what is currently recorded in versioninfo
+		fmt.Printf("[versioninfo] merging recorded (%v) and new (%v)\n", cur_cf, new_cf)
+		// Check #1: recorded status is NIL, add latest result
 		if cur_cf == nil {
-			if crf.fail {
-				vf.lastCompileResult.Failures = append(vf.lastCompileResult.Failures, new_cf)
-				res = 1
-			}
+			vf.lastCompileResult.CompileResults = append(vf.lastCompileResult.CompileResults, new_cf)
+			res = 1
 			continue
 		}
 
-		// at this point recordede status is a fail
+		// at this point recorded status is a fail
 		// Check #2: recorded status is fail, new status is OK
 		if !crf.fail {
 			vf.removeCompilerFailure(crf.comp)
@@ -196,11 +199,11 @@ func (vi *VersionInfo) merge_result(vf *VersionFile, crfa []*compileresult_file)
 }
 
 // might return nil
-func (vf *VersionFile) result_for_compiler(c interfaces.Compiler) *pb.CompileFailure {
+func (vf *VersionFile) result_for_compiler(c interfaces.Compiler) *pb.CompileResult {
 	if vf.lastCompileResult == nil {
 		return nil
 	}
-	for _, cf := range vf.lastCompileResult.Failures {
+	for _, cf := range vf.lastCompileResult.CompileResults {
 		if cf.CompilerName == c.ShortName() {
 			return cf
 		}
@@ -210,15 +213,20 @@ func (vf *VersionFile) result_for_compiler(c interfaces.Compiler) *pb.CompileFai
 
 // remove the entry for this compiler
 func (vf *VersionFile) removeCompilerFailure(c interfaces.Compiler) {
-	var n []*pb.CompileFailure
+	var n []*pb.CompileResult
 	if vf.lastCompileResult == nil {
 		return
 	}
-	for _, f := range vf.lastCompileResult.Failures {
+	for _, f := range vf.lastCompileResult.CompileResults {
 		if f.CompilerName == c.ShortName() {
 			continue
 		}
 		n = append(n, f)
 	}
-	vf.lastCompileResult.Failures = n
+	vf.lastCompileResult.CompileResults = n
+}
+
+// true if compiler compiled successfully
+func (vf *VersionFile) ResultForCompiler(compname string) *pb.CompileResult {
+	return nil
 }

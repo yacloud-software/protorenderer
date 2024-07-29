@@ -99,14 +99,15 @@ message FileTransfer {
 }
 
 message FileResult {
-  bool Failed=1; // if at least one compiler failed, this is set
+  //  bool Failed=1; // if at least one compiler failed, this is set
   string Filename=2;
-  repeated CompileFailure Failures=3;
+  repeated CompileResult CompileResults=3;
 }
-message CompileFailure {
+message CompileResult {
   string CompilerName=1;
-  string ErrorMessage=2;
-  bytes Output=3; // compiler output
+  bool Success=2;
+  string ErrorMessage=3;
+  bytes Output=4; // compiler output
 }
 message VersionInfo {
   repeated VersionFile Files=1;
@@ -114,7 +115,7 @@ message VersionInfo {
 }
 message VersionFile {
   string Filename=1;
-  FileResult Result=2;
+  FileResult FileResult=2;
 }
 service ProtoRenderer2 {
   // protoc-gen-meta2 submits files to protorenderer server for analysis. not intented to be used by clients other than protoc-gen-meta2

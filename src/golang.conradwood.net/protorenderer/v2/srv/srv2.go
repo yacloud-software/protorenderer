@@ -29,7 +29,7 @@ var (
 
 func Start() {
 	var err error
-
+	fmt.Printf("Starting protorenderer-server (v2)\n")
 	server.SetHealth(cma.Health_STARTING)
 
 	CompileEnv = &StandardCompilerEnvironment{workdir: "/tmp/pr/v2"}
@@ -77,7 +77,7 @@ func server_started() {
 	}
 	if b {
 		err := RecompileStore(CompileEnv)
-		utils.Bail("failed to build versioninfo", err)
+		utils.Bail("failed to recompile store", err)
 	}
 	server.SetHealth(cma.Health_READY)
 }
@@ -97,6 +97,23 @@ func mkdir(dir string) {
 
 func (pr *protoRenderer) GetVersionInfo(ctx context.Context, req *cma.Void) (*pb.VersionInfo, error) {
 	return currentVersionInfo.ToProto(), nil
+}
+
+// store the versioninfo.pbbin
+func saveVersionInfo() error {
+	vi := currentVersionInfo
+	ce := CompileEnv
+	fname := ce.StoreDir() + "/versioninfo.pbbin"
+	fmt.Printf("[recompilestore] Storing\n")
+	b, err := utils.MarshalBytes(vi.ToProto())
+	if err != nil {
+		return err
+	}
+	err = utils.WriteFile(fname, b)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func reloadVersionInfo(ce interfaces.CompilerEnvironment) {

@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/go-easyops/linux"
 	"golang.conradwood.net/go-easyops/utils"
 	"golang.conradwood.net/protorenderer/v2/interfaces"
@@ -10,12 +11,12 @@ import (
 func MergeCompilerEnvironment(ce interfaces.CompilerEnvironment, remove bool) error {
 	err := linux.CopyDir(ce.CompilerOutDir(), ce.StoreDir())
 	if err != nil {
-		return err
+		return errors.Errorf("failed to merge environments: %w", err)
 	}
 	if remove {
 		err = utils.RecreateSafely(ce.CompilerOutDir())
 		if err != nil {
-			return err
+			return errors.Errorf("failed to merge environments: %w", err)
 		}
 	}
 	return nil

@@ -6,7 +6,6 @@ import (
 	pb "golang.conradwood.net/apis/protorenderer2"
 	"golang.conradwood.net/go-easyops/authremote"
 	"golang.conradwood.net/go-easyops/utils"
-	"golang.conradwood.net/protorenderer/v2/helpers"
 	"golang.conradwood.net/protorenderer/v2/store"
 	"os"
 	"time"
@@ -30,7 +29,7 @@ func EditStore() error {
 			fmt.Printf("failed to unmarshal versioninfo: %s\n", err)
 		}
 	}
-	err = helpers.WriteYaml("/tmp/versioninfo.yaml", vi)
+	err = utils.WriteYaml("/tmp/versioninfo.yaml", vi)
 	if err != nil {
 		fmt.Printf("failed to write versioninfo: %s\n", err)
 	} else {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"golang.conradwood.net/go-easyops/cmdline"
+	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/go-easyops/linux"
 	cc "golang.conradwood.net/protorenderer/v2/compilers/common"
 	"golang.conradwood.net/protorenderer/v2/helpers"
@@ -25,7 +26,7 @@ func (gc *golangCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnv
 	targetdir := outdir + "/" + gc.ShortName()
 	err := helpers.Mkdir(targetdir)
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 	import_dirs := []string{
 		dir,
@@ -49,7 +50,7 @@ func (gc *golangCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnv
 		l := linux.New()
 		out, err := l.SafelyExecuteWithDir(cmdandfile, dir, nil)
 		if err != nil {
-			err = fmt.Errorf("failed .proto->pb.go (%w)", err)
+			err = errors.Errorf("failed .proto->pb.go (%w)", err)
 			cr.AddFailed(gc, pf, err, []byte(out))
 			fmt.Printf("Compiler working dir: %s\n", dir)
 			fmt.Printf("%s Failed to compile: %s: %s\n", pcfname, f, err)
@@ -78,7 +79,7 @@ func (gc *golangCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnv
 			l := linux.New()
 			out, err := l.SafelyExecuteWithDir(cmdandfile, dir, nil)
 			if err != nil {
-				err = fmt.Errorf("failed .proto->create.go (%w)", err)
+				err = errors.Errorf("failed .proto->create.go (%w)", err)
 				cr.AddFailed(gc, pf, err, []byte(out))
 				fmt.Printf("%s Failed to compile: %s: %s\n", pcfname, f, err)
 				fmt.Printf("Compiler output: %s\n", out)

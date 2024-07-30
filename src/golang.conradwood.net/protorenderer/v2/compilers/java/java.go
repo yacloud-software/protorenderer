@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	gocmdline "golang.conradwood.net/go-easyops/cmdline"
+	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/go-easyops/linux"
 	"golang.conradwood.net/go-easyops/utils"
 	"golang.conradwood.net/protorenderer/cmdline"
@@ -49,7 +50,7 @@ func (gc *JavaCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnvir
 	targetdir := outdir + "/" + gc.ShortName()
 	err := helpers.Mkdir(targetdir)
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 	import_dirs := []string{
 		dir,
@@ -67,7 +68,7 @@ func (gc *JavaCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnvir
 	javaSrc := targetdir + "/src"
 	err = helpers.Mkdir(javaSrc)
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 
 	compiler_exe := gocmdline.GetYACloudDir() + "/ctools/dev/go/current/protoc/protoc"
@@ -76,22 +77,22 @@ func (gc *JavaCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnvir
 		// find the non-std compiler from this repo:
 		compiler_exe, err = utils.FindFile(fmt.Sprintf("extra/compilers/%s/weird.exe", cmdline.GetCompilerVersion()))
 		if err != nil {
-			return err
+			return errors.Wrap(err)
 		}
 		compiler_exe, err = filepath.Abs(compiler_exe)
 		if err != nil {
-			return err
+			return errors.Wrap(err)
 		}
 	}
 
 	// find the compiler plugin:
 	plugin_exe, err := utils.FindFile(fmt.Sprintf("extra/compilers/%s/%s", cmdline.GetCompilerVersion(), cmdline.GetJavaPluginName()))
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 	plugin_exe, err = filepath.Abs(plugin_exe)
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 	//	j.SetStage("gen-protobuf")
 
@@ -110,13 +111,13 @@ func (gc *JavaCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnvir
 	out, err := l.SafelyExecuteWithDir(cmdandfile, dir, nil)
 	if err != nil {
 		fmt.Printf("Output:\n%s\n", out)
-		return err
+		return errors.Wrap(err)
 	}
 
 	// inject the custom headers to the .java files
 	new_files, err := nf.FindNew()
 	if err != nil {
-		return fmt.Errorf("(1) unable to find new files: %w", err)
+		return errors.Errorf("(1) unable to find new files: %w", err)
 	}
 
 	for _, new_file := range new_files {
@@ -124,13 +125,13 @@ func (gc *JavaCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnvir
 		fm.AddHeader(fmt.Sprintf("// created by protorenderer, run (sources: %s)\n", strings.Join(proto_file_names, " ")))
 		err = fm.Save()
 		if err != nil {
-			return fmt.Errorf("unable to save modified file: %w", err)
+			return errors.Errorf("unable to save modified file: %w", err)
 		}
 	}
 
 	err = gc.compileJava2Class(ctx, ce, files, outdir, cr)
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 	return nil
 }
@@ -141,12 +142,12 @@ func (gc *JavaCompiler) compileJava2Class(ctx context.Context, ce interfaces.Com
 	targetdir := outdir + "/" + gc.ShortName() + "/classes" // this where the .class files go
 	err := helpers.Mkdir(targetdir)
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 
 	java_files, err := helpers.FindFiles(dir, ".java")
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 
 	fmt.Printf("Start java (.java->.class) compilation (src=%s,target=%s)...\n", dir, targetdir)
@@ -174,7 +175,7 @@ func (gc *JavaCompiler) compileJava2Class(ctx context.Context, ce interfaces.Com
 	}
 	cp, err := classpath()
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 	cmdandfile := append(cmd, java_files...)
 	l := linux.New()
@@ -185,7 +186,7 @@ func (gc *JavaCompiler) compileJava2Class(ctx context.Context, ce interfaces.Com
 	out, err := l.SafelyExecuteWithDir(cmdandfile, dir, nil)
 	if err != nil {
 		fmt.Printf(".java->.class failed: %s\n", string(out))
-		return err
+		return errors.Wrap(err)
 	}
 	return nil
 }

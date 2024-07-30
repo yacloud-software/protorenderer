@@ -23,6 +23,15 @@ type compileresult_file struct {
 func (cr *compileresult) AddSuccess(c interfaces.Compiler, pf interfaces.ProtoFile) {
 	cr.Lock()
 	defer cr.Unlock()
+	// remove previous ones for this compiler
+	var nr []*compileresult_file
+	for _, or := range cr.results {
+		if or.comp.ShortName() == c.ShortName() && pf.GetFilename() == or.pf.GetFilename() {
+			continue
+		}
+		nr = append(nr, or)
+	}
+	cr.results = nr
 	cr.results = append(cr.results, &compileresult_file{comp: c, pf: pf})
 }
 func (cr *compileresult) AddFailed(c interfaces.Compiler, pf interfaces.ProtoFile, err error, output []byte) {

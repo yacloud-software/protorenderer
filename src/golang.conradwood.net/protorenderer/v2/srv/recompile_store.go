@@ -5,6 +5,7 @@ import (
 	"fmt"
 	//	pb "golang.conradwood.net/apis/protorenderer2"
 	"golang.conradwood.net/go-easyops/authremote"
+	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/go-easyops/utils"
 	"golang.conradwood.net/protorenderer/v2/helpers"
 	"golang.conradwood.net/protorenderer/v2/interfaces"
@@ -29,7 +30,7 @@ func RecompileStore(ce interfaces.CompilerEnvironment) error {
 
 	must_save, err := build_version_info(ce, vi)
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 	if must_save {
 		vi.SetDirty()
@@ -37,7 +38,7 @@ func RecompileStore(ce interfaces.CompilerEnvironment) error {
 	// rebuild based on versioninfo
 	pfs, err := helpers.FindProtoFiles(ce.AllKnownProtosDir())
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 
 	fmt.Printf("[recompilestore] total of %d protofiles found in store\n", len(pfs))
@@ -56,33 +57,28 @@ func RecompileStore(ce interfaces.CompilerEnvironment) error {
 	ctx := authremote.ContextWithTimeout(time.Duration(15) * time.Minute)
 	err = compile_all_compilers(ctx, ce, vi.CompileResult(), pfs)
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 	fmt.Printf("[recompilestore] Merging result to store\n")
 	ce.(*StandardCompilerEnvironment).new_protos_same_as_store = false
 	err = helpers.MergeCompilerEnvironment(ce, true)
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 	if vi.IsDirty() {
-		fmt.Printf("[recompilestore] Storing\n")
-		b, err := utils.MarshalBytes(vi.ToProto())
+		err := saveVersionInfo()
 		if err != nil {
-			return err
-		}
-		err = utils.WriteFile(fname, b)
-		if err != nil {
-			return err
+			return errors.Wrap(err)
 		}
 		err = store.Store(ctx, ce.StoreDir()) // 0 == latest
 		if err != nil {
-			return err
+			return errors.Wrap(err)
 		}
 		fmt.Printf("Saved store\n")
 	}
 	vpb := vi.ToProto()
 	fname = "/tmp/versioninfo.yaml"
-	err = helpers.WriteYaml(fname, vpb)
+	err = utils.WriteYaml(fname, vpb)
 	if err != nil {
 		fmt.Printf("[recompilestore] write failure: %s", err)
 	} else {

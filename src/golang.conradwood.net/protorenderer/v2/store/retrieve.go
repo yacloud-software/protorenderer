@@ -6,6 +6,7 @@ import (
 	//	ost "golang.conradwood.net/apis/objectstore"
 	"golang.conradwood.net/go-easyops/authremote"
 	"golang.conradwood.net/go-easyops/client"
+	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/protorenderer/cmdline"
 	"golang.conradwood.net/protorenderer/v2/helpers"
 	"golang.conradwood.net/protorenderer/v2/store/binaryversions"
@@ -27,7 +28,7 @@ func Retrieve(ctx context.Context, dir string, version uint64) error {
 			return err
 		}
 	*/
-	return berr
+	return errors.Wrap(berr)
 
 }
 

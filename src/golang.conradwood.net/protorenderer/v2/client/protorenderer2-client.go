@@ -22,17 +22,20 @@ import (
 )
 
 var (
-	deps       = flag.String("dependencies", "", "if set, finds files that depend on that filename")
-	get_vinfo  = flag.Bool("get_versioninfo", false, "if true get versioninfo, print it out and exit")
-	save       = flag.Bool("save", false, "if true, and compilation is successful, add the proto and its artefacts to protorenderers store")
-	version    = flag.Uint64("version", 0, "work on this version, 0 (default) is latest")
-	edit_store = flag.Bool("edit_store", false, "if true, checkout store, wait for key and save it again (needs -token and -ge_disable_user_token)")
+	display_versioninfo = flag.String("display_versioninfo", "", "if set to a filename, will display versioninfo.pbbin as yaml")
+	deps                = flag.String("dependencies", "", "if set, finds files that depend on that filename")
+	get_vinfo           = flag.Bool("get_versioninfo", false, "if true get versioninfo, print it out and exit")
+	save                = flag.Bool("save", false, "if true, and compilation is successful, add the proto and its artefacts to protorenderers store")
+	version             = flag.Uint64("version", 0, "work on this version, 0 (default) is latest")
+	edit_store          = flag.Bool("edit_store", false, "if true, checkout store, wait for key and save it again (needs -token and -ge_disable_user_token)")
 )
 
 func main() {
 	flag.Parse()
 	if *edit_store {
 		utils.Bail("failed to edit store", EditStore())
+	} else if *display_versioninfo != "" {
+		utils.Bail("failed to display version info", DisplayVersionInfo())
 	} else if *deps != "" {
 		utils.Bail("failed to do reverse dependencies", ReverseDeps())
 	} else if *get_vinfo {
@@ -224,5 +227,24 @@ func ReverseDeps() error {
 		fmt.Printf("%s\n", filename)
 	}
 
+	return nil
+}
+
+func DisplayVersionInfo() error {
+	b, err := utils.ReadFile(*display_versioninfo)
+	if err != nil {
+		return err
+	}
+	vi := &pb.VersionInfo{}
+	err = utils.UnmarshalBytes(b, vi)
+	if err != nil {
+		return err
+	}
+	fname := "/tmp/versioninfo.yaml"
+	err = utils.WriteYaml(fname, vi)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Written to %s\n", fname)
 	return nil
 }

@@ -221,7 +221,7 @@ func (gc *JavaCompiler) compileJava2Class(ctx context.Context, ce interfaces.Com
 			for _, pf := range files {
 				if pf.GetFilename() == source_proto_name {
 					got_pf = true
-					cr.AddFailed(gc, pf, fmt.Errorf("failed to compile .class:", err), []byte(out))
+					cr.AddFailed(gc, pf, fmt.Errorf("failed to compile .class: %s", err), []byte(out))
 				}
 			}
 			if !got_pf {

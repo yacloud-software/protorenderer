@@ -48,16 +48,6 @@ func Start() {
 	utils.RecreateSafely(CompileEnv.CompilerOutDir())
 	mkdir(CompileEnv.NewProtosDir())
 
-	ctx := authremote.ContextWithTimeout(time.Duration(180) * time.Second)
-	err = store.Retrieve(ctx, CompileEnv.StoreDir(), 0) // 0 == latest
-	utils.Bail("failed to retrieve latest version", err)
-
-	//	os.Exit(0)
-
-	if false {
-		java.Start(CompileEnv, CompileEnv.CompilerOutDir())
-	}
-
 	sd := server.NewServerDef()
 	sd.SetPort(cmdline.GetRPCPort())
 	e := new(protoRenderer)
@@ -75,6 +65,15 @@ func Start() {
 }
 
 func server_started() {
+	ctx := authremote.ContextWithTimeout(time.Duration(180) * time.Second)
+	err := store.Retrieve(ctx, CompileEnv.StoreDir(), 0) // 0 == latest
+	utils.Bail("failed to retrieve latest version", err)
+
+	//	os.Exit(0)
+
+	if false {
+		java.Start(CompileEnv, CompileEnv.CompilerOutDir())
+	}
 	reloadVersionInfo(CompileEnv)
 	b := *recompile_on_startup
 	if !utils.FileExists(CompileEnv.StoreDir() + "/versioninfo.pbbin") {

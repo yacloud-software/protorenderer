@@ -32,7 +32,9 @@ func Start() {
 	fmt.Printf("Starting protorenderer-server (v2)\n")
 	server.SetHealth(cma.Health_STARTING)
 
-	CompileEnv = &StandardCompilerEnvironment{workdir: "/tmp/pr/v2"}
+	hd, err := utils.HomeDir()
+	utils.Bail("failed to get homedir", err)
+	CompileEnv = &StandardCompilerEnvironment{workdir: hd + "/tmp/pr/v2"}
 	utils.RecreateSafely(CompileEnv.workdir + "/store")
 	//scr := &StandardCompileResult{}
 	mkdir(CompileEnv.AllKnownProtosDir())

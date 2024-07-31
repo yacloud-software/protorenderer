@@ -31,6 +31,7 @@ func Start() {
 	var err error
 	fmt.Printf("Starting protorenderer-server (v2)\n")
 	server.SetHealth(cma.Health_STARTING)
+	server.SetHealth(cma.Health_READY) // ?
 
 	hd, err := utils.HomeDir()
 	utils.Bail("failed to get homedir", err)

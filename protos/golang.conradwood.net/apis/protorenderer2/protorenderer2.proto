@@ -15,6 +15,8 @@ message ProtoFileInfo {
   repeated DBProtoFile Imports=2; // which files this file imports
   map<string,string> CNWOptions=3;
   repeated ProtoMessageInfo Messages=4;
+  string Package=5; // standard "package xxx" parameter
+  string PackageJava=6; // option java_package = "foo"
 }
 
 message ProtoMessageInfo {

@@ -13,6 +13,9 @@ import (
 
 // version 0 == default
 func Download(ctx context.Context, realm, destination string, version uint64) error {
+	if !*use_store {
+		return nil
+	}
 	fmt.Printf("[store] Downloading \"%s\" to \"%s\"\n", PROTORENDERER_STORE_DIR_NAME, destination)
 	c := pb.GetBinaryVersionsClient()
 	dir, err := c.MkOrGetDir(ctx, &pb.MkDirRequest{DirName: PROTORENDERER_STORE_DIR_NAME, Realm: &pb.Realm{Name: realm}})

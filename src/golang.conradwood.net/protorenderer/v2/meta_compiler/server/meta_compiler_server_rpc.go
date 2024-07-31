@@ -13,7 +13,6 @@ import (
 	"golang.conradwood.net/protorenderer/v2/store"
 	"sort"
 	"strings"
-	"time"
 )
 
 type ServerMetaCompiler struct {
@@ -35,13 +34,10 @@ func InternalMetaSubmit(ctx context.Context, req *pb.ProtocRequest) (*common.Voi
 	icm := &ServerMetaCompiler{mc: mc, descriptors: make(map[string]*MessageDescriptor)}
 	// we want all protofiles in the database, to be able to refer to them by ID
 	// we also need a map of all protobuf messages, because within a message we might reference another one
-	started := time.Now()
 	err = icm.save_request_to_db(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-	dur := time.Since(started)
-	fmt.Printf("[metacompiler] db request took %0.1fs\n", dur.Seconds())
 	fmt.Printf("[metacompiler] request with %d protofiles\n", len(req.ProtoFiles))
 	files_written := 0
 	for _, pf := range req.ProtoFiles {

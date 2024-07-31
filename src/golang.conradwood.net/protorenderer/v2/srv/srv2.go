@@ -14,6 +14,7 @@ import (
 	"golang.conradwood.net/protorenderer/v2/compilers/java"
 	"golang.conradwood.net/protorenderer/v2/interfaces"
 	ms "golang.conradwood.net/protorenderer/v2/meta_compiler/server"
+	"golang.conradwood.net/protorenderer/v2/metadata"
 	"golang.conradwood.net/protorenderer/v2/store"
 	"golang.conradwood.net/protorenderer/v2/versioninfo"
 	"google.golang.org/grpc"
@@ -31,11 +32,9 @@ func Start() {
 	var err error
 	fmt.Printf("Starting protorenderer-server (v2)\n")
 	server.SetHealth(cma.Health_STARTING)
-	server.SetHealth(cma.Health_READY) // ?
 
-	hd, err := utils.HomeDir()
-	utils.Bail("failed to get homedir", err)
-	CompileEnv = &StandardCompilerEnvironment{workdir: hd + "/tmp/pr/v2"}
+	CompileEnv = &StandardCompilerEnvironment{workdir: "/tmp/pr/v2"}
+	metadata.MetaCache.SetEnv(CompileEnv)
 	utils.RecreateSafely(CompileEnv.workdir + "/store")
 	//scr := &StandardCompileResult{}
 	mkdir(CompileEnv.AllKnownProtosDir())

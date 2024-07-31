@@ -10,8 +10,20 @@ import (
 	"golang.conradwood.net/protorenderer/cmdline"
 	"golang.conradwood.net/protorenderer/v2/helpers"
 	"golang.conradwood.net/protorenderer/v2/interfaces"
+	"golang.conradwood.net/protorenderer/v2/metadata"
 	"path/filepath"
+	"regexp"
+	"sort"
 	"strings"
+	"time"
+)
+
+const (
+	MARKER = "// this marker placed here for parsing. SOURCE:"
+)
+
+var (
+	numeric_regex = regexp.MustCompile(`\.\d`)
 )
 
 /*
@@ -35,8 +47,8 @@ type JavaCompiler struct {
 }
 
 func New() interfaces.Compiler {
-	cp, _ := classpath()
-	fmt.Printf("CLASSPATH=%s\n", strings.Join(cp, ":"))
+	//	cp, _ := classpath()
+	//	fmt.Printf("CLASSPATH=%s\n", strings.Join(cp, ":"))
 	return &JavaCompiler{}
 }
 
@@ -46,7 +58,13 @@ func (gc JavaCompiler) ShortName() string { return "java" }
 // assumes that _all_ existing .proto files are already compiled to .java and .class files
 // (otherwise the imports won't work)
 func (gc *JavaCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnvironment, files []interfaces.ProtoFile, outdir string, cr interfaces.CompileResult) error {
-	dir := ce.WorkDir() + "/" + ce.NewProtosDir()
+
+	x := len(files)
+	files = gc.filter_known_non_working(files, cr)
+	if len(files) == 0 {
+		return errors.Errorf("javacompiler invoked with %d files, but after filtering broken ones, none left", x)
+	}
+	dir := ce.NewProtosDir()
 	targetdir := outdir + "/" + gc.ShortName()
 	err := helpers.Mkdir(targetdir)
 	if err != nil {
@@ -105,31 +123,33 @@ func (gc *JavaCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnvir
 		cmd = append(cmd, fmt.Sprintf("-I%s", id))
 	}
 	nf := helpers.NewFileFinder(javaSrc)
-	nf.FindNew() // build internal list
-	fmt.Printf("Compiling files: \"%s\"\n", strings.Join(proto_file_names, " "))
-	cmdandfile := append(cmd, proto_file_names...)
-	out, err := l.SafelyExecuteWithDir(cmdandfile, dir, nil)
-	if err != nil {
-		fmt.Printf("Output:\n%s\n", out)
-		return errors.Wrap(err)
-	}
 
-	// inject the custom headers to the .java files
-	new_files, err := nf.FindNew()
-	if err != nil {
-		return errors.Errorf("(1) unable to find new files: %w", err)
-	}
-
-	for _, new_file := range new_files {
-		fm := helpers.NewFileModifierFromFilename(javaSrc + "/" + new_file)
-		fm.AddHeader(fmt.Sprintf("// created by protorenderer, run (sources: %s)\n", strings.Join(proto_file_names, " ")))
-		err = fm.Save()
+	var successful_files []interfaces.ProtoFile
+	for _, pfn := range files {
+		fname := pfn.GetFilename()
+		fmt.Printf("[javacompiler] Compiling file: \"%s\"\n", fname)
+		cmdandfile := append(cmd, fname)
+		out, err := l.SafelyExecuteWithDir(cmdandfile, dir, nil)
 		if err != nil {
-			return errors.Errorf("unable to save modified file: %w", err)
+			cr.AddFailed(gc, pfn, err, []byte(out))
+		} else {
+			successful_files = append(successful_files, pfn)
+		}
+		new_files, err := nf.FindNew() // to inject the custom headers to the .java files
+		if err != nil {
+			return errors.Errorf("(1) unable to find new files: %w", err)
+		}
+
+		for _, new_file := range new_files {
+			fm := helpers.NewFileModifierFromFilename(javaSrc + "/" + new_file)
+			fm.AddHeader(fmt.Sprintf("%s%s\n", MARKER, fname))
+			err = fm.Save()
+			if err != nil {
+				return errors.Errorf("unable to save modified file: %w", err)
+			}
 		}
 	}
-
-	err = gc.compileJava2Class(ctx, ce, files, outdir, cr)
+	err = gc.compileJava2Class(ctx, ce, successful_files, outdir, cr)
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -177,16 +197,38 @@ func (gc *JavaCompiler) compileJava2Class(ctx context.Context, ce interfaces.Com
 	if err != nil {
 		return errors.Wrap(err)
 	}
-	cmdandfile := append(cmd, java_files...)
-	l := linux.New()
-	env := []string{
-		"CLASSPATH=" + strings.Join(cp, ":"),
-	}
-	l.SetEnvironment(env)
-	out, err := l.SafelyExecuteWithDir(cmdandfile, dir, nil)
-	if err != nil {
-		fmt.Printf(".java->.class failed: %s\n", string(out))
-		return errors.Wrap(err)
+	sort.Slice(java_files, func(i, j int) bool {
+		return java_files[i] < java_files[j]
+	})
+	for i, java_file := range java_files {
+		source_proto_name, err := gc.get_source_from_java_file(dir + "/" + java_file)
+		if err != nil {
+			return errors.Wrap(err)
+		}
+
+		fmt.Printf("[javacompiler] Compiling %s->%s->class file (%d of %d)\n", source_proto_name, java_file, i, len(java_files))
+		cmdandfile := append(cmd, java_file)
+		l := linux.New()
+		env := []string{
+			"CLASSPATH=" + strings.Join(cp, ":"),
+		}
+		l.SetEnvironment(env)
+		l.SetMaxRuntime(time.Duration(60) * time.Second)
+		out, err := l.SafelyExecuteWithDir(cmdandfile, dir, nil)
+		if err != nil {
+			fmt.Printf("%s->.class failed: %s\n", java_file, string(out))
+			got_pf := false
+			for _, pf := range files {
+				if pf.GetFilename() == source_proto_name {
+					got_pf = true
+					cr.AddFailed(gc, pf, fmt.Errorf("failed to compile .class:", err), []byte(out))
+				}
+			}
+			if !got_pf {
+				return errors.Errorf("file %s: compiling %s to .class, was unable to find protofile", source_proto_name, java_file)
+			}
+			continue
+		}
 	}
 	return nil
 }
@@ -211,4 +253,56 @@ func classpath() ([]string, error) {
 		res = append(res, jf)
 	}
 	return res, nil
+}
+
+func (gc *JavaCompiler) filter_known_non_working(files []interfaces.ProtoFile, cr interfaces.CompileResult) []interfaces.ProtoFile {
+	var res []interfaces.ProtoFile
+	for _, pf := range files {
+		pfi := metadata.MetaCache.ByProtoFile(pf)
+		if pfi == nil {
+			// what should we do if we have no metadata here?
+			fmt.Printf("[javacompiler] no metadata for %s\n", pf.GetFilename())
+			continue
+		}
+		// check java package name
+		java_package := pfi.PackageJava
+		if java_package == "" {
+			java_package = pfi.Package
+		}
+		if java_package == "" {
+			cr.AddFailed(gc, pf, fmt.Errorf("unable to determine java package name"), nil)
+			continue
+		}
+		if strings.Contains(java_package, " ") {
+			cr.AddFailed(gc, pf, fmt.Errorf("Invalid space in Packagename: \"%s\"", java_package), nil)
+			continue
+		}
+		if numeric_regex.MatchString(java_package) {
+			cr.AddFailed(gc, pf, fmt.Errorf("Invalid digit in Packagename: \"%s\"", java_package), nil)
+			continue
+		}
+		res = append(res, pf)
+	}
+	return res
+}
+
+// given an absolute filename finds the header //source: and returns the .proto name
+func (gc *JavaCompiler) get_source_from_java_file(abs_filename string) (string, error) {
+	b, err := utils.ReadFile(abs_filename)
+	if err != nil {
+		return "", err
+	}
+	i := 0
+	for _, line := range strings.Split(string(b), "\n") {
+		i++
+		if i > 10 {
+			return "", errors.Errorf("no header found in first %d lines of file %s\n", i, abs_filename)
+		}
+		if strings.Contains(line, MARKER) {
+			source := strings.TrimPrefix(line, MARKER)
+			source = strings.Trim(source, "\n")
+			return source, nil
+		}
+	}
+	return "", errors.Errorf("no header found in file %s\n", abs_filename)
 }

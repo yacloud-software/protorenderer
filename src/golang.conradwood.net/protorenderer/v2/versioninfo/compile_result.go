@@ -23,7 +23,22 @@ type compileresult_file struct {
 func (cr *compileresult) AddSuccess(c interfaces.Compiler, pf interfaces.ProtoFile) {
 	cr.Lock()
 	defer cr.Unlock()
-	// remove previous ones for this compiler
+	cr.removeCompilerResult(c, pf)
+	cr.results = append(cr.results, &compileresult_file{comp: c, pf: pf})
+}
+func (cr *compileresult) AddFailed(c interfaces.Compiler, pf interfaces.ProtoFile, err error, output []byte) {
+	cr.Lock()
+	defer cr.Unlock()
+	cr.removeCompilerResult(c, pf)
+	cr.results = append(cr.results, &compileresult_file{
+		comp:   c,
+		pf:     pf,
+		fail:   true,
+		err:    err,
+		output: output,
+	})
+}
+func (cr *compileresult) removeCompilerResult(c interfaces.Compiler, pf interfaces.ProtoFile) {
 	var nr []*compileresult_file
 	for _, or := range cr.results {
 		if or.comp.ShortName() == c.ShortName() && pf.GetFilename() == or.pf.GetFilename() {
@@ -32,18 +47,6 @@ func (cr *compileresult) AddSuccess(c interfaces.Compiler, pf interfaces.ProtoFi
 		nr = append(nr, or)
 	}
 	cr.results = nr
-	cr.results = append(cr.results, &compileresult_file{comp: c, pf: pf})
-}
-func (cr *compileresult) AddFailed(c interfaces.Compiler, pf interfaces.ProtoFile, err error, output []byte) {
-	cr.Lock()
-	defer cr.Unlock()
-	cr.results = append(cr.results, &compileresult_file{
-		comp:   c,
-		pf:     pf,
-		fail:   true,
-		err:    err,
-		output: output,
-	})
 }
 func (cr *compileresult) GetResults(pf interfaces.ProtoFile) []*pb.CompileResult {
 	cr.Lock()

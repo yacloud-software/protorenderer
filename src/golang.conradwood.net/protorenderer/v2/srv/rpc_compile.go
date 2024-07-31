@@ -10,6 +10,7 @@ import (
 	"golang.conradwood.net/protorenderer/v2/helpers"
 	"golang.conradwood.net/protorenderer/v2/interfaces"
 	"golang.conradwood.net/protorenderer/v2/meta_compiler"
+	"golang.conradwood.net/protorenderer/v2/metadata"
 	"golang.conradwood.net/protorenderer/v2/store"
 	//	"golang.conradwood.net/protorenderer/v2/store"
 	"strings"
@@ -145,8 +146,12 @@ func compile_all_compilers(ctx context.Context, ce interfaces.CompilerEnvironmen
 
 	for _, comp := range compilers {
 		fmt.Printf("[compile] starting \"%s\" compiler with %d files\n", comp.ShortName(), len(pfs))
+		if len(pfs) == 0 {
+			continue
+		}
 		err := comp.Compile(ctx, ce, pfs, od, scr)
 		if err != nil {
+			fmt.Printf("[compile] Compiler \"%s\" failed: %s\n", comp.ShortName(), err)
 			return errors.Wrap(err)
 		}
 		for _, pf := range pfs {
@@ -277,10 +282,6 @@ func remove_broken(pfs []interfaces.ProtoFile, scr interfaces.CompileResult) []i
 
 // recompile all the dependencies on the given file(s)...
 func recompile_dependencies_with_err(ctx context.Context, ce interfaces.CompilerEnvironment, pfs []interfaces.ProtoFile) error {
-	err := MetaCache.readAllIfNecessary()
-	if err != nil {
-		return errors.Wrap(err)
-	}
 	scr := currentVersionInfo.CompileResult()
 	for _, pf := range pfs {
 		err := recompile_dependencies(ctx, ce, scr, pf)
@@ -293,7 +294,7 @@ func recompile_dependencies_with_err(ctx context.Context, ce interfaces.Compiler
 
 // recompile any files that directly or indirectly import "pf"
 func recompile_dependencies(ctx context.Context, ce interfaces.CompilerEnvironment, scr interfaces.CompileResult, pf interfaces.ProtoFile) error {
-	pfs, err := MetaCache.AllWithDependencyOn(pf.GetFilename(), 0)
+	pfs, err := metadata.MetaCache.AllWithDependencyOn(pf.GetFilename(), 0)
 	if err != nil {
 		return errors.Wrap(err)
 	}

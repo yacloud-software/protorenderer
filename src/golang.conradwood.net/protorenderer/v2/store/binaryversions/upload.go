@@ -14,8 +14,7 @@ import (
 )
 
 var (
-	use_store = flag.Bool("store_activated", true, "if false, permanent storage will be disabled (turned into no-ops")
-	debug     = flag.Bool("debug_binaryversions", false, "debug download/upload")
+	debug = flag.Bool("debug_binaryversions", false, "debug download/upload")
 )
 
 const (
@@ -23,11 +22,8 @@ const (
 )
 
 func Upload(dname string) error {
-	if !*use_store {
-		return nil
-	}
 	c := pb.GetBinaryVersionsClient()
-	ctx := authremote.ContextWithTimeout(time.Duration(3) * time.Minute) // long upload
+	ctx := authremote.ContextWithTimeout(time.Duration(30) * time.Minute) // long upload
 	dir, err := c.MkOrGetDir(ctx, &pb.MkDirRequest{DirName: PROTORENDERER_STORE_DIR_NAME})
 	if err != nil {
 		return err

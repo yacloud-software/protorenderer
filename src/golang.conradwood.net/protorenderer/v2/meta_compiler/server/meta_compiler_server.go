@@ -25,8 +25,12 @@ func (smc *ServerMetaCompiler) handle_protofile(ctx context.Context, pf *google_
 		}
 	}
 	res := &pb.ProtoFileInfo{
+		Package:    pkg_name,
 		ProtoFile:  proto_file,
 		CNWOptions: cnwopts,
+	}
+	if pf.Options != nil && pf.Options.JavaPackage != nil {
+		res.PackageJava = *pf.Options.JavaPackage
 	}
 	for _, imp := range pf.Dependency {
 		pf, err := store.FileByName(ctx, imp)

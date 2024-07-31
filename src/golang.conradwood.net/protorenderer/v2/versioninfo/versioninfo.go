@@ -117,7 +117,7 @@ func (vi *VersionInfo) GetOrAddFile(file string, mi *pb.ProtoFileInfo) *VersionF
 			lastCompileResult: &pb.FileResult{Filename: file},
 		}
 		vi.files[file] = vf
-		fmt.Printf("Adding \"%s\"\n", file)
+		fmt.Printf("[versioninfo] Adding \"%s\"\n", file)
 		vi.SetDirty()
 	}
 

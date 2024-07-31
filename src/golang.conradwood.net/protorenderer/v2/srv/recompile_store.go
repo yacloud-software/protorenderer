@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	//	pb "golang.conradwood.net/apis/protorenderer2"
+	"flag"
 	"golang.conradwood.net/go-easyops/authremote"
 	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/go-easyops/utils"
@@ -13,6 +14,10 @@ import (
 	"golang.conradwood.net/protorenderer/v2/store"
 	"golang.conradwood.net/protorenderer/v2/versioninfo"
 	"time"
+)
+
+var (
+	recompile_ignore_existing_versioninfo = flag.Bool("recompile_rebuild_from_scratch", false, "if true, ignore versioninfo etc, and rebuild from scratch")
 )
 
 // recompiles the entire store, rebuilds versioninfo
@@ -26,6 +31,9 @@ func RecompileStore(ce interfaces.CompilerEnvironment) error {
 	fname := ce.StoreDir() + "/versioninfo.pbbin"
 	fmt.Printf("[recompilestore] Start\n")
 	vi := currentVersionInfo
+	if *recompile_ignore_existing_versioninfo {
+		vi = versioninfo.New()
+	}
 	fmt.Printf("[recompilestore] building missing meta (.info) files\n")
 
 	must_save, err := build_version_info(ce, vi)

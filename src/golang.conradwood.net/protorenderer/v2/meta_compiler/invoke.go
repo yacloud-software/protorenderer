@@ -15,6 +15,10 @@ import (
 	"time"
 )
 
+const (
+	use_parallel = true
+)
+
 // TODO - instead of using gRPC use go-easyops IPC
 
 type MetaCompiler struct {
@@ -69,16 +73,35 @@ func (gc *MetaCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnvir
 	for _, id := range import_dirs {
 		cmd = append(cmd, fmt.Sprintf("-I%s", id))
 	}
-	for _, pf := range files {
-		filename := pf.GetFilename()
-		cmdfl := append(cmd, filename)
+	if use_parallel {
+		wg := &sync.WaitGroup{}
+		for _, xpf := range files {
+			wg.Add(1)
+			go func(pf interfaces.ProtoFile) {
+				defer wg.Done()
+				filename := pf.GetFilename()
+				cmdfl := append(cmd, filename)
 
-		out, err := l.SafelyExecuteWithDir(cmdfl, dir, nil)
-		if err != nil {
-			fmt.Printf("[metacompiler] protoc output: %s\n", out)
-			fmt.Printf("[metacompiler] Failed to compile: %s\n", err)
-			cr.AddFailed(gc, pf, err, []byte(out))
-			continue
+				out, err := l.SafelyExecuteWithDir(cmdfl, dir, nil)
+				if err != nil {
+					fmt.Printf("[metacompiler] protoc output: %s\n", out)
+					fmt.Printf("[metacompiler] Failed to compile: %s\n", err)
+					cr.AddFailed(gc, pf, err, []byte(out))
+				}
+			}(xpf)
+		}
+		wg.Wait()
+	} else {
+		for _, pf := range files {
+			filename := pf.GetFilename()
+			cmdfl := append(cmd, filename)
+
+			out, err := l.SafelyExecuteWithDir(cmdfl, dir, nil)
+			if err != nil {
+				fmt.Printf("[metacompiler] protoc output: %s\n", out)
+				fmt.Printf("[metacompiler] Failed to compile: %s\n", err)
+				cr.AddFailed(gc, pf, err, []byte(out))
+			}
 		}
 	}
 	return nil

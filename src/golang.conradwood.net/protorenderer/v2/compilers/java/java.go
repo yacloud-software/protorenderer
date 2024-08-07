@@ -172,7 +172,7 @@ func (gc *JavaCompiler) compileJava2Class(ctx context.Context, ce interfaces.Com
 		return errors.Wrap(err)
 	}
 
-	fmt.Printf("Start java (.java->.class) compilation (src=%s,target=%s) (%d files)...\n", dir, targetdir, len(java_files))
+	fmt.Printf("Start java (.java->.class) compilation (src=%s,target=%s) (%d files, submitted %d files)...\n", dir, targetdir, len(java_files), len(files))
 	javac := "/etc/java-home/bin/javac"
 	cmd := []string{
 		javac,

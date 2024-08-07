@@ -17,7 +17,7 @@ type CommentResult struct {
 }
 
 func (smc *ServerMetaCompiler) dealWithComments(pf *descriptor.FileDescriptorProto) (*CommentResult, error) {
-	smc.debugf("----comments:\n")
+	//	smc.debugf("----comments:\n")
 	res := &CommentResult{
 		Messages: make(map[string]string),
 		Services: make(map[string]string),
@@ -37,7 +37,7 @@ func (smc *ServerMetaCompiler) dealWithComments(pf *descriptor.FileDescriptorPro
 		//		sv := pkg.ObtainService(*svc.Name)
 		comment := FindCommentPath(pf, 6, si)
 		comment_text := comment.CombinedText()
-		smc.debugf(" name=%s, si=%d (%s)\n", *svc.Name, si, comment_text)
+		//		smc.debugf(" name=%s, si=%d (%s)\n", *svc.Name, si, comment_text)
 		res.Services[*svc.Name] = comment_text
 	}
 
@@ -48,7 +48,7 @@ func (smc *ServerMetaCompiler) dealWithComments(pf *descriptor.FileDescriptorPro
 			//	rpc := sv.ObtainRPC(*mp.Name)
 			comment := FindCommentPath(pf, 6, si, 2, mi)
 			comment_text := comment.CombinedText()
-			smc.debugf("    %s: %s\n", *mp.Name, comment_text)
+			//			smc.debugf("    %s: %s\n", *mp.Name, comment_text)
 			key := fmt.Sprintf("%s.%s", *svc.Name, *mp.Name)
 			res.RPCs[key] = comment_text
 		}
@@ -59,7 +59,7 @@ func (smc *ServerMetaCompiler) dealWithComments(pf *descriptor.FileDescriptorPro
 		//		msg := pkg.ObtainMessage(*m.Name)
 		comment := FindCommentPath(pf, 4, mi)
 		comment_text := comment.CombinedText()
-		smc.debugf("Comment for %s: %s\n", *m.Name, comment_text)
+		//		smc.debugf("Comment for %s: %s\n", *m.Name, comment_text)
 		res.Messages[*m.Name] = comment_text
 
 		for _, f := range m.Field {
@@ -67,7 +67,7 @@ func (smc *ServerMetaCompiler) dealWithComments(pf *descriptor.FileDescriptorPro
 			comment := FindCommentPath(pf, 4, mi, 2, int(*f.Number)-1)
 			//	fl := msg.ObtainField(*f.Name)
 			comment_text := comment.CombinedText()
-			smc.debugf("Comment for %s: %s\n", *f.Name, comment_text)
+			//			smc.debugf("Comment for %s: %s\n", *f.Name, comment_text)
 			field_name := fmt.Sprintf("%s.%s", *m.Name, *f.Name)
 			res.Fields[field_name] = comment_text
 		}

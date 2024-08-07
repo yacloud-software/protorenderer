@@ -1,7 +1,7 @@
 package compiler
 
 import (
-	"fmt"
+	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/go-easyops/utils"
 	"io/ioutil"
 	"strings"
@@ -28,7 +28,7 @@ func AllFiles(dir string, suffix string) ([]string, error) {
 	for i, _ := range files {
 		fn := files[i]
 		if !strings.HasPrefix(fn, dir) {
-			return nil, fmt.Errorf("Invalid filename \"%s\" - does not start with \"%s\"", fn, dir)
+			return nil, errors.Errorf("Invalid filename \"%s\" - does not start with \"%s\"", fn, dir)
 		}
 		fn = strings.TrimPrefix(fn, dir)
 		files[i] = fn
@@ -47,7 +47,7 @@ func addDir(dir string, suffix string) ([]string, error) {
 	}
 	fis, err := ioutil.ReadDir(dir)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
 	var res []string
 	for _, fi := range fis {
@@ -68,31 +68,3 @@ func addDir(dir string, suffix string) ([]string, error) {
 	}
 	return res, nil
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

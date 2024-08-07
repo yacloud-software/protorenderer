@@ -8,15 +8,11 @@ import (
 	"golang.conradwood.net/go-easyops/authremote"
 	"golang.conradwood.net/go-easyops/linux"
 	"golang.conradwood.net/go-easyops/utils"
+	"golang.conradwood.net/protorenderer/v2/client/protosubmitter"
 	"golang.conradwood.net/protorenderer/v2/common"
 	"golang.conradwood.net/protorenderer/v2/compilers/golang"
-	//	"golang.conradwood.net/protorenderer/v2/helpers"
-	"io"
-	"os"
-	"time"
-	//	"golang.conradwood.net/protorenderer/v2/compilers/meta" // NOTE: different type of compiler! (parses comments, assigns IDs etc)
 	"golang.conradwood.net/protorenderer/v2/interfaces"
-	"golang.yacloud.eu/yatools/gitrepo"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -32,6 +28,7 @@ var (
 
 func main() {
 	flag.Parse()
+	var err error
 	if *edit_store {
 		utils.Bail("failed to edit store", EditStore())
 	} else if *display_versioninfo != "" {
@@ -43,11 +40,16 @@ func main() {
 	} else {
 		if len(flag.Args()) != 0 {
 			for _, a := range flag.Args() {
-				submit_protos_with_dir(a)
+				if *save {
+					err = protosubmitter.SubmitProtos(a)
+				} else {
+					err = protosubmitter.CompileProtos(a)
+				}
+				utils.Bail("failed to compile", err)
 			}
 			os.Exit(0)
 		}
-		submit_protos()
+		utils.Bail("failed to submit", protosubmitter.SubmitProtosGit())
 	}
 	fmt.Printf("Done\n")
 }
@@ -110,83 +112,6 @@ func mkdir(dir string) {
 	utils.Bail("failed to create dir", err)
 }
 
-func submit_protos() {
-	path, err := os.Getwd()
-	utils.Bail("no current dir", err)
-	gr, err := gitrepo.NewGitRepo(path)
-	utils.Bail("not a yagitrepo", err)
-	proto_dir := gr.Path() + "/protos/"
-	submit_protos_with_dir(proto_dir)
-}
-func submit_protos_with_dir(proto_dir string) {
-	ctx := authremote.ContextWithTimeout(time.Duration(30) * time.Second)
-
-	// repoid
-	repoid := uint32(0)
-	gr, err := gitrepo.NewYAGitRepo(proto_dir)
-	if err != nil {
-		fmt.Printf("Not a YAGitRepo: \"%s\"\n", proto_dir)
-	} else {
-		repoid = uint32(gr.RepositoryID())
-	}
-	srv, err := pb.GetProtoRenderer2Client().Submit(ctx)
-	utils.Bail("failed to stream files to server", err)
-	so := &pb.SubmitOption{Save: *save}
-	err = srv.Send(&pb.FileTransfer{SubmitOption: so})
-	utils.Bail("failed to stream options to server", err)
-	bs := utils.NewByteStreamSender(func(key, filename string) error {
-		// start new file
-		err := srv.Send(&pb.FileTransfer{Filename: filename, RepositoryID: repoid})
-		return err
-	},
-		// send contents
-		func(b []byte) error {
-			err := srv.Send(&pb.FileTransfer{Data: b})
-			return err
-		},
-	)
-	err = utils.DirWalk(proto_dir, func(root, relfil string) error {
-		if !strings.HasSuffix(relfil, ".proto") {
-			return nil
-		}
-		ct, err := utils.ReadFile(proto_dir + "/" + relfil)
-		if err != nil {
-			return err
-		}
-		fmt.Printf("Submitting %s (%d bytes)\n", "protos/"+relfil, len(ct))
-		err = bs.SendBytes("foo", relfil, ct)
-		return err
-	},
-	)
-	utils.Bail("failed to read proto files", err)
-	err = srv.Send(&pb.FileTransfer{TransferComplete: true}) // switching to recv mode now
-	utils.Bail("failed to send files", err)
-	// receiving the results now...
-	for {
-		recv, err := srv.Recv()
-		if recv != nil {
-			if recv.Filename != "" {
-				fmt.Printf("Receiving: filename=%s, bytes=%d\n", recv.Filename, len(recv.Data))
-			}
-			if recv.Result != nil {
-				fmt.Printf("Failure for %s: %v\n", recv.Result.Filename, recv.Result.Filename)
-				for _, result := range recv.Result.CompileResults {
-					fmt.Printf("    compiler: \"%s\" (success=%v)\n", result.CompilerName, result.Success)
-					fmt.Printf("    error: %s\n", result.ErrorMessage)
-					fmt.Printf("    output: %s\n", result.Output)
-				}
-			}
-		}
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			utils.Bail("failed to receive files", err)
-		}
-	}
-	fmt.Printf("Done\n")
-
-}
 func GetVersionInfo() error {
 	ctx := authremote.Context()
 	vi, err := pb.GetProtoRenderer2Client().GetVersionInfo(ctx, &cma.Void{})

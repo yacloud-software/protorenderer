@@ -69,7 +69,7 @@ func RecompileStore(ce interfaces.CompilerEnvironment) error {
 	}
 	fmt.Printf("[recompilestore] Merging result to store\n")
 	ce.(*StandardCompilerEnvironment).new_protos_same_as_store = false
-	err = helpers.MergeCompilerEnvironment(ce, true)
+	err = helpers.MergeCompilerEnvironment(ce, ce, true)
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -127,6 +127,6 @@ func build_version_info(ce interfaces.CompilerEnvironment, vi *versioninfo.Versi
 		}
 		vi.GetOrAddFile(pf.GetFilename(), mi)
 	}
-	utils.Bail("failed to merge compiler env", helpers.MergeCompilerEnvironment(ce, true))
+	utils.Bail("failed to merge compiler env", helpers.MergeCompilerEnvironment(ce, ce, true))
 	return store_required, nil
 }

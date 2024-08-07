@@ -5,6 +5,7 @@ import (
 	"fmt"
 	google_protobuf "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	pb "golang.conradwood.net/apis/protorenderer2"
+	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/protorenderer/cmdline"
 	"golang.conradwood.net/protorenderer/v2/store"
 )
@@ -29,10 +30,19 @@ func (smc *ServerMetaCompiler) handle_protofile(ctx context.Context, pf *google_
 		ProtoFile:  proto_file,
 		CNWOptions: cnwopts,
 	}
-	if pf.Options != nil && pf.Options.JavaPackage != nil {
-		res.PackageJava = *pf.Options.JavaPackage
+	if pf.Options != nil {
+		if pf.Options.JavaPackage != nil {
+			res.PackageJava = *pf.Options.JavaPackage
+		}
+		if pf.Options.GoPackage != nil {
+			res.PackageGo = *pf.Options.GoPackage
+		}
 	}
-	for _, imp := range pf.Dependency {
+	for _, imp := range pf.Dependency { // the imports
+		err := smc.hasFailedRecursively(ctx, imp)
+		if err != nil {
+			return nil, err
+		}
 		pf, err := store.FileByName(ctx, imp)
 		if err != nil {
 			return nil, err
@@ -71,6 +81,7 @@ func (smc *ServerMetaCompiler) handle_protofile(ctx context.Context, pf *google_
 
 // creates field info (but does not add comment)
 func (smc *ServerMetaCompiler) createFieldInfo(m *pb.SQLMessage, fd *google_protobuf.FieldDescriptorProto) (*pb.ProtoFieldInfo, error) {
+	fqdnmessage := fmt.Sprintf("%s/%s", m.ProtoFile.Filename, m.Name)
 	pfi := &pb.ProtoFieldInfo{
 		Name: *fd.Name,
 	}
@@ -106,9 +117,12 @@ func (smc *ServerMetaCompiler) createFieldInfo(m *pb.SQLMessage, fd *google_prot
 
 	if pfi.Modifier == pb.FieldModifier_SINGLE {
 		// is is a single (neither array nor map) field of complex type
-		msg := smc.GetMessageDescriptorByFQDN(msgfqdn)
+		msg := smc.mc.GetMessageDescriptorByFQDN(msgfqdn)
 		if msg == nil {
-			return nil, fmt.Errorf("No descriptor for message \"%s\"", msgfqdn)
+			// this can happen if the order of files as delivered by protoc does not consider the hierarchy of imports
+			// TODO: store all messages (in server process) and parse later, considering import hierarchy
+			//       (probably makes the code easier to follow as well)
+			return nil, errors.Errorf("in message \"%s\": No descriptor for message \"%s\"", fqdnmessage, msgfqdn)
 		}
 		if msg.ID == 0 {
 			return nil, fmt.Errorf("message \"%s\" must not have ID 0", msgfqdn)
@@ -126,7 +140,7 @@ func (smc *ServerMetaCompiler) createFieldInfo(m *pb.SQLMessage, fd *google_prot
 	// but it is deprecated.
 
 	ismap := false
-	msg := smc.GetMessageDescriptorByFQDN(msgfqdn)
+	msg := smc.mc.GetMessageDescriptorByFQDN(msgfqdn)
 	if msg == nil {
 		ismap = true
 	}
@@ -192,4 +206,31 @@ func (smc *ServerMetaCompiler) debugf(format string, args ...interface{}) {
 	prefix := fmt.Sprintf("[servermetacompiler] ")
 	text := fmt.Sprintf(format, args...)
 	fmt.Printf("%s%s", prefix, text)
+}
+
+// check if filename has failed or any of the files, the filename imports has failed
+func (smc *ServerMetaCompiler) hasFailedRecursively(ctx context.Context, filename string) error {
+	cr := smc.mc.CompileResult()
+	mi := smc.mc.CompilerEnvironment().MetaCache().ByFilename(filename)
+	if mi == nil {
+		return errors.Errorf("file \"%s\" not successfully compiled: it has no metadata", filename)
+	}
+	pf, err := store.FileByName(ctx, filename)
+	if err != nil {
+		return err
+	}
+	failures := cr.GetResults(pf)
+	for _, failure := range failures {
+		if failure.CompilerName != "meta" {
+			continue
+		}
+		return errors.Errorf("compile of \"%s\" failed: \"%s\"", filename, failure.ErrorMessage)
+	}
+	for _, imp := range mi.Imports {
+		err := smc.hasFailedRecursively(ctx, imp.Filename)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -32,7 +32,7 @@ func Upload(dname string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Uploading to Dir: #%d (%s) in Realm #%d \"%s\"\n", dir.ID, dir.DirName, dir.Realm.ID, dir.Realm.Name)
+	fmt.Printf("[store] Uploading to Dir: #%d (%s) in Realm #%d \"%s\"\n", dir.ID, dir.DirName, dir.Realm.ID, dir.Realm.Name)
 
 	u := &Uploader{root: dname}
 	//	ctx := authremote.Context()
@@ -55,7 +55,7 @@ func Upload(dname string) error {
 		fmt.Printf("Closerecv failed\n")
 		return err
 	}
-	fmt.Printf("Created version %d (%s)\n", dv.ID, dv.UniqueReference)
+	fmt.Printf("[store] Created version %d (%s)\n", dv.ID, dv.UniqueReference)
 	return nil
 }
 func (u *Uploader) Walker(root string, rel string) error {
@@ -118,7 +118,7 @@ func (u *Uploader) uploadFile(npath string, filename string) error {
 			break
 		}
 		if err != nil {
-			fmt.Printf("Upload failed: %s\n", err)
+			fmt.Printf("[store] Upload failed: %s\n", err)
 			return err
 		}
 	}

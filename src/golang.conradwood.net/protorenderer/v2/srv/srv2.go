@@ -7,6 +7,7 @@ import (
 	cma "golang.conradwood.net/apis/common"
 	pb "golang.conradwood.net/apis/protorenderer2"
 	"golang.conradwood.net/go-easyops/authremote"
+	cm "golang.conradwood.net/go-easyops/cmdline"
 	"golang.conradwood.net/go-easyops/linux"
 	"golang.conradwood.net/go-easyops/server"
 	"golang.conradwood.net/go-easyops/utils"
@@ -33,11 +34,17 @@ func Start() {
 	fmt.Printf("Starting protorenderer-server (v2)\n")
 	server.SetHealth(cma.Health_STARTING)
 
-	hd, err := utils.HomeDir()
-	utils.Bail("failed to get homedir", err)
-	CompileEnv = &StandardCompilerEnvironment{workdir: hd + "/tmp/pr/v2"}
-	metadata.MetaCache.SetEnv(CompileEnv)
-
+	hd := "/tmp"
+	if cm.Datacenter() {
+		hd, err = utils.HomeDir()
+		utils.Bail("failed to get homedir", err)
+	}
+	workdir := hd + "/pr/v2"
+	fmt.Printf("Workdir: %s\n", workdir)
+	mc := metadata.New()
+	CompileEnv = &StandardCompilerEnvironment{mc: mc, workdir: workdir}
+	mc.SetEnv(CompileEnv)
+	CompileEnv.Fork()
 	utils.RecreateSafely(CompileEnv.workdir + "/store")
 	//scr := &StandardCompileResult{}
 	mkdir(CompileEnv.AllKnownProtosDir())
@@ -77,9 +84,11 @@ func server_started() {
 	}
 	reloadVersionInfo(CompileEnv)
 	b := *recompile_on_startup
-	if !utils.FileExists(CompileEnv.StoreDir() + "/versioninfo.pbbin") {
-		b = true
-	}
+	/*
+		if !utils.FileExists(CompileEnv.StoreDir() + "/versioninfo.pbbin") {
+			b = true
+		}
+	*/
 	if b {
 		err := RecompileStore(CompileEnv)
 		utils.Bail("failed to recompile store", err)

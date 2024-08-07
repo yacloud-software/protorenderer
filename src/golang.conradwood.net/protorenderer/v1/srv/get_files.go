@@ -2,7 +2,6 @@ package srv
 
 import (
 	"context"
-	"fmt"
 	pr "golang.conradwood.net/apis/protorenderer"
 	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/protorenderer/v1/compiler"
@@ -90,7 +89,7 @@ func (p *protoRenderer) GetFilesJavaClass(ctx context.Context, req *pr.ID) (*pr.
 	//	fmt.Printf("Need java class files for %s\n", pkg.FQDN)
 	rf, err := compiler.Files(ctx, pkg.Proto, filetype)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "unable to get java files for proto \"%s\": %s", pkg.Proto, err)
 	}
 	fl := &pr.FilenameList{}
 	for _, f := range rf {
@@ -202,7 +201,7 @@ func (p *protoRenderer) GetFile(ctx context.Context, req *pr.FileRequest) (*pr.F
 		} else if suffix == ".go" || suffix == ".pb.go" {
 			compiler = cv.goCompiler
 		} else {
-			return nil, fmt.Errorf("unknown file \"%s\"", suffix)
+			return nil, errors.Errorf("unknown file \"%s\"", suffix)
 		}
 	} else {
 		if req.Compiler == pr.CompilerType_GOLANG {
@@ -228,31 +227,3 @@ func (p *protoRenderer) GetFile(ctx context.Context, req *pr.FileRequest) (*pr.F
 	res := &pr.File{Content: ct}
 	return res, nil
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

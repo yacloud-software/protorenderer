@@ -9,10 +9,6 @@ import (
 	"sync"
 )
 
-var (
-	MetaCache = &metaCache{metaEntries: make(map[string]*metaEntry)}
-)
-
 type metaCache struct {
 	sync.Mutex
 	ce          interfaces.CompilerEnvironment
@@ -26,6 +22,29 @@ type metaEntry struct {
 	mc            *metaCache
 }
 
+func New() *metaCache {
+	return &metaCache{metaEntries: make(map[string]*metaEntry)}
+}
+func (mc *metaCache) Add(pfi *pb.ProtoFileInfo) {
+	mc.Lock()
+	defer mc.Unlock()
+	fname := pfi.ProtoFile.Filename
+	fmt.Printf("[meta] Adding %s\n", fname)
+	mc.metaEntries[fname] = &metaEntry{filename: fname, protofileinfo: pfi, mc: mc}
+}
+func (mc *metaCache) Fork() interfaces.MetaCache {
+	mc.Lock()
+	defer mc.Unlock()
+	res := &metaCache{
+		ce:          mc.ce,
+		has_read:    false,
+		metaEntries: make(map[string]*metaEntry),
+	}
+	for k, v := range mc.metaEntries {
+		res.metaEntries[k] = v
+	}
+	return res
+}
 func (mc *metaCache) SetEnv(ce interfaces.CompilerEnvironment) {
 	mc.ce = ce
 }
@@ -91,13 +110,13 @@ func (mc *metaCache) allWithDependencyOnRecursive(res map[string]*pb.ProtoFileIn
 			return err
 		}
 		for _, imp := range pfi.Imports {
-			if imp.Name == filename {
-				_, fd := res[imp.Name]
+			if imp.Filename == filename {
+				_, fd := res[imp.Filename]
 				if fd {
 					continue
 				}
-				res[imp.Name] = pfi
-				err = mc.allWithDependencyOnRecursive(res, pfi.ProtoFile.Name, maxdepth, cur_depth+1)
+				res[imp.Filename] = pfi
+				err = mc.allWithDependencyOnRecursive(res, pfi.ProtoFile.Filename, maxdepth, cur_depth+1)
 				if err != nil {
 					return err
 				}
@@ -132,13 +151,18 @@ func (me *metaEntry) GetProtoFileInfo() (*pb.ProtoFileInfo, error) {
 
 // get a protofileinfo for a file
 func (mc *metaCache) ByProtoFile(pf interfaces.ProtoFile) *pb.ProtoFileInfo {
+	return mc.ByFilename(pf.GetFilename())
+}
+
+// get a protofileinfo for a .proto  file
+func (mc *metaCache) ByFilename(fname string) *pb.ProtoFileInfo {
 	err := mc.readAllIfNecessary()
 	if err != nil {
 		fmt.Printf("[metadata] failed to read meta: %s\n", err)
 		return nil
 	}
 	mc.Lock()
-	me := mc.metaEntries[pf.GetFilename()]
+	me := mc.metaEntries[fname]
 	mc.Unlock()
 	if me == nil {
 		return nil
@@ -149,4 +173,18 @@ func (mc *metaCache) ByProtoFile(pf interfaces.ProtoFile) *pb.ProtoFileInfo {
 		return nil
 	}
 	return pfi
+}
+
+func (mc *metaCache) ImportFrom(src interfaces.MetaCache) {
+	cast, ok := src.(*metaCache)
+	if !ok {
+		panic("cannot currently do a generic interface import of metacaches")
+	}
+	cast.Lock()
+	defer cast.Unlock()
+	mc.Lock()
+	defer mc.Unlock()
+	for k, v := range cast.metaEntries {
+		mc.metaEntries[k] = v
+	}
 }

@@ -6,6 +6,7 @@ import (
 	//	"flag"
 	"fmt"
 	pr "golang.conradwood.net/apis/protorenderer"
+	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/go-easyops/linux"
 	"golang.conradwood.net/go-easyops/utils"
 	"golang.conradwood.net/protorenderer/cmdline"
@@ -284,7 +285,7 @@ func (j *JavaCompiler) protoFileToJavaFile(pf *pr.ProtoFile) ([]string, error) {
 	dir := j.javaSrc + "/" + xs
 	st, err := AllJava(dir)
 	if err != nil {
-		return nil, fmt.Errorf("protoFileToJavaFile failed for %s (javapackage %s): %s", pf.Filename, jp, err)
+		return nil, errors.Errorf("protoFileToJavaFile failed for %s (javapackage %s): %s", pf.Filename, jp, err)
 	}
 	var res []string
 	for _, f := range st {
@@ -307,18 +308,28 @@ func (j *JavaCompiler) Errorf(text string, err error) error {
 		es = es[:1500] + "..."
 	}
 	f := prefix + fmt.Sprintf("while executing \"%s\", an error has occured: %s", text, es)
-	return fmt.Errorf(f)
+	return errors.Errorf(f)
 }
 func (j *JavaCompiler) Files(ctx context.Context, pkg *pr.Package, filetype string) ([]File, error) {
 	var res []File
+	if pkg.Prefix == "." {
+		return res, nil
+	}
 	javadirname := goPackagenameToJavaDir(pkg.Prefix)
 
 	if filetype == ".class" {
 		d := j.javaClasses + "/" + javadirname
+		abs, err := filepath.Abs(d)
+		if err != nil {
+			return nil, err
+		}
+		if d == "/" || abs == "/" || strings.HasPrefix(abs, "/etc") {
+			return nil, errors.Errorf("attempt to retrieve root dir for pkg \"%s\"", pkg.Prefix)
+		}
 		//		fmt.Printf("Finding .class files in \"%s\"\n", d)
 		fs, err := AllFiles(d, ".class")
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "whilst attempting to retrieve \"%s\" in dir \"%s\"", pkg.Prefix, d)
 		}
 		for _, f := range fs {
 			res = append(res, &StdFile{
@@ -329,7 +340,7 @@ func (j *JavaCompiler) Files(ctx context.Context, pkg *pr.Package, filetype stri
 		}
 
 	} else {
-		return nil, fmt.Errorf("java compiler does not provide files of type \"%s\"", filetype)
+		return nil, errors.Errorf("java compiler does not provide files of type \"%s\"", filetype)
 	}
 	return res, nil
 }

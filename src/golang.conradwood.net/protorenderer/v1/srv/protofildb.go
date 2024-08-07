@@ -20,7 +20,7 @@ func findOrUpdateProtoInDB(ctx context.Context, req *pb.AddProtoRequest) (*pb2.D
 		return nil, err
 	}
 	if res == nil {
-		res = &pb2.DBProtoFile{Name: req.Name, RepositoryID: req.RepositoryID}
+		res = &pb2.DBProtoFile{Filename: req.Name, RepositoryID: req.RepositoryID}
 		_, err = dbproto.Save(ctx, res)
 		if err != nil {
 			return nil, err
@@ -43,7 +43,7 @@ func FindByName(ctx context.Context, name string) (*pb2.DBProtoFile, error) {
 	if p != nil {
 		return p.(*pb2.DBProtoFile), nil
 	}
-	dbp, err := dbproto.ByName(ctx, name)
+	dbp, err := dbproto.ByFilename(ctx, name)
 	if err != nil {
 		return nil, err
 	}

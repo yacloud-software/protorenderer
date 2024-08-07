@@ -10,7 +10,6 @@ import (
 	"golang.conradwood.net/protorenderer/cmdline"
 	"golang.conradwood.net/protorenderer/v2/helpers"
 	"golang.conradwood.net/protorenderer/v2/interfaces"
-	"golang.conradwood.net/protorenderer/v2/metadata"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -60,7 +59,7 @@ func (gc JavaCompiler) ShortName() string { return "java" }
 func (gc *JavaCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnvironment, files []interfaces.ProtoFile, outdir string, cr interfaces.CompileResult) error {
 
 	x := len(files)
-	files = gc.filter_known_non_working(files, cr)
+	files = gc.filter_known_non_working(ce, files, cr)
 	if len(files) == 0 {
 		return errors.Errorf("javacompiler invoked with %d files, but after filtering broken ones, none left", x)
 	}
@@ -170,7 +169,7 @@ func (gc *JavaCompiler) compileJava2Class(ctx context.Context, ce interfaces.Com
 		return errors.Wrap(err)
 	}
 
-	fmt.Printf("Start java (.java->.class) compilation (src=%s,target=%s)...\n", dir, targetdir)
+	fmt.Printf("Start java (.java->.class) compilation (src=%s,target=%s) (%d files)...\n", dir, targetdir, len(java_files))
 	javac := "/etc/java-home/bin/javac"
 	cmd := []string{
 		javac,
@@ -181,7 +180,7 @@ func (gc *JavaCompiler) compileJava2Class(ctx context.Context, ce interfaces.Com
 			"-J-Xms5000000",
 			"-J-Xss1000000",
 		*/
-		"--source-path", "/tmp/pr/v2/compile_outdir/java/src",
+		"--source-path", fmt.Sprintf("%s/java/src", ce.CompilerOutDir()),
 		"-d",
 		targetdir,
 		//		"-cp",
@@ -193,20 +192,38 @@ func (gc *JavaCompiler) compileJava2Class(ctx context.Context, ce interfaces.Com
 		"-source",
 		cmdline.GetJavaRelease(),
 	}
-	cp, err := classpath()
+	cp, err := classpath(ce)
 	if err != nil {
 		return errors.Wrap(err)
 	}
 	sort.Slice(java_files, func(i, j int) bool {
 		return java_files[i] < java_files[j]
 	})
+	/*
+		at first, we are optimistic, try compiling all at once. this is the "good path". if none fails, it is the fastest means to compile
+		if the compiler fails, we go through each file to find out which one failed
+	*/
+	fmt.Printf("[javacompiler] Compiling %d java files to class..\n", len(java_files))
+	cmdandfile := append(cmd, java_files...)
+	l := linux.New()
+	env := []string{
+		"CLASSPATH=" + strings.Join(cp, ":"),
+	}
+	l.SetEnvironment(env)
+	l.SetMaxRuntime(time.Duration(60) * time.Second)
+	_, err = l.SafelyExecuteWithDir(cmdandfile, dir, nil)
+	if err == nil {
+		// none failed
+		return nil
+	}
+	// try each file
 	for i, java_file := range java_files {
 		source_proto_name, err := gc.get_source_from_java_file(dir + "/" + java_file)
 		if err != nil {
 			return errors.Wrap(err)
 		}
 
-		fmt.Printf("[javacompiler] Compiling %s->%s->class file (%d of %d)\n", source_proto_name, java_file, i, len(java_files))
+		fmt.Printf("[javacompiler] Compiling %s->%s->class file (%d of %d)\n", source_proto_name, java_file, i+1, len(java_files))
 		cmdandfile := append(cmd, java_file)
 		l := linux.New()
 		env := []string{
@@ -233,7 +250,7 @@ func (gc *JavaCompiler) compileJava2Class(ctx context.Context, ce interfaces.Com
 	return nil
 }
 
-func classpath() ([]string, error) {
+func classpath(ce interfaces.CompilerEnvironment) ([]string, error) {
 	jars, err := utils.FindFile(fmt.Sprintf("extra/jars"))
 	//	jars, err := utils.FindFile(fmt.Sprintf("extra/%s/jars", cmdline.GetCompilerVersion()))
 	if err != nil {
@@ -252,16 +269,19 @@ func classpath() ([]string, error) {
 		jf := jars + "/" + j
 		res = append(res, jf)
 	}
+	// order really matters!
+	res = append(res, fmt.Sprintf("%s", ce.CompilerOutDir()+"/java/classes"))
+	res = append(res, fmt.Sprintf("%s", ce.StoreDir()+"/java/classes"))
 	return res, nil
 }
 
-func (gc *JavaCompiler) filter_known_non_working(files []interfaces.ProtoFile, cr interfaces.CompileResult) []interfaces.ProtoFile {
+func (gc *JavaCompiler) filter_known_non_working(ce interfaces.CompilerEnvironment, files []interfaces.ProtoFile, cr interfaces.CompileResult) []interfaces.ProtoFile {
 	var res []interfaces.ProtoFile
 	for _, pf := range files {
-		pfi := metadata.MetaCache.ByProtoFile(pf)
+		pfi := ce.MetaCache().ByProtoFile(pf)
 		if pfi == nil {
 			// what should we do if we have no metadata here?
-			fmt.Printf("[javacompiler] no metadata for %s\n", pf.GetFilename())
+			fmt.Printf("[javacompiler] filter: no metadata for %s\n", pf.GetFilename())
 			continue
 		}
 		// check java package name
@@ -270,15 +290,15 @@ func (gc *JavaCompiler) filter_known_non_working(files []interfaces.ProtoFile, c
 			java_package = pfi.Package
 		}
 		if java_package == "" {
-			cr.AddFailed(gc, pf, fmt.Errorf("unable to determine java package name"), nil)
+			cr.AddFailed(gc, pf, fmt.Errorf("filter: unable to determine java package name"), nil)
 			continue
 		}
 		if strings.Contains(java_package, " ") {
-			cr.AddFailed(gc, pf, fmt.Errorf("Invalid space in Packagename: \"%s\"", java_package), nil)
+			cr.AddFailed(gc, pf, fmt.Errorf("filter: Invalid space in Packagename: \"%s\"", java_package), nil)
 			continue
 		}
 		if numeric_regex.MatchString(java_package) {
-			cr.AddFailed(gc, pf, fmt.Errorf("Invalid digit in Packagename: \"%s\"", java_package), nil)
+			cr.AddFailed(gc, pf, fmt.Errorf("filter: Invalid digit in Packagename: \"%s\"", java_package), nil)
 			continue
 		}
 		res = append(res, pf)

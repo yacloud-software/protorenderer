@@ -1,5 +1,10 @@
 package main
 
+import (
+	"fmt"
+	"golang.conradwood.net/protorenderer/v2/interfaces"
+)
+
 type StandardCompilerEnvironment struct {
 	workdir string
 }
@@ -22,4 +27,10 @@ func (sce *StandardCompilerEnvironment) ResultsDir() string {
 }
 func (sce *StandardCompilerEnvironment) CompilerOutDir() string {
 	return sce.workdir + "/compile_outdir"
+}
+func (sce *StandardCompilerEnvironment) MetaCache() interfaces.MetaCache {
+	return nil
+}
+func (sce *StandardCompilerEnvironment) Printf(format string, args ...interface{}) {
+	fmt.Printf(format, args...)
 }

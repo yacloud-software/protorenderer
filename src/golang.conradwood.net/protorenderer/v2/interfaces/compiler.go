@@ -5,11 +5,10 @@ import (
 	pb "golang.conradwood.net/apis/protorenderer2"
 )
 
-// a .proto file
+// this is a .proto file. usually instantiated via the database (e.g. a DBProtoFile implements this)
 type ProtoFile interface {
 	GetID() uint64
 	GetFilename() string // always relative
-	Content() []byte
 }
 
 // e.g. implemented by go, java, python, php etc..

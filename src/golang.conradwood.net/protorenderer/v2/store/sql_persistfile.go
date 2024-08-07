@@ -30,7 +30,7 @@ func GetOrCreateFile(ctx context.Context, filename string, repoid uint64) (*pb2.
 	}
 
 	fname := strings.TrimPrefix(filename, "protos/")
-	files, err := db.DefaultDBDBProtoFile().ByName(ctx, fname)
+	files, err := db.DefaultDBDBProtoFile().ByFilename(ctx, fname)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +38,7 @@ func GetOrCreateFile(ctx context.Context, filename string, repoid uint64) (*pb2.
 	if len(files) != 0 {
 		res = files[0]
 	} else {
-		res = &pb2.DBProtoFile{Name: fname, RepositoryID: repoid}
+		res = &pb2.DBProtoFile{Filename: fname, RepositoryID: repoid}
 		_, err = db.DefaultDBDBProtoFile().Save(ctx, res)
 		if err != nil {
 			return nil, err
@@ -69,7 +69,7 @@ func FileByName(ctx context.Context, filename string) (*pb2.DBProtoFile, error) 
 	}
 
 	fname := strings.TrimPrefix(filename, "protos/")
-	files, err := db.DefaultDBDBProtoFile().ByName(ctx, fname)
+	files, err := db.DefaultDBDBProtoFile().ByFilename(ctx, fname)
 	if err != nil {
 		return nil, err
 	}

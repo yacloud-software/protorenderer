@@ -3,25 +3,19 @@ package server
 import (
 	"context"
 	"fmt"
-	google_protobuf "github.com/golang/protobuf/protoc-gen-go/descriptor"
+	//	google_protobuf "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"golang.conradwood.net/apis/common"
 	pb "golang.conradwood.net/apis/protorenderer2"
 	"golang.conradwood.net/go-easyops/utils"
-	"golang.conradwood.net/protorenderer/cmdline"
+	//	"golang.conradwood.net/protorenderer/cmdline"
 	"golang.conradwood.net/protorenderer/v2/helpers"
 	mcomp "golang.conradwood.net/protorenderer/v2/meta_compiler"
 	"golang.conradwood.net/protorenderer/v2/store"
-	"sort"
 	"strings"
 )
 
 type ServerMetaCompiler struct {
-	mc          *mcomp.MetaCompiler
-	descriptors map[string]*MessageDescriptor
-}
-type MessageDescriptor struct {
-	ID        uint64
-	descproto *google_protobuf.DescriptorProto
+	mc *mcomp.MetaCompiler
 }
 
 // called by the protoc plugin
@@ -31,7 +25,7 @@ func InternalMetaSubmit(ctx context.Context, req *pb.ProtocRequest) (*common.Voi
 		fmt.Printf("meta compiler server invoked with an invalid meta compiler id (%s)\n", err)
 		return nil, err
 	}
-	icm := &ServerMetaCompiler{mc: mc, descriptors: make(map[string]*MessageDescriptor)}
+	icm := &ServerMetaCompiler{mc: mc}
 	// we want all protofiles in the database, to be able to refer to them by ID
 	// we also need a map of all protobuf messages, because within a message we might reference another one
 	err = icm.save_request_to_db(ctx, req)
@@ -46,6 +40,10 @@ func InternalMetaSubmit(ctx context.Context, req *pb.ProtocRequest) (*common.Voi
 		fmt.Printf("[metacompiler] Protofile request received: %s (submitted=%v,processed=%v)\n", *pf.Name, was_submitted, was_processed)
 		if !was_submitted {
 			// don't re-run the meta-compiler for a dependency
+			if icm.mc.CompilerEnvironment().MetaCache().ByFilename(*pf.Name) == nil {
+				panic(fmt.Sprintf("not submitted, and not in metacache: %s", *pf.Name))
+			}
+
 			continue
 		}
 		if was_processed {
@@ -61,6 +59,8 @@ func InternalMetaSubmit(ctx context.Context, req *pb.ProtocRequest) (*common.Voi
 		if err != nil {
 			return nil, err
 		}
+
+		icm.mc.CompilerEnvironment().MetaCache().Add(info)
 
 		// save the meta information to disk
 		y, err := utils.MarshalBytes(info)
@@ -93,48 +93,20 @@ func (smc *ServerMetaCompiler) add_info_text(ctx context.Context, info *pb.Proto
 				PrimitiveType1String: fmt.Sprintf("%v", field.PrimitiveType1),
 				PrimitiveType2String: fmt.Sprintf("%v", field.PrimitiveType2),
 			}
-			msg := smc.GetMessageDescriptorByID(field.ObjectID1)
+			msg := smc.mc.GetMessageDescriptorByID(field.ObjectID1)
 			if msg != nil {
-				pft.ObjectID1String = *msg.descproto.Name
+				pft.ObjectID1String = *msg.DescProto().Name
 			}
-			msg = smc.GetMessageDescriptorByID(field.ObjectID2)
+			msg = smc.mc.GetMessageDescriptorByID(field.ObjectID2)
 			if msg != nil {
-				pft.ObjectID2String = *msg.descproto.Name
+				pft.ObjectID2String = *msg.DescProto().Name
 			}
 			field.TextualRepresentation = pft
 		}
 	}
 	return nil
 }
-func (smc *ServerMetaCompiler) GetMessageDescriptorByID(id uint64) *MessageDescriptor {
-	for _, msg := range smc.descriptors {
-		if msg.ID == id {
-			return msg
-		}
-	}
-	return nil
-}
-func (smc *ServerMetaCompiler) GetMessageDescriptorByFQDN(fqdn string) *MessageDescriptor {
-	msg, found := smc.descriptors[fqdn]
-	if found {
-		return msg
-	}
-	if cmdline.GetDebugMeta() {
-		var names []string
-		for k, _ := range smc.descriptors {
-			names = append(names, k)
-		}
-		sort.Slice(names, func(i, j int) bool {
-			return names[i] < names[j]
-		})
-		fmt.Printf("Known proto messages:\n")
-		for _, n := range names {
-			fmt.Printf(" \"%s\"\n", n)
-		}
-		fmt.Printf("Not found: \"%s\"\n", fqdn)
-	}
-	return nil
-}
+
 func (icm *ServerMetaCompiler) save_request_to_db(ctx context.Context, req *pb.ProtocRequest) error {
 	for _, pf := range req.ProtoFiles {
 		if icm.mc.WasProcessed(*pf.Name) {
@@ -153,7 +125,7 @@ func (icm *ServerMetaCompiler) save_request_to_db(ctx context.Context, req *pb.P
 				return err
 			}
 			fqdn := fmt.Sprintf(".%v.%v", *pf.Package, *ms.Name)
-			icm.descriptors[fqdn] = &MessageDescriptor{ID: msg.ID, descproto: ms}
+			icm.mc.AddDescriptor(fqdn, msg.ID, ms)
 		}
 	}
 	return nil

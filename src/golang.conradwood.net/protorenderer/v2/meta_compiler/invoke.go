@@ -97,7 +97,7 @@ func (gc *MetaCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnvir
 				out, err := l.SafelyExecuteWithDir(cmdfl, dir, nil)
 				if err != nil {
 					fmt.Printf("[metacompiler] protoc output: %s\n", out)
-					fmt.Printf("[metacompiler] Failed to compile: %s\n", err)
+					fmt.Printf("[metacompiler] Failed to compile %s: %s\n", filename, err)
 					cr.AddFailed(gc, pf, err, []byte(out))
 				}
 			}(xpf)
@@ -105,13 +105,16 @@ func (gc *MetaCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnvir
 		wg.Wait()
 	} else {
 		for _, pf := range files {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
 			filename := pf.GetFilename()
 			cmdfl := append(cmd, filename)
 
 			out, err := l.SafelyExecuteWithDir(cmdfl, dir, nil)
 			if err != nil {
 				fmt.Printf("[metacompiler] protoc output: %s\n", out)
-				fmt.Printf("[metacompiler] Failed to compile: %s\n", err)
+				fmt.Printf("[metacompiler] Failed to compile %s: %s\n", filename, err)
 				cr.AddFailed(gc, pf, err, []byte(out))
 			}
 		}

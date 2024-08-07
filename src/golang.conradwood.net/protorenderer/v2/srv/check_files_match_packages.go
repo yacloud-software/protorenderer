@@ -9,6 +9,10 @@ import (
 	"strings"
 )
 
+var (
+	KNOWN_ODD_PACKAGES = []string{"google", "gogoproto"}
+)
+
 type check_compiler struct {
 }
 
@@ -32,6 +36,17 @@ func check_if_files_match_packages(ctx context.Context, ce interfaces.CompilerEn
 			scr.AddFailed(fake_comp, pf, errors.Errorf("file \"%s\" is missing mandatory option package", fname), nil)
 			continue
 		}
+		odd_package := false
+		for _, kop := range KNOWN_ODD_PACKAGES {
+			if strings.Contains(mi.Package, kop) || strings.Contains(mi.PackageGo, kop) {
+				odd_package = true
+				break
+			}
+		}
+		if odd_package {
+			return nil
+		}
+
 		if mi.PackageGo == "" {
 			scr.AddFailed(fake_comp, pf, errors.Errorf("file \"%s\" is missing mandatory option go_package", fname), nil)
 			continue

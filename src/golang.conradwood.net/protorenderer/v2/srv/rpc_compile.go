@@ -109,7 +109,12 @@ func compile(srv compile_serve_req, save_on_success bool) error {
 	}
 
 	// compile protos
-	err = compile_all_compilers(ctx, ce, scr, pfs)
+	compilers := []interfaces.Compiler{golang.New()}
+	if cmdline.GetCompilerEnabledJava() {
+		compilers = append(compilers, java.New())
+	}
+
+	err = compile_all_compilersWithCompilerArray(ctx, ce, scr, pfs, compilers)
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -132,7 +137,8 @@ func compile(srv compile_serve_req, save_on_success bool) error {
 	}
 
 	if opt.Save {
-		err = recompile_dependencies_with_err(ctx, ce, pfs)
+
+		err = recompile_dependencies_with_err(ctx, ce, pfs, compilers)
 		if err != nil {
 			fmt.Printf("Recompiling dependencies: %s\n", err)
 			return errors.Errorf("failed to recompile dependencies: %s\n", err)
@@ -157,11 +163,14 @@ func compile(srv compile_serve_req, save_on_success bool) error {
 
 // compile all files with all enabled compilers and place results in ce.CompilerOutDir()
 func compile_all_compilers(ctx context.Context, ce interfaces.CompilerEnvironment, scr interfaces.CompileResult, pfs []interfaces.ProtoFile) error {
-	od := ce.CompilerOutDir()
 	compilers := []interfaces.Compiler{golang.New()}
 	if cmdline.GetCompilerEnabledJava() {
 		compilers = append(compilers, java.New())
 	}
+	return compile_all_compilersWithCompilerArray(ctx, ce, scr, pfs, compilers)
+}
+func compile_all_compilersWithCompilerArray(ctx context.Context, ce interfaces.CompilerEnvironment, scr interfaces.CompileResult, pfs []interfaces.ProtoFile, compilers []interfaces.Compiler) error {
+	od := ce.CompilerOutDir()
 
 	for _, comp := range compilers {
 		ce.Printf("[compile] starting \"%s\" compiler with %d files\n", comp.ShortName(), len(pfs))
@@ -300,10 +309,10 @@ func remove_broken(pfs []interfaces.ProtoFile, scr interfaces.CompileResult) []i
 }
 
 // recompile all the dependencies on the given file(s)...
-func recompile_dependencies_with_err(ctx context.Context, ce interfaces.CompilerEnvironment, pfs []interfaces.ProtoFile) error {
+func recompile_dependencies_with_err(ctx context.Context, ce interfaces.CompilerEnvironment, pfs []interfaces.ProtoFile, compilers []interfaces.Compiler) error {
 	scr := currentVersionInfo.CompileResult()
 	for _, pf := range pfs {
-		err := recompile_dependencies(ctx, ce, scr, pf)
+		err := recompile_dependencies(ctx, ce, scr, pf, compilers)
 		if err != nil {
 			return errors.Wrap(err)
 		}
@@ -312,7 +321,7 @@ func recompile_dependencies_with_err(ctx context.Context, ce interfaces.Compiler
 }
 
 // recompile any files that directly or indirectly import "pf"
-func recompile_dependencies(ctx context.Context, ce interfaces.CompilerEnvironment, scr interfaces.CompileResult, pf interfaces.ProtoFile) error {
+func recompile_dependencies(ctx context.Context, ce interfaces.CompilerEnvironment, scr interfaces.CompileResult, pf interfaces.ProtoFile, compilers []interfaces.Compiler) error {
 	pfs, err := ce.MetaCache().AllWithDependencyOn(pf.GetFilename(), 0)
 	if err != nil {
 		return errors.Wrap(err)
@@ -323,7 +332,7 @@ func recompile_dependencies(ctx context.Context, ce interfaces.CompilerEnvironme
 		cpfs = append(cpfs, spf)
 	}
 
-	err = compile_all_compilers(ctx, ce, scr, cpfs)
+	err = compile_all_compilersWithCompilerArray(ctx, ce, scr, cpfs, compilers)
 	if err != nil {
 		return errors.Wrap(err)
 	}

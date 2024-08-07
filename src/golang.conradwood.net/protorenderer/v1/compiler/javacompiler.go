@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	//	"flag"
+	"flag"
 	"fmt"
 	pr "golang.conradwood.net/apis/protorenderer"
 	"golang.conradwood.net/go-easyops/errors"
@@ -21,6 +22,8 @@ import (
 )
 
 var (
+	ignore_err = flag.Bool("java_ignore_retrieve_file_error", false, "if true instead of erroring, ignore files that cannot be retrieved")
+
 /*
 java_compiler_bin   = flag.String("java_compiler", "/usr/bin/javac", "path to javac binary")
 java_release        = flag.String("java_release", "11", "flag --target [java_release] for javac: build for specific target version")
@@ -324,11 +327,17 @@ func (j *JavaCompiler) Files(ctx context.Context, pkg *pr.Package, filetype stri
 			return nil, err
 		}
 		if d == "/" || abs == "/" || strings.HasPrefix(abs, "/etc") {
+			if *ignore_err {
+				return nil, nil
+			}
 			return nil, errors.Errorf("attempt to retrieve root dir for pkg \"%s\"", pkg.Prefix)
 		}
 		//		fmt.Printf("Finding .class files in \"%s\"\n", d)
 		fs, err := AllFiles(d, ".class")
 		if err != nil {
+			if *ignore_err {
+				return nil, nil
+			}
 			return nil, errors.Wrapf(err, "whilst attempting to retrieve \"%s\" in dir \"%s\"", pkg.Prefix, d)
 		}
 		for _, f := range fs {

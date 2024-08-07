@@ -29,19 +29,32 @@ func get_files() {
 		if !packageMatches(pkg) {
 			continue
 		}
+		gofiles := &pb.FilenameList{}
+		protofiles := &pb.FilenameList{}
+		nanofiles := &pb.FilenameList{}
+		javafiles := &pb.FilenameList{}
+
 		pkgid := &pb.ID{ID: pkg.ID}
-		gofiles, err := protoClient.GetFilesGO(ctx, pkgid)
-		utils.Bail("failed to get go files", err)
 
-		javafiles, err := protoClient.GetFilesJavaClass(ctx, pkgid)
-		utils.Bail("failed to get java files", err)
+		if requested_files("golang") {
+			gofiles, err = protoClient.GetFilesGO(ctx, pkgid)
+			utils.Bail("failed to get go files", err)
+		}
 
-		protofiles, err := protoClient.GetFilesProto(ctx, pkgid)
-		utils.Bail("failed to get proto files", err)
+		if requested_files("javaclass") {
+			javafiles, err = protoClient.GetFilesJavaClass(ctx, pkgid)
+			utils.Bail("failed to get java files", err)
+		}
 
-		nanofiles, err := protoClient.GetFilesNanoPB(ctx, pkgid)
-		utils.Bail("failed to get proto files", err)
+		if requested_files("proto") {
+			protofiles, err = protoClient.GetFilesProto(ctx, pkgid)
+			utils.Bail("failed to get proto files", err)
+		}
 
+		if requested_files("nanopb") {
+			nanofiles, err = protoClient.GetFilesNanoPB(ctx, pkgid)
+			utils.Bail("failed to get proto files", err)
+		}
 		fmt.Printf("Name: %s (%d go files, %d java files, %d protos)\n", pkg.Name, len(gofiles.Files), len(javafiles.Files), len(protofiles.Files))
 		for _, f := range gofiles.Files {
 			ctx = ar.Context()
@@ -112,30 +125,9 @@ func packageMatches(fp *pb.FlatPackage) bool {
 	return false
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+func requested_files(name string) bool {
+	if name == "proto" {
+		return true
+	}
+	return false
+}

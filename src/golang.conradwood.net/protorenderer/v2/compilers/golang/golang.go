@@ -44,6 +44,9 @@ func (gc *golangCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnv
 		cmd = append(cmd, fmt.Sprintf("-I%s", id))
 	}
 	for _, pf := range files {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		f := pf.GetFilename()
 		Debugf("Compiler working dir: %s, compiling %s\n", dir, f)
 		cmdandfile := append(cmd, f)
@@ -73,6 +76,9 @@ func (gc *golangCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnv
 
 		//	fmt.Printf("Compiler working dir: %s\n", dir)
 		for _, pf := range files {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
 			f := pf.GetFilename()
 			//		fmt.Printf("Compiler working dir: %s, compiling %s\n", dir, f)
 			cmdandfile := append(cmd, f)

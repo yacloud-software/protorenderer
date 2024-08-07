@@ -1,7 +1,7 @@
 package helpers
 
 import (
-	"fmt"
+	//	"fmt"
 	"golang.conradwood.net/go-easyops/utils"
 	"strings"
 )
@@ -36,7 +36,7 @@ func (f *fileModifier) Save() error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("modifier: saved \"%s\"\n", f.filename)
+	//	fmt.Printf("modifier: saved \"%s\"\n", f.filename)
 	return nil
 }
 

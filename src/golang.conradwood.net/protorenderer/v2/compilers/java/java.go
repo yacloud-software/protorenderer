@@ -31,7 +31,7 @@ java compiles in two stages:
 2) .java to .class
 */
 type JavaCompiler struct {
-	stage string
+	compiled_to_class map[string]bool
 	/*
 		WorkDir     string
 		javaSrc     string
@@ -48,7 +48,7 @@ type JavaCompiler struct {
 func New() interfaces.Compiler {
 	//	cp, _ := classpath()
 	//	fmt.Printf("CLASSPATH=%s\n", strings.Join(cp, ":"))
-	return &JavaCompiler{}
+	return &JavaCompiler{compiled_to_class: make(map[string]bool)}
 }
 
 func (gc JavaCompiler) ShortName() string { return "java" }
@@ -147,6 +147,9 @@ func (gc *JavaCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnvir
 				return errors.Errorf("unable to save modified file: %w", err)
 			}
 		}
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 	}
 	err = gc.compileJava2Class(ctx, ce, successful_files, outdir, cr)
 	if err != nil {
@@ -199,6 +202,19 @@ func (gc *JavaCompiler) compileJava2Class(ctx context.Context, ce interfaces.Com
 	sort.Slice(java_files, func(i, j int) bool {
 		return java_files[i] < java_files[j]
 	})
+
+	// filter those that were done already
+	var njava_files []string
+	for _, nf := range java_files {
+		if gc.compiled_to_class[nf] {
+			continue
+		}
+		njava_files = append(njava_files, nf)
+	}
+	java_files = njava_files
+	if len(java_files) == 0 {
+		return nil
+	}
 	/*
 		at first, we are optimistic, try compiling all at once. this is the "good path". if none fails, it is the fastest means to compile
 		if the compiler fails, we go through each file to find out which one failed
@@ -214,10 +230,16 @@ func (gc *JavaCompiler) compileJava2Class(ctx context.Context, ce interfaces.Com
 	_, err = l.SafelyExecuteWithDir(cmdandfile, dir, nil)
 	if err == nil {
 		// none failed
+		for _, jf := range java_files {
+			gc.compiled_to_class[jf] = true
+		}
 		return nil
 	}
 	// try each file
 	for i, java_file := range java_files {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		source_proto_name, err := gc.get_source_from_java_file(dir + "/" + java_file)
 		if err != nil {
 			return errors.Wrap(err)
@@ -246,6 +268,7 @@ func (gc *JavaCompiler) compileJava2Class(ctx context.Context, ce interfaces.Com
 			}
 			continue
 		}
+		gc.compiled_to_class[java_file] = true
 	}
 	return nil
 }

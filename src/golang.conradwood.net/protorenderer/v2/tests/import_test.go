@@ -17,9 +17,10 @@ import (
 
 // test on-the-fly-compile for directories
 func TestOnTheFlyCompileDirs(t *testing.T) {
+	testcompile(t, "d", "tests/04_test", map[string]int{"info": 1, "go": 1, "java": 1, "class": 6}) // re-check to make sure previous tests do not influece it
 	//	testcompile(t, "b", "tests/02_test", map[string]int{"info": 4, "java": 37, "go": 12, "class": 78})
 	testcompile(t, "a", "tests/01_test", map[string]int{"info": 1, "go": 1, "java": 1, "class": 6})
-	testcompile(t, "b", "tests/02_test", map[string]int{"info": 12, "go": 12, "java": 66, "class": 279})
+	testcompile(t, "b", "tests/02_test", map[string]int{"info": 12, "go": 12, "java": 1, "class": 22})
 	testcompile(t, "c", "tests/01_test", map[string]int{"info": 1, "go": 1, "java": 1, "class": 6}) // re-check to make sure previous tests do not influece it
 }
 func TestOnTheFlyCompileFiles(t *testing.T) {
@@ -63,7 +64,7 @@ func test_submit_file(t *testing.T, proto_dir, proto_file string, expected map[s
 	}
 	err = check_dir_against_expected(tmpdir, expected)
 	if err != nil {
-		t.Fatalf("result mismatch: %s\n", err)
+		t.Fatalf("result mismatch for %s: %s\n", proto_dir, err)
 		return
 	}
 }
@@ -95,7 +96,7 @@ func run_test(t *testing.T, testname, dir string, expected map[string]int, save 
 	t.Logf("comparing result with expected...\n")
 	err = check_dir_against_expected(protosubmitter.PROTO_COMPILE_RESULT, expected)
 	if err != nil {
-		t.Fatalf("Result mismatch: %s\n", err)
+		t.Fatalf("Result mismatch for %s: %s\n", dir, err)
 	}
 }
 
@@ -109,6 +110,9 @@ func check_dir_against_expected(dir string, expected map[string]int) error {
 	exts := make(map[string]int)
 	for _, f := range filenames {
 		e := filepath.Ext(f)
+		if e == ".goeasyops-dir" {
+			continue
+		}
 		i := exts[e]
 		i++
 		exts[e] = i

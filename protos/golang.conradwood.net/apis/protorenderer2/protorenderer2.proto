@@ -9,6 +9,7 @@ import "golang.conradwood.net/apis/h2gproxy/h2gproxy.proto";
 import "google/protobuf/descriptor.proto";
 
 // information parsed out of a .proto file, enriched with references to database IDs, created by meta
+// this is what we cache in the metacache
 // saved under info/... .info
 message ProtoFileInfo {
   DBProtoFile ProtoFile=1; // which file this was parsed from
@@ -17,6 +18,7 @@ message ProtoFileInfo {
   repeated ProtoMessageInfo Messages=4;
   string Package=5; // standard "package xxx" parameter
   string PackageJava=6; // option java_package = "foo"
+  string PackageGo=7; // standard "go_package xxx" parameter
 }
 
 message ProtoMessageInfo {
@@ -78,7 +80,7 @@ message ProtoFieldInfoText {
 // keeping a file in database with metadata
 message DBProtoFile {
   uint64 ID=1;
-  string Name=2; //  e.g. "golang.conradwood.net/apis/protorenderer/protorenderer.proto" 
+  string Filename=2; //  e.g. "golang.conradwood.net/apis/protorenderer/protorenderer.proto" 
   uint64 RepositoryID=3; // a repo id, if submitted
   string Package=4; // the string provided by the "package" option
 }
@@ -102,9 +104,12 @@ message FileTransfer {
   bool TransferComplete=3;
   uint32 RepositoryID=4; // if we are submitting a filename, then this is the repository ID where the file comes from (if any)
   FileResult Result=5; // send by server as response to a compile
-  SubmitOption SubmitOption=6; 
+  SubmitOption SubmitOption=6;
+  FileTransferStdout Output=7; // perhaps we like to print progress on stdout, then we use this to do so
 }
-
+message FileTransferStdout {
+  repeated string Lines=1;
+}
 message FileResult {
   //  bool Failed=1; // if at least one compiler failed, this is set
   string Filename=2;
@@ -132,6 +137,10 @@ message ReverseDependenciesRequest {
 message ReverseDependenciesResponse {
   repeated string Filenames=1; // the name of files which directly or indirectly  depend on the file
 }
+message ProtoFileRequest {
+  string ProtoFileName=1; // e.g. "golang.conradwood.net/apis/common/common.proto"
+  repeated string Compilers=2; // if nil, only get proto and info. Otherwise get artefacts from the specified compilers. e.g. "golang" or "java"
+}
 
 service ProtoRenderer2 {
   // protoc-gen-meta2 submits files to protorenderer server for analysis. not intented to be used by clients other than protoc-gen-meta2
@@ -142,5 +151,6 @@ service ProtoRenderer2 {
   rpc GetVersionInfo(common.Void) returns (VersionInfo);
   // get reverse depdencies, that is which files depend on the file submitted.
   rpc GetReverseDependencies(ReverseDependenciesRequest) returns (ReverseDependenciesResponse);
-
+  // get a proto file, and optionally its artefacts
+  rpc GetProtoFile(ProtoFileRequest) returns (stream FileTransfer);
 }

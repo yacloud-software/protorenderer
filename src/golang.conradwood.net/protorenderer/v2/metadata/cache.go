@@ -48,15 +48,10 @@ func (mc *metaCache) Fork() interfaces.MetaCache {
 func (mc *metaCache) SetEnv(ce interfaces.CompilerEnvironment) {
 	mc.ce = ce
 }
-
-// read all from store if required
-func (mc *metaCache) readAllIfNecessary() error {
-	if mc.has_read {
-		return nil
-	}
+func (mc *metaCache) Read(dir string) error {
 	mc.Lock()
 	defer mc.Unlock()
-	infodir := mc.ce.StoreDir() + "/info"
+	infodir := dir + "/info"
 	err := utils.DirWalk(infodir, func(root, relfile string) error {
 		if !strings.HasSuffix(relfile, ".info") {
 			return nil
@@ -80,14 +75,10 @@ func (mc *metaCache) readAllIfNecessary() error {
 }
 
 func (mc *metaCache) AllWithDependencyOn(filename string, maxdepth uint32) ([]*pb.ProtoFileInfo, error) {
-	err := mc.readAllIfNecessary()
-	if err != nil {
-		return nil, err
-	}
 	mc.Lock()
 	defer mc.Unlock()
 	res_m := make(map[string]*pb.ProtoFileInfo)
-	err = mc.allWithDependencyOnRecursive(res_m, filename, maxdepth, 0)
+	err := mc.allWithDependencyOnRecursive(res_m, filename, maxdepth, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -126,10 +117,6 @@ func (mc *metaCache) allWithDependencyOnRecursive(res map[string]*pb.ProtoFileIn
 	return nil
 }
 func (me *metaEntry) GetProtoFileInfo() (*pb.ProtoFileInfo, error) {
-	err := me.mc.readAllIfNecessary()
-	if err != nil {
-		return nil, err
-	}
 	me.Lock()
 	defer me.Unlock()
 	if me.protofileinfo != nil {
@@ -156,11 +143,6 @@ func (mc *metaCache) ByProtoFile(pf interfaces.ProtoFile) *pb.ProtoFileInfo {
 
 // get a protofileinfo for a .proto  file
 func (mc *metaCache) ByFilename(fname string) *pb.ProtoFileInfo {
-	err := mc.readAllIfNecessary()
-	if err != nil {
-		fmt.Printf("[metadata] failed to read meta: %s\n", err)
-		return nil
-	}
 	mc.Lock()
 	me := mc.metaEntries[fname]
 	mc.Unlock()

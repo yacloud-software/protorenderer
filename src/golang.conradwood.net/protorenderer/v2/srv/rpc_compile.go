@@ -137,8 +137,9 @@ func compile(srv compile_serve_req, save_on_success bool) error {
 	}
 
 	if opt.Save {
-
-		err = recompile_dependencies_with_err(ctx, ce, pfs, compilers)
+		dc := NewDependencyCompiler(ce, pfs)
+		err = dc.Recompile(ctx)
+		//		err = recompile_dependencies_with_err(ctx, ce, pfs, compilers)
 		if err != nil {
 			fmt.Printf("Recompiling dependencies: %s\n", err)
 			return errors.Errorf("failed to recompile dependencies: %s\n", err)
@@ -306,42 +307,6 @@ func remove_broken(pfs []interfaces.ProtoFile, scr interfaces.CompileResult) []i
 		res = append(res, pf)
 	}
 	return res
-}
-
-// recompile all the dependencies on the given file(s)...
-func recompile_dependencies_with_err(ctx context.Context, ce interfaces.CompilerEnvironment, pfs []interfaces.ProtoFile, compilers []interfaces.Compiler) error {
-	scr := currentVersionInfo.CompileResult()
-	for _, pf := range pfs {
-		err := recompile_dependencies(ctx, ce, scr, pf, compilers)
-		if err != nil {
-			return errors.Wrap(err)
-		}
-	}
-	return nil
-}
-
-// recompile any files that directly or indirectly import "pf"
-func recompile_dependencies(ctx context.Context, ce interfaces.CompilerEnvironment, scr interfaces.CompileResult, pf interfaces.ProtoFile, compilers []interfaces.Compiler) error {
-	pfs, err := ce.MetaCache().AllWithDependencyOn(pf.GetFilename(), 0)
-	if err != nil {
-		return errors.Wrap(err)
-	}
-	var cpfs []interfaces.ProtoFile
-	for _, npf := range pfs {
-		spf := &helpers.StandardProtoFile{Filename: npf.ProtoFile.Filename}
-		cpfs = append(cpfs, spf)
-	}
-
-	err = compile_all_compilersWithCompilerArray(ctx, ce, scr, cpfs, compilers)
-	if err != nil {
-		return errors.Wrap(err)
-	}
-	for _, cpf := range cpfs {
-		if helpers.ContainsFailure(scr.GetResults(cpf)) {
-			return errors.Errorf("failed to compile dependency \"%s\"\n", pf.GetFilename())
-		}
-	}
-	return nil
 }
 
 func send_all_broken_ones(ce interfaces.CompilerEnvironment, pfs []interfaces.ProtoFile, cr interfaces.CompileResult) {

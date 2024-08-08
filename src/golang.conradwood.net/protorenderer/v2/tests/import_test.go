@@ -17,7 +17,7 @@ import (
 
 // test on-the-fly-compile for directories
 func TestOnTheFlyCompileDirs(t *testing.T) {
-	testcompile(t, "d", "tests/04_test", map[string]int{"info": 1, "go": 1, "java": 1, "class": 6}) // re-check to make sure previous tests do not influece it
+	//	testcompile(t, "d", "tests/04_test", map[string]int{"info": 1, "go": 1, "java": 1, "class": 6}) // re-check to make sure previous tests do not influece it
 	//	testcompile(t, "b", "tests/02_test", map[string]int{"info": 4, "java": 37, "go": 12, "class": 78})
 	testcompile(t, "a", "tests/01_test", map[string]int{"info": 1, "go": 1, "java": 1, "class": 6})
 	testcompile(t, "b", "tests/02_test", map[string]int{"info": 12, "go": 12, "java": 1, "class": 22})

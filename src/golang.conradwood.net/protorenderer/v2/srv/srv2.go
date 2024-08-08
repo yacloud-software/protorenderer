@@ -33,28 +33,6 @@ func Start() {
 	var err error
 	fmt.Printf("Starting protorenderer-server (v2)\n")
 	server.SetHealth(cma.Health_STARTING)
-
-	hd := "/tmp"
-	if cm.Datacenter() {
-		hd, err = utils.HomeDir()
-		utils.Bail("failed to get homedir", err)
-	}
-	workdir := hd + "/pr/v2"
-	fmt.Printf("Workdir: %s\n", workdir)
-	mc := metadata.New()
-	CompileEnv = &StandardCompilerEnvironment{mc: mc, workdir: workdir}
-	mc.SetEnv(CompileEnv)
-	CompileEnv.Fork()
-	utils.RecreateSafely(CompileEnv.workdir + "/store")
-	//scr := &StandardCompileResult{}
-	mkdir(CompileEnv.AllKnownProtosDir())
-
-	fmt.Printf("Creating workdir...\n")
-	err = createWorkDir()
-	utils.Bail("failed to create workdir", err)
-	utils.RecreateSafely(CompileEnv.CompilerOutDir())
-	mkdir(CompileEnv.NewProtosDir())
-
 	sd := server.NewServerDef()
 	sd.SetPort(cmdline.GetRPCPort())
 	e := new(protoRenderer)
@@ -72,27 +50,52 @@ func Start() {
 }
 
 func server_started() {
+	var err error
 	server.SetHealth(cma.Health_STARTING)
-	ctx := authremote.ContextWithTimeout(time.Duration(180) * time.Second)
-	err := store.Retrieve(ctx, CompileEnv.StoreDir(), 0) // 0 == latest
-	utils.Bail("failed to retrieve latest version", err)
 
+	hd := "/tmp"
+	if cm.Datacenter() {
+		hd, err = utils.HomeDir()
+		utils.Bail("failed to get homedir", err)
+	}
+	workdir := hd + "/pr/v2"
+	fmt.Printf("Workdir: %s\n", workdir)
+	mc := metadata.New()
+	CompileEnv = &StandardCompilerEnvironment{mc: mc, workdir: workdir}
+	mc.SetEnv(CompileEnv)
+	utils.RecreateSafely(CompileEnv.workdir + "/store")
+	//scr := &StandardCompileResult{}
+	mkdir(CompileEnv.AllKnownProtosDir())
+
+	fmt.Printf("Creating workdir...\n")
+	err = createWorkDir()
+	utils.Bail("failed to create workdir", err)
+	utils.RecreateSafely(CompileEnv.CompilerOutDir())
+	mkdir(CompileEnv.NewProtosDir())
+
+	ctx := authremote.ContextWithTimeout(time.Duration(180) * time.Second)
+	err = store.Retrieve(ctx, CompileEnv.StoreDir(), 0) // 0 == latest
+	utils.Bail("failed to retrieve latest version", err)
+	fmt.Printf("Reading metadata from current version...\n")
+	err = mc.Read(CompileEnv.StoreDir())
+	utils.Bail("failed to read info files", err)
 	//	os.Exit(0)
 
 	if false {
 		java.Start(CompileEnv, CompileEnv.CompilerOutDir())
 	}
-	reloadVersionInfo(CompileEnv)
-	b := *recompile_on_startup
 	/*
-		if !utils.FileExists(CompileEnv.StoreDir() + "/versioninfo.pbbin") {
-			b = true
+		reloadVersionInfo(CompileEnv)
+		b := *recompile_on_startup
+			if !utils.FileExists(CompileEnv.StoreDir() + "/versioninfo.pbbin") {
+				b = true
+			}
+		if b {
+			err := RecompileStore(CompileEnv)
+			utils.Bail("failed to recompile store", err)
 		}
 	*/
-	if b {
-		err := RecompileStore(CompileEnv)
-		utils.Bail("failed to recompile store", err)
-	}
+
 	server.SetHealth(cma.Health_READY)
 }
 

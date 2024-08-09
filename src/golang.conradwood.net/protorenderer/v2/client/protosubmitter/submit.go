@@ -92,11 +92,11 @@ func submit_proto_filenames(abs_filenames []string, save bool) error {
 		if !utils.FileExists(fname) {
 			return errors.Errorf("file \"%s\" does not exist", fname)
 		}
+		path := "http://nopath"
 		gr, err := gitrepo.NewGitRepo(fname)
-		if err != nil {
-			return err
+		if err == nil {
+			path = gr.Path()
 		}
-		path := gr.Path()
 		nf := strings.TrimPrefix(fname, path)
 		idx := strings.Index(nf, "/protos/")
 		if idx != -1 {

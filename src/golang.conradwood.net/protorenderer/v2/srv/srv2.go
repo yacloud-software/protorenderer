@@ -64,6 +64,7 @@ func server_started() {
 	CompileEnv = &StandardCompilerEnvironment{mc: mc, workdir: workdir}
 	mc.SetEnv(CompileEnv)
 	utils.RecreateSafely(CompileEnv.workdir + "/store")
+
 	//scr := &StandardCompileResult{}
 	mkdir(CompileEnv.AllKnownProtosDir())
 
@@ -74,11 +75,20 @@ func server_started() {
 	mkdir(CompileEnv.NewProtosDir())
 
 	ctx := authremote.ContextWithTimeout(time.Duration(180) * time.Second)
+
+	// download files from binaryversions
 	err = store.Retrieve(ctx, CompileEnv.StoreDir(), 0) // 0 == latest
 	utils.Bail("failed to retrieve latest version", err)
+
+	linux.CreateIfNotExists(CompileEnv.workdir+"/store/info", 0777)
+
 	fmt.Printf("Reading metadata from current version...\n")
 	err = mc.Read(CompileEnv.StoreDir())
 	utils.Bail("failed to read info files", err)
+
+	// reload versioninfo and store it in global var
+	reloadVersionInfo(CompileEnv)
+
 	//	os.Exit(0)
 
 	if false {

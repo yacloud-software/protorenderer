@@ -85,6 +85,8 @@ golang.yacloud.eu/unixipc v0.1.26852 h1:bKxdKQVBTcuzgPuUv0ZUHui44Ys3KY+gOBTQ5m5S
 golang.yacloud.eu/unixipc v0.1.26852/go.mod h1:BboKEBCyQzeXbtXowwSLV9U+wI32wq49ZVs72+uO/ZI=
 golang.yacloud.eu/yatools v0.1.28748 h1:Y0DgBNDP57bdT8FLYWVx9+uWI6Y+CUEd/ykLrsUbLdA=
 golang.yacloud.eu/yatools v0.1.28748/go.mod h1:JejvC697Uj1K23xLv5JTaIz34lnJx1XLh6IR4daEYv8=
+golang.yacloud.eu/yatools v0.1.28981 h1:Ibx5AdEa2p0HJSMtE3fp7u+N4pQjInESZk2I38EOc/Y=
+golang.yacloud.eu/yatools v0.1.28981/go.mod h1:JejvC697Uj1K23xLv5JTaIz34lnJx1XLh6IR4daEYv8=
 google.golang.org/genproto/googleapis/rpc v0.0.0-20240528184218-531527333157 h1:Zy9XzmMEflZ/MAaA7vNcoebnRAld7FsPW1EeBB7V0m8=
 google.golang.org/genproto/googleapis/rpc v0.0.0-20240528184218-531527333157/go.mod h1:EfXuqaE1J41VCDicxHzUDm+8rk+7ZdXzHV0IhO/I6s0=
 google.golang.org/grpc v1.65.0 h1:bs/cUb4lp1G5iImFFd3u5ixQzweKizoZJAwBNLR42lc=

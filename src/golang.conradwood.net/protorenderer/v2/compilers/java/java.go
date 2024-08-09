@@ -61,7 +61,9 @@ func (gc *JavaCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnvir
 	x := len(files)
 	files = gc.filter_known_non_working(ce, files, cr)
 	if len(files) == 0 {
-		return errors.Errorf("javacompiler invoked with %d files, but after filtering broken ones, none left", x)
+		fmt.Printf("WARNING: javacompiler invoked with %d files, but after filtering broken ones, none left\n", x)
+		//		return errors.Errorf("javacompiler invoked with %d files, but after filtering broken ones, none left", x)
+		return nil
 	}
 	dir := ce.NewProtosDir()
 	targetdir := outdir + "/" + gc.ShortName()

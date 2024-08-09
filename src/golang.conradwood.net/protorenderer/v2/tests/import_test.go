@@ -17,11 +17,20 @@ import (
 
 // test on-the-fly-compile for directories
 func TestOnTheFlyCompileDirs(t *testing.T) {
-	//	testcompile(t, "d", "tests/04_test", map[string]int{"info": 1, "go": 1, "java": 1, "class": 6}) // re-check to make sure previous tests do not influece it
-	//	testcompile(t, "b", "tests/02_test", map[string]int{"info": 4, "java": 37, "go": 12, "class": 78})
-	testcompile(t, "a", "tests/01_test", map[string]int{"info": 1, "go": 1, "java": 1, "class": 6})
-	testcompile(t, "b", "tests/02_test", map[string]int{"info": 12, "go": 12, "java": 1, "class": 22})
-	testcompile(t, "c", "tests/01_test", map[string]int{"info": 1, "go": 1, "java": 1, "class": 6}) // re-check to make sure previous tests do not influece it
+	tests := []struct {
+		dir      string
+		expected map[string]int
+	}{
+		//		{"tests/04_test", map[string]int{"info": 1, "go": 1, "java": 1, "class": 6}}, // re-check to make sure previous tests do not influence it
+		{"tests/01_test", map[string]int{"info": 1, "go": 1, "java": 1, "class": 6}},
+		{"tests/02_test", map[string]int{"info": 12, "go": 12, "java": 66, "class": 279}},
+		{"tests/01_test", map[string]int{"info": 1, "go": 1, "java": 1, "class": 6}}, // re-check to make sure
+	}
+	for _, ts := range tests {
+		t.Run(ts.dir, func(tst *testing.T) {
+			testcompile(tst, ts.dir, ts.dir, ts.expected)
+		})
+	}
 }
 func TestOnTheFlyCompileFiles(t *testing.T) {
 	testcompile(t, "a", "tests/01_test/protos/golang.conradwood.net/apis/test/test.proto", map[string]int{"info": 1, "go": 1, "java": 1, "class": 6})
@@ -38,8 +47,44 @@ func TestSubmit(t *testing.T) {
 	proto_file = "golang.conradwood.net/apis/test2/test2.proto"
 	proto_dir = "tests/03_test/protos/"
 	test_submit_file(t, proto_dir, proto_file, map[string]int{"info": 1, "proto": 1, "go": 1, "java": 1, "class": 6})
+}
+
+func TestPreviousResults(t *testing.T) {
+	tdata := []struct {
+		name         string
+		java_package string
+	}{
+		{"works", ""},      //works
+		{"fails", "3 sdf"}, // fails
+	}
+	for _, td := range tdata {
+		t.Run(td.name, func(tlocal *testing.T) {
+			test_prev_res(tlocal, td.java_package)
+		})
+	}
+}
+
+func test_prev_res(t *testing.T, javapackage string) {
+	pfb := helpers.NewProtoFileBuilder("testdyn")
+	if javapackage != "" {
+		pfb.SetJavaPackage(javapackage)
+	}
+	b := pfb.Bytes()
+	td := t.TempDir()
+	write_fake_git_repo(td)
+	fname := pfb.GetFilename()
+	ffname := td + "/" + fname
+
+	err := utils.WriteFileCreateDir(ffname, b)
+	if err != nil {
+		t.Fatalf("failed to write: %s", err)
+		return
+	}
+	//	t.Logf("proto:\n%s", string(b))
+	test_submit_file(t, td+"/", fname, nil)
 
 }
+
 func test_submit_file(t *testing.T, proto_dir, proto_file string, expected map[string]int) {
 	var err error
 	fname := proto_dir + proto_file
@@ -49,6 +94,7 @@ func test_submit_file(t *testing.T, proto_dir, proto_file string, expected map[s
 	}
 	err = protosubmitter.SubmitProtos(fname)
 	if err != nil {
+		t.Logf("failed: %s\n", errors.ErrorStringWithStackTrace(err))
 		t.Fatalf("failed to submit file %s: %s", fname, err)
 		return
 	}
@@ -56,6 +102,7 @@ func test_submit_file(t *testing.T, proto_dir, proto_file string, expected map[s
 	// now retrieve the file again
 	ctx := authremote.Context()
 	tmpdir := t.TempDir()
+	write_fake_git_repo(tmpdir)
 	//	tmpdir = "/tmp/protorenderer_tests"
 	err = protoretriever.ByFilename(ctx, proto_file, tmpdir)
 	if err != nil {
@@ -89,6 +136,7 @@ func run_test(t *testing.T, testname, dir string, expected map[string]int, save 
 		err = protosubmitter.CompileProtos(fname)
 	}
 	if err != nil {
+		t.Logf("failed: %s\n", errors.ErrorStringWithStackTrace(err))
 		t.Fatalf("failed to submit dir %s: %s", dir, err)
 		return
 	}
@@ -101,7 +149,11 @@ func run_test(t *testing.T, testname, dir string, expected map[string]int, save 
 }
 
 // give a directory and a map of extensions and count it compares the two
+// if map is nil or empty, it always returns true
 func check_dir_against_expected(dir string, expected map[string]int) error {
+	if expected == nil || len(expected) == 0 {
+		return nil
+	}
 	filenames, err := helpers.FindFiles(dir)
 	if err != nil {
 		return err

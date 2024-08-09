@@ -42,6 +42,7 @@ func (pr *protoRenderer) Submit(srv pb.ProtoRenderer2_SubmitServer) error {
 func compile(srv compile_serve_req, save_on_success bool) error {
 	compile_lock.Lock()
 	defer compile_lock.Unlock()
+	fmt.Printf("[compile] -------------------- started ------------------\n")
 	ce := CompileEnv.Fork()
 	//	sce, itis := ce.(*StandardCompilerEnvironment)
 	//	if itis {
@@ -157,7 +158,7 @@ func compile(srv compile_serve_req, save_on_success bool) error {
 		store.TriggerUpload(ce.StoreDir())
 
 	}
-	fmt.Printf("[compile] completed\n")
+	fmt.Printf("[compile] -------------------- completed ------------------\n")
 	//	utils.RecreateSafely(ce.CompilerOutDir())
 	return nil
 }

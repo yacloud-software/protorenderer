@@ -130,14 +130,13 @@ func compile(srv compile_serve_req, save_on_success bool) error {
 	if err != nil {
 		return errors.Wrap(err)
 	}
-	for _, pf := range pfs {
-		if helpers.ContainsFailure(scr.GetResults(pf)) {
-			send_all_broken_ones(ce, submitted_proto_list, scr)
-			return errors.Errorf("at least one error occured")
-		}
-	}
+	send_all_broken_ones(ce, submitted_proto_list, scr)
 
 	if opt.Save {
+		cr := NewCompareResult(scr, &common.StandardCompileResult{}) // TODO fix compile results
+		if cr.IsWorse() {
+			return errors.Errorf("at least one error occured. not committing files to store")
+		}
 		dc := NewDependencyCompiler(ce, pfs)
 		err = dc.Recompile(ctx)
 		//		err = recompile_dependencies_with_err(ctx, ce, pfs, compilers)

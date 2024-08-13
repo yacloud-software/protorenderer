@@ -49,13 +49,22 @@ func TestSubmit(t *testing.T) {
 	test_submit_file(t, proto_dir, proto_file, map[string]int{"info": 1, "proto": 1, "go": 1, "java": 1, "class": 6})
 }
 
+/*
+Test description: Test accept failing protos as long as situation does not get worse but better
+1) submitting proto for the first time, even if it fails, it should store it, report it and not fail
+2) subsequently submitting proto, if it fails, it should store it and report it and not fail
+3) subsequently submitting proto, if it succeeds, it should store it without reporting any error
+4) subsequently submitting proto, if it fails, it should NOT store it and report it and fail
+Note: fails in this test means one compiler fails
+*/
 func TestPreviousResults(t *testing.T) {
 	tdata := []struct {
 		name         string
 		java_package string
+		should_fail  bool
 	}{
-		{"works", ""},      //works
-		{"fails", "3 sdf"}, // fails
+		{"works", "", false},      //works
+		{"fails", "3 sdf", false}, // fails
 	}
 	for _, td := range tdata {
 		t.Run(td.name, func(tlocal *testing.T) {

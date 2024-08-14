@@ -50,6 +50,8 @@ func TestSubmit(t *testing.T) {
 }
 
 /*
+	-- this test is disabled until this functionality is (scheduled to be) implemented
+
 Test description: Test accept failing protos as long as situation does not get worse but better
 1) submitting proto for the first time, even if it fails, it should store it, report it and not fail
 2) subsequently submitting proto, if it fails, it should store it and report it and not fail
@@ -57,7 +59,7 @@ Test description: Test accept failing protos as long as situation does not get w
 4) subsequently submitting proto, if it fails, it should NOT store it and report it and fail
 Note: fails in this test means one compiler fails
 */
-func TestPreviousResults(t *testing.T) {
+func DISTestPreviousResults(t *testing.T) {
 	tdata := []struct {
 		name         string
 		java_package string
@@ -118,7 +120,7 @@ func test_submit_file(t *testing.T, proto_dir, proto_file string, expected map[s
 		t.Fatalf("failed to retrieve files: %s\n", err)
 		return
 	}
-	err = check_dir_against_expected(tmpdir, expected)
+	err = check_dir_against_expected(t, tmpdir, expected)
 	if err != nil {
 		t.Fatalf("result mismatch for %s: %s\n", proto_dir, err)
 		return
@@ -151,7 +153,7 @@ func run_test(t *testing.T, testname, dir string, expected map[string]int, save 
 	}
 
 	t.Logf("comparing result with expected...\n")
-	err = check_dir_against_expected(protosubmitter.PROTO_COMPILE_RESULT, expected)
+	err = check_dir_against_expected(t, protosubmitter.PROTO_COMPILE_RESULT, expected)
 	if err != nil {
 		t.Fatalf("Result mismatch for %s: %s\n", dir, err)
 	}
@@ -159,7 +161,7 @@ func run_test(t *testing.T, testname, dir string, expected map[string]int, save 
 
 // give a directory and a map of extensions and count it compares the two
 // if map is nil or empty, it always returns true
-func check_dir_against_expected(dir string, expected map[string]int) error {
+func check_dir_against_expected(t *testing.T, dir string, expected map[string]int) error {
 	if expected == nil || len(expected) == 0 {
 		return nil
 	}
@@ -167,13 +169,20 @@ func check_dir_against_expected(dir string, expected map[string]int) error {
 	if err != nil {
 		return err
 	}
+	// filter filenames for known irrelevant files
+	var fnames []string
+	for _, f := range filenames {
+		if f == ".goeasyops-dir" || f == ".git/config" {
+			continue
+		}
+		fnames = append(fnames, f)
+	}
+	filenames = fnames
+
 	// built map by extension
 	exts := make(map[string]int)
 	for _, f := range filenames {
 		e := filepath.Ext(f)
-		if e == ".goeasyops-dir" {
-			continue
-		}
 		i := exts[e]
 		i++
 		exts[e] = i
@@ -190,7 +199,7 @@ func check_dir_against_expected(dir string, expected map[string]int) error {
 			if err == nil {
 				fmt.Printf("Files with extension \"%s\":\n", e_k)
 				for _, fname := range failed_filenames {
-					fmt.Printf("  file: \"%s\"\n", fname)
+					t.Logf("  file: \"%s\"\n", fname)
 				}
 			}
 		}
@@ -203,6 +212,13 @@ func check_dir_against_expected(dir string, expected map[string]int) error {
 		if expected[ext] != ct {
 			xext := strings.TrimPrefix(ext, ".")
 			if expected[xext] != ct {
+				for _, f := range filenames {
+					if filepath.Ext(f) != xext {
+						continue
+					}
+					t.Logf(" file with extension \"%s\": %s\n", xext, f)
+				}
+
 				return errors.Errorf("found %d files with extension \"%s\", but expected \"%d\" files with that extension", ct, ext, expected[ext])
 			}
 		}

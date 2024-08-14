@@ -135,7 +135,7 @@ func compile(srv compile_serve_req, save_on_success bool) error {
 	if opt.Save {
 		cr := NewCompareResult(scr, &common.StandardCompileResult{}) // TODO fix compile results
 		if cr.IsWorse() {
-			return errors.Errorf("at least one error occured. not committing files to store")
+			return errors.Errorf("the new protos are worse than what is in store. not submitting")
 		}
 		dc := NewDependencyCompiler(ce, pfs)
 		err = dc.Recompile(ctx)
@@ -311,8 +311,12 @@ func remove_broken(pfs []interfaces.ProtoFile, scr interfaces.CompileResult) []i
 
 func send_all_broken_ones(ce interfaces.CompilerEnvironment, pfs []interfaces.ProtoFile, cr interfaces.CompileResult) {
 	for _, pf := range pfs {
+		results := cr.GetResults(pf)
+		if !helpers.ContainsFailure(results) {
+			continue
+		}
 		fmt.Printf("file \"%s\" failed:\n", pf.GetFilename())
-		for _, comp_err := range cr.GetResults(pf) {
+		for _, comp_err := range results {
 			if comp_err.Success {
 				continue
 			}

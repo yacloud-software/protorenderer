@@ -10,7 +10,8 @@ const (
 )
 
 var (
-	port = flag.Int("port", 4102, "The grpc server port")
+	nanopb_flags = flag.String("nanopb_options", "", "comma delimited key=value options that will be passed to nanopb_generator with -s option")
+	port         = flag.Int("port", 4102, "The grpc server port")
 
 	java_compiler_bin   = flag.String("java_compiler", "/usr/bin/javac", "path to javac binary")
 	java_release        = flag.String("java_release", "11", "flag --target [java_release] for javac: build for ssecific target version")
@@ -19,7 +20,7 @@ var (
 	prefix_object_store = flag.String("prefix_object_store", "protorenderer-tmp", "a prefix to be used for objectstore put/get")
 	compile_java        = flag.Bool("compile_java", false, "if true compile java classes")
 	compile_python      = flag.Bool("compile_python", false, "if true compile python...")
-	compile_nano        = flag.Bool("compile_nanopb", false, "if true compile with nanopb")
+	compile_nano        = flag.Bool("compile_nanopb", true, "if true compile with nanopb")
 	debug_meta          = flag.Bool("debug_meta", false, "debug meta compiler")
 )
 
@@ -56,4 +57,7 @@ func GetJavaPluginName() string {
 }
 func GetCompilerVersion() string {
 	return "original"
+}
+func GetNanoPBFlags() string {
+	return *nanopb_flags
 }

@@ -7,10 +7,12 @@ import (
 	"golang.conradwood.net/protorenderer/v2/common"
 	"golang.conradwood.net/protorenderer/v2/compilers/golang"
 	"golang.conradwood.net/protorenderer/v2/compilers/java"
+	"golang.conradwood.net/protorenderer/v2/compilers/nanopb"
 	"golang.conradwood.net/protorenderer/v2/helpers"
 	"golang.conradwood.net/protorenderer/v2/interfaces"
 	"golang.conradwood.net/protorenderer/v2/meta_compiler"
 	"golang.conradwood.net/protorenderer/v2/store"
+	"path/filepath"
 	//	"golang.conradwood.net/protorenderer/v2/store"
 	"strings"
 	//	pb1 "golang.conradwood.net/apis/protorenderer"
@@ -110,10 +112,7 @@ func compile(srv compile_serve_req, save_on_success bool) error {
 	}
 
 	// compile protos
-	compilers := []interfaces.Compiler{golang.New()}
-	if cmdline.GetCompilerEnabledJava() {
-		compilers = append(compilers, java.New())
-	}
+	compilers := getCompilerArray()
 
 	err = compile_all_compilersWithCompilerArray(ctx, ce, scr, pfs, compilers)
 	if err != nil {
@@ -164,10 +163,7 @@ func compile(srv compile_serve_req, save_on_success bool) error {
 
 // compile all files with all enabled compilers and place results in ce.CompilerOutDir()
 func compile_all_compilers(ctx context.Context, ce interfaces.CompilerEnvironment, scr interfaces.CompileResult, pfs []interfaces.ProtoFile) error {
-	compilers := []interfaces.Compiler{golang.New()}
-	if cmdline.GetCompilerEnabledJava() {
-		compilers = append(compilers, java.New())
-	}
+	compilers := getCompilerArray()
 	return compile_all_compilersWithCompilerArray(ctx, ce, scr, pfs, compilers)
 }
 func compile_all_compilersWithCompilerArray(ctx context.Context, ce interfaces.CompilerEnvironment, scr interfaces.CompileResult, pfs []interfaces.ProtoFile, compilers []interfaces.Compiler) error {
@@ -235,6 +231,10 @@ func send(ce interfaces.CompilerEnvironment, srv compile_serve_req, dir string) 
 	err := utils.DirWalk(dir, func(root, relfil string) error {
 		for _, ign := range IGNORE_FILES {
 			if relfil == ign {
+				return nil
+			}
+			b := filepath.Base(relfil)
+			if b == ign {
 				return nil
 			}
 		}
@@ -323,4 +323,15 @@ func send_all_broken_ones(ce interfaces.CompilerEnvironment, pfs []interfaces.Pr
 			ce.Printf("    %s, file: \"%s\": %s (%s)", comp_err.CompilerName, pf.GetFilename(), comp_err.ErrorMessage, comp_err.Output)
 		}
 	}
+}
+
+func getCompilerArray() []interfaces.Compiler {
+	compilers := []interfaces.Compiler{golang.New()}
+	if cmdline.GetCompilerEnabledJava() {
+		compilers = append(compilers, java.New())
+	}
+	if cmdline.GetCompilerEnabledNanoPB() {
+		compilers = append(compilers, nanopb.New())
+	}
+	return compilers
 }

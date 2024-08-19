@@ -22,9 +22,9 @@ func TestOnTheFlyCompileDirs(t *testing.T) {
 		expected map[string]int
 	}{
 		//		{"tests/04_test", map[string]int{"info": 1, "go": 1, "java": 1, "class": 6}}, // re-check to make sure previous tests do not influence it
-		{"tests/01_test", map[string]int{"info": 1, "go": 1, "java": 1, "class": 6}},
-		{"tests/02_test", map[string]int{"info": 12, "go": 12, "java": 66, "class": 279}},
-		{"tests/01_test", map[string]int{"info": 1, "go": 1, "java": 1, "class": 6}}, // re-check to make sure
+		{"tests/01_test", map[string]int{"info": 1, "go": 1, "java": 1, "class": 6, "c": 1, "h": 2}},
+		{"tests/02_test", map[string]int{"info": 12, "go": 12, "java": 66, "class": 279, "c": 12, "h": 24}},
+		{"tests/01_test", map[string]int{"info": 1, "go": 1, "java": 1, "class": 6, "c": 1, "h": 2}}, // re-check to make sure
 	}
 	for _, ts := range tests {
 		t.Run(ts.dir, func(tst *testing.T) {
@@ -33,7 +33,7 @@ func TestOnTheFlyCompileDirs(t *testing.T) {
 	}
 }
 func TestOnTheFlyCompileFiles(t *testing.T) {
-	testcompile(t, "a", "tests/01_test/protos/golang.conradwood.net/apis/test/test.proto", map[string]int{"info": 1, "go": 1, "java": 1, "class": 6})
+	testcompile(t, "a", "tests/01_test/protos/golang.conradwood.net/apis/test/test.proto", map[string]int{"info": 1, "go": 1, "java": 1, "class": 6, "c": 1, "h": 2})
 }
 
 func TestSubmit(t *testing.T) {

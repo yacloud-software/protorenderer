@@ -38,18 +38,19 @@ func main() {
 	} else if *get_vinfo {
 		utils.Bail("failed to get versioninfo", GetVersionInfo())
 	} else {
+		ps := protosubmitter.New()
 		if len(flag.Args()) != 0 {
 			for _, a := range flag.Args() {
 				if *save {
-					err = protosubmitter.SubmitProtos(a)
+					err = ps.SubmitProtos(a)
 				} else {
-					err = protosubmitter.CompileProtos(a)
+					err = ps.CompileProtos(a)
 				}
 				utils.Bail("failed to compile", err)
 			}
 			os.Exit(0)
 		}
-		utils.Bail("failed to submit", protosubmitter.SubmitProtosGit())
+		utils.Bail("failed to submit", ps.SubmitProtosGit())
 	}
 	fmt.Printf("Done\n")
 }

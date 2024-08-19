@@ -18,32 +18,49 @@ const (
 	PROTO_COMPILE_RESULT = "/tmp/proto_compile_result"
 )
 
+type ProtoSubmitter interface {
+	SubmitProtos(dir string) error
+	CompileProtos(dir string) error
+	SubmitProtosGit() error
+	CompileProtosGit() error
+}
+type protoSubmitter struct {
+	printer func(txt string)
+}
+
+func New() ProtoSubmitter {
+	return &protoSubmitter{}
+}
+func NewWithOutput(print func(txt string)) ProtoSubmitter {
+	return &protoSubmitter{printer: print}
+}
+
 // CLI function, compile and submit directory or file to store
-func SubmitProtos(dir string) error {
-	return submit_protos_with_dir(dir, true)
+func (ps *protoSubmitter) SubmitProtos(dir string) error {
+	return ps.submit_protos_with_dir(dir, true)
 }
 
 // CLI function, compile but do not submit to store
-func CompileProtos(dir string) error {
-	return submit_protos_with_dir(dir, false)
+func (ps *protoSubmitter) CompileProtos(dir string) error {
+	return ps.submit_protos_with_dir(dir, false)
 }
 
-func SubmitProtosGit() error {
-	dir, err := find_git_dir()
+func (ps *protoSubmitter) SubmitProtosGit() error {
+	dir, err := ps.find_git_dir()
 	if err != nil {
 		return err
 	}
-	return submit_protos_with_dir(dir, true)
+	return ps.submit_protos_with_dir(dir, true)
 }
-func CompileProtosGit() error {
-	dir, err := find_git_dir()
+func (ps *protoSubmitter) CompileProtosGit() error {
+	dir, err := ps.find_git_dir()
 	if err != nil {
 		return err
 	}
-	return submit_protos_with_dir(dir, false)
+	return ps.submit_protos_with_dir(dir, false)
 }
 
-func find_git_dir() (string, error) {
+func (ps *protoSubmitter) find_git_dir() (string, error) {
 	path, err := os.Getwd()
 	if err != nil {
 		return "", err
@@ -59,13 +76,13 @@ func find_git_dir() (string, error) {
 /*
 given a directory, all .proto files in that directory will be submitted to protorenderer.
 */
-func submit_protos_with_dir(proto_dir string, save bool) error {
+func (ps *protoSubmitter) submit_protos_with_dir(proto_dir string, save bool) error {
 	d, err := IsDir(proto_dir)
 	if err != nil {
 		return err
 	}
 	if !d {
-		return submit_proto_filenames([]string{proto_dir}, save)
+		return ps.submit_proto_filenames([]string{proto_dir}, save)
 		//		return errors.Errorf("\"%s\" is not a directory", proto_dir)
 	}
 
@@ -81,12 +98,12 @@ func submit_protos_with_dir(proto_dir string, save bool) error {
 	if err != nil {
 		return err
 	}
-	return submit_proto_files(proto_dir, filenames, save)
+	return ps.submit_proto_files(proto_dir, filenames, save)
 }
 
 // given absolute filename(s), will submit those to protorenderer
 // if filenames are part of different git repositories, it will make multiple calls, one per git repository
-func submit_proto_filenames(abs_filenames []string, save bool) error {
+func (ps *protoSubmitter) submit_proto_filenames(abs_filenames []string, save bool) error {
 	repo_files := make(map[string][]string) // git repository directory -> filenames
 	for _, fname := range abs_filenames {
 		if !utils.FileExists(fname) {
@@ -109,9 +126,9 @@ func submit_proto_filenames(abs_filenames []string, save bool) error {
 	}
 	for k, v := range repo_files {
 		for _, fname := range v {
-			debugf("Repo \"%s\": %s\n", k, fname)
+			ps.debugf("Repo \"%s\": %s\n", k, fname)
 		}
-		err := submit_proto_files(k, v, save)
+		err := ps.submit_proto_files(k, v, save)
 		if err != nil {
 			return err
 		}
@@ -131,7 +148,7 @@ for example: VALID: "golang.conradwood.net/apis/common/common.proto"
 
 for example: NOT VALID: "protos/golang.conradwood.net/apis/common/common.proto"
 */
-func submit_proto_files(proto_dir string, filenames []string, save bool) error {
+func (ps *protoSubmitter) submit_proto_files(proto_dir string, filenames []string, save bool) error {
 	utils.RecreateSafely(PROTO_COMPILE_RESULT)
 	ctx := authremote.ContextWithTimeout(time.Duration(1800) * time.Second)
 
@@ -139,7 +156,7 @@ func submit_proto_files(proto_dir string, filenames []string, save bool) error {
 	repoid := uint32(0)
 	gr, err := gitrepo.NewYAGitRepo(proto_dir)
 	if err != nil {
-		debugf("Not a YAGitRepo: \"%s\"\n", proto_dir)
+		ps.debugf("Not a YAGitRepo: \"%s\"\n", proto_dir)
 	} else {
 		repoid = uint32(gr.RepositoryID())
 	}
@@ -147,7 +164,7 @@ func submit_proto_files(proto_dir string, filenames []string, save bool) error {
 	if err != nil {
 		return err
 	}
-	debugf("RepositoryID: %d\n", repoid)
+	ps.debugf("RepositoryID: %d\n", repoid)
 	so := &pb.SubmitOption{Save: save}
 	err = srv.Send(&pb.FileTransfer{SubmitOption: so})
 	if err != nil {
@@ -170,7 +187,7 @@ func submit_proto_files(proto_dir string, filenames []string, save bool) error {
 		if err != nil {
 			return err
 		}
-		debugf("Submitting %s (%d bytes)\n", "protos/"+fname, len(ct))
+		ps.debugf("Submitting %s (%d bytes)\n", "protos/"+fname, len(ct))
 		fname = strings.TrimPrefix(fname, "protos/")
 		err = bs.SendBytes("foo", fname, ct)
 		if err != nil {
@@ -191,20 +208,23 @@ func submit_proto_files(proto_dir string, filenames []string, save bool) error {
 		if recv != nil {
 			/*
 				if recv.Filename != "" {
-					debugf("Receiving: filename=%s, bytes=%d\n", recv.Filename, len(recv.Data))
+					ps.debugf("Receiving: filename=%s, bytes=%d\n", recv.Filename, len(recv.Data))
 				}
 			*/
 			if recv.Result != nil {
-				debugf("Failure for %s: %v\n", recv.Result.Filename, recv.Result.Filename)
+				ps.debugf("Failure for %s: %v\n", recv.Result.Filename, recv.Result.Filename)
 				for _, result := range recv.Result.CompileResults {
-					debugf("    compiler: \"%s\" (success=%v)\n", result.CompilerName, result.Success)
-					debugf("    error: %s\n", result.ErrorMessage)
-					debugf("    output: %s\n", result.Output)
+					ps.debugf("    compiler: \"%s\" (success=%v)\n", result.CompilerName, result.Success)
+					ps.debugf("    error: %s\n", result.ErrorMessage)
+					ps.debugf("    output: %s\n", result.Output)
 				}
 			}
 			if recv.Output != nil {
 				for _, line := range recv.Output.Lines {
-					fmt.Printf("server: \"%s\"\n", line)
+					pf := ps.printer
+					if pf != nil {
+						pf(fmt.Sprintf("server: \"%s\"\n", line))
+					}
 				}
 			}
 
@@ -222,11 +242,11 @@ func submit_proto_files(proto_dir string, filenames []string, save bool) error {
 			} //			utils.Bail("failed to receive files", err)
 		}
 	}
-	debugf("Done\n")
+	ps.debugf("Done\n")
 	return nil
 }
 
-func debugf(format string, args ...interface{}) {
+func (ps *protoSubmitter) debugf(format string, args ...interface{}) {
 	if !DEBUG {
 		return
 	}

@@ -26,10 +26,13 @@ type Compiler interface {
 		3. and put the output into outdir.
 	*/
 	Compile(ctx context.Context, ce CompilerEnvironment, files []ProtoFile, outdir string, cr CompileResult) error
+	DirsForPackage(ctx context.Context, package_name string) ([]string, error) // given a package, e.g. golang.conradwood.net/apis/registry will return the dirs with files created by this, e.g. []string{ "java/classes/net/conradwood/golang/apis/h2gproxy",}
+
 }
 
 type CompileResult interface {
 	AddSuccess(c Compiler, pf ProtoFile)
 	AddFailed(c Compiler, pf ProtoFile, err error, output []byte)
 	GetResults(ProtoFile) []*pb.CompileResult // get results for all compilers
+	GetFailed() []*pb.CompileResult
 }

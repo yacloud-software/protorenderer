@@ -37,6 +37,18 @@ func (scr *StandardCompileResult) GetResults(pf interfaces.ProtoFile) []*pb.Comp
 	}
 	return res
 }
+
+func (scr *StandardCompileResult) GetFailed() []*pb.CompileResult {
+	var res []*pb.CompileResult
+	for _, cr := range scr.errors {
+		if cr.err == nil {
+			continue
+		}
+		res = append(res, cr.getCompileFailure())
+	}
+	return res
+}
+
 func (scf *standard_compile_failure) getCompileFailure() *pb.CompileResult {
 	res := &pb.CompileResult{
 		CompilerName: "no compiler",

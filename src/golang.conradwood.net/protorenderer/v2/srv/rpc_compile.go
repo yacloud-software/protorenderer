@@ -95,6 +95,9 @@ func compile(srv compile_serve_req, save_on_success bool) error {
 	// it is not worth compiling them with any other compiles
 	pfs = remove_broken(pfs, scr)
 	if len(pfs) == 0 {
+		for _, failed := range scr.GetFailed() {
+			fmt.Printf("Meta compiler failed: %s\n", failed.ErrorMessage)
+		}
 		send_all_broken_ones(ce, submitted_proto_list, scr)
 		return errors.Errorf("meta compiler failed to compile any files")
 	}

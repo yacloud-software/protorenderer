@@ -202,3 +202,6 @@ func (smc *MetaCompiler) GetMessageDescriptorByFQDN(fqdn string) *MessageDescrip
 func (mc *MetaCompiler) AddDescriptor(fqdn string, id uint64, msgtype *google_protobuf.DescriptorProto) {
 	mc.descriptors[fqdn] = &MessageDescriptor{ID: id, descproto: msgtype}
 }
+func (c *MetaCompiler) DirsForPackage(ctx context.Context, package_name string) ([]string, error) {
+	return nil, errors.NotImplemented(ctx, c.ShortName()+".DirsForPackage")
+}

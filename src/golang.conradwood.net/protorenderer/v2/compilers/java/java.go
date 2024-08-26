@@ -351,3 +351,6 @@ func (gc *JavaCompiler) get_source_from_java_file(abs_filename string) (string, 
 	}
 	return "", errors.Errorf("no header found in file %s\n", abs_filename)
 }
+func (c *JavaCompiler) DirsForPackage(ctx context.Context, package_name string) ([]string, error) {
+	return nil, errors.NotImplemented(ctx, c.ShortName()+".DirsForPackage")
+}

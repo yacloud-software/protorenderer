@@ -95,3 +95,6 @@ func (gc *golangCompiler) Compile(ctx context.Context, ce interfaces.CompilerEnv
 	Debugf("Compiling go completed\n")
 	return nil
 }
+func (c *golangCompiler) DirsForPackage(ctx context.Context, package_name string) ([]string, error) {
+	return nil, errors.NotImplemented(ctx, c.ShortName()+".DirsForPackage")
+}

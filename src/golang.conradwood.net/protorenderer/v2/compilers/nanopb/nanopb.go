@@ -3,6 +3,7 @@ package nanopb
 import (
 	"context"
 	"fmt"
+	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/go-easyops/linux"
 	"golang.conradwood.net/go-easyops/utils"
 	//	"golang.conradwood.net/protorenderer/v2/helpers"
@@ -159,4 +160,7 @@ func find_nanopb_binary() string {
 	}
 	return pwd + "/" + fmt.Sprintf("extra/compilers/%s/nanopb/nanopb_generator.py", cmdline.GetCompilerVersion())
 
+}
+func (c *NanoPBCompiler) DirsForPackage(ctx context.Context, package_name string) ([]string, error) {
+	return nil, errors.NotImplemented(ctx, c.ShortName()+".DirsForPackage")
 }

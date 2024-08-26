@@ -82,3 +82,6 @@ func (cr *compileresult_file) toCompileResultProto() *pb.CompileResult {
 	}
 	return cf
 }
+func (cr *compileresult) GetFailed() []*pb.CompileResult {
+	return nil
+}

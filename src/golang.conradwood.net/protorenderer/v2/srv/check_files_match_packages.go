@@ -95,3 +95,6 @@ func java_package_name_reverse(pkg string) string {
 	}
 	return res
 }
+func (c *check_compiler) DirsForPackage(ctx context.Context, package_name string) ([]string, error) {
+	return nil, errors.NotImplemented(ctx, c.ShortName()+".DirsForPackage")
+}

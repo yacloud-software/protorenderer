@@ -24,6 +24,7 @@ var (
 	save                = flag.Bool("save", false, "if true, and compilation is successful, add the proto and its artefacts to protorenderers store")
 	version             = flag.Uint64("version", 0, "work on this version, 0 (default) is latest")
 	edit_store          = flag.Bool("edit_store", false, "if true, checkout store, wait for key and save it again (needs -token and -ge_disable_user_token)")
+	get_package_files   = flag.String("get_package", "", "if set to a package, e.g. \"golang.conradwood.net/apis/registry\", then get the compiled files for this package")
 )
 
 func main() {
@@ -31,6 +32,8 @@ func main() {
 	var err error
 	if *edit_store {
 		utils.Bail("failed to edit store", EditStore())
+	} else if *get_package_files != "" {
+		utils.Bail("failed to get files", GetPackageFiles())
 	} else if *display_versioninfo != "" {
 		utils.Bail("failed to display version info", DisplayVersionInfo())
 	} else if *deps != "" {

@@ -139,6 +139,9 @@ message ReverseDependenciesResponse {
 }
 message ProtoFileRequest {
   string ProtoFileName=1; // e.g. "golang.conradwood.net/apis/common/common.proto"
+}
+message CompiledFilesRequest {
+  string Package=1; // e.g. "golang.conradwood.net/apis/registry"
   repeated string Compilers=2; // if nil, only get proto and info. Otherwise get artefacts from the specified compilers. e.g. "golang" or "java"
 }
 
@@ -151,6 +154,8 @@ service ProtoRenderer2 {
   rpc GetVersionInfo(common.Void) returns (VersionInfo);
   // get reverse depdencies, that is which files depend on the file submitted.
   rpc GetReverseDependencies(ReverseDependenciesRequest) returns (ReverseDependenciesResponse);
-  // get a proto file, and optionally its artefacts
+  // get a proto file
   rpc GetProtoFile(ProtoFileRequest) returns (stream FileTransfer);
+  // get the results of compiling a protofile, including its meta file
+  rpc GetCompiledFiles(CompiledFilesRequest) returns (stream FileTransfer);
 }

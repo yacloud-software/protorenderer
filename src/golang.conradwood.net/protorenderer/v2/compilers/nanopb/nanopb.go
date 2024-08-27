@@ -46,6 +46,7 @@ func (npb *NanoPBCompiler) Compile(ctx context.Context, ce interfaces.CompilerEn
 			"-D", targetDir, // output dir
 			"-Q", `#include "nanopb/%s"`,
 			"-L", `#include <nanopb/%s>`,
+			"-I", ce.AllKnownProtosDir(),
 			"--strip-path",
 		}
 		com = AddNanoPBOptions(com)

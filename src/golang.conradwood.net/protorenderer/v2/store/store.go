@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"golang.conradwood.net/go-easyops/utils"
 	"golang.conradwood.net/protorenderer/v2/store/binaryversions"
 	"time"
 )
@@ -38,7 +39,7 @@ func upload_worker() {
 		fmt.Printf("[uploadworker] uploading \"%s\"\n", ur.dir)
 		err := binaryversions.Upload(ur.dir)
 		if err != nil {
-			fmt.Printf("[uploadworker] Failed to upload \"%s\": %s\n", ur.dir, err)
+			fmt.Printf("[uploadworker] Failed to upload \"%s\": %s\n", ur.dir, utils.ErrorString(err))
 		} else {
 			fmt.Printf("[uploadworker] uploaded \"%s\"\n", ur.dir)
 		}

@@ -99,7 +99,7 @@ func compile(srv compile_serve_req, save_on_success bool) error {
 			fmt.Printf("Meta compiler failed: %s\n", failed.ErrorMessage)
 		}
 		send_all_broken_ones(ce, submitted_proto_list, scr)
-		return errors.Errorf("meta compiler failed to compile any files")
+		return errors.Errorf("meta compiler failed to compile any files (from %d files in total)", len(pfs))
 	}
 
 	err = check_if_files_match_packages(ctx, ce, scr, pfs)

@@ -2,16 +2,13 @@ package store
 
 import (
 	"context"
-	"fmt"
 	//	ost "golang.conradwood.net/apis/objectstore"
-	"golang.conradwood.net/go-easyops/authremote"
-	"golang.conradwood.net/go-easyops/client"
+	//	"golang.conradwood.net/go-easyops/authremote"
+	//	"golang.conradwood.net/go-easyops/client"
 	"golang.conradwood.net/go-easyops/errors"
-	"golang.conradwood.net/protorenderer/cmdline"
-	"golang.conradwood.net/protorenderer/v2/helpers"
+	//	"golang.conradwood.net/protorenderer/cmdline"
+	//	"golang.conradwood.net/protorenderer/v2/helpers"
 	"golang.conradwood.net/protorenderer/v2/store/binaryversions"
-	"strings"
-	"sync"
 )
 
 const (
@@ -32,6 +29,7 @@ func Retrieve(ctx context.Context, dir string, version uint64) error {
 
 }
 
+/*
 func retrieve_from_object_store(ctx context.Context, dir string, version uint64) error {
 	bs, err := client.Get(ctx, cmdline.VERSIONOBJECT)
 	if err != nil {
@@ -103,3 +101,4 @@ func retrieve_worker(ch chan *retrieve_request, wg *sync.WaitGroup) {
 	}
 	wg.Done()
 }
+*/

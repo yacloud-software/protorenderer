@@ -9,11 +9,11 @@ import (
 	"golang.conradwood.net/go-easyops/linux"
 	"golang.conradwood.net/go-easyops/utils"
 	"golang.conradwood.net/protorenderer/v2/client/protosubmitter"
-	"golang.conradwood.net/protorenderer/v2/common"
-	"golang.conradwood.net/protorenderer/v2/compilers/golang"
+	//	"golang.conradwood.net/protorenderer/v2/common"
+	//	"golang.conradwood.net/protorenderer/v2/compilers/golang"
 	"golang.conradwood.net/protorenderer/v2/interfaces"
 	"os"
-	"path/filepath"
+	//	"path/filepath"
 	"strings"
 )
 
@@ -57,6 +57,8 @@ func main() {
 	}
 	fmt.Printf("Done\n")
 }
+
+/*
 func local_compile() {
 	outdir := "compile_result/protos"
 	// copy the test files across
@@ -88,7 +90,8 @@ func local_compile() {
 	pb.GetProtoRenderer2Client()
 	golang_compiler.Compile(ctx, sce, pfs, sce.WorkDir()+"/"+outdir, scr)
 
-}
+   }
+*/
 
 func find_protofiles() (string, []interfaces.ProtoFile, error) {
 	dir, err := utils.FindFile("extra/test_protos/new_protos/protos")

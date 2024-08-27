@@ -1,6 +1,7 @@
 package protosubmitter
 
 import (
+	"flag"
 	"fmt"
 	pb "golang.conradwood.net/apis/protorenderer2"
 	"golang.conradwood.net/go-easyops/authremote"
@@ -9,13 +10,17 @@ import (
 	"golang.yacloud.eu/yatools/gitrepo"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
 
 const (
-	DEBUG                = false
 	PROTO_COMPILE_RESULT = "/tmp/proto_compile_result"
+)
+
+var (
+	debug_proto_submitter = flag.Bool("debug_protosubmitter", false, "true debug submit code")
 )
 
 type ProtoSubmitter interface {
@@ -106,6 +111,16 @@ func (ps *protoSubmitter) submit_protos_with_dir(proto_dir string, save bool) er
 func (ps *protoSubmitter) submit_proto_filenames(abs_filenames []string, save bool) error {
 	repo_files := make(map[string][]string) // git repository directory -> filenames
 	for _, fname := range abs_filenames {
+		if len(fname) == 0 {
+			return errors.Errorf("no filename provided")
+		}
+		if fname[0] != '/' {
+			afname, err := filepath.Abs(fname)
+			if err != nil {
+				return errors.Errorf("filename \"%s\" is not absolute (%s)", fname, err)
+			}
+			fname = afname
+		}
 		if !utils.FileExists(fname) {
 			return errors.Errorf("file \"%s\" does not exist", fname)
 		}
@@ -151,6 +166,10 @@ for example: NOT VALID: "protos/golang.conradwood.net/apis/common/common.proto"
 func (ps *protoSubmitter) submit_proto_files(proto_dir string, filenames []string, save bool) error {
 	utils.RecreateSafely(PROTO_COMPILE_RESULT)
 	ctx := authremote.ContextWithTimeout(time.Duration(1800) * time.Second)
+	ps.debugf("proto-dir: %s\n", proto_dir)
+	for _, f := range filenames {
+		ps.debugf("submitting: \"%s\"\n", f)
+	}
 
 	// repoid
 	repoid := uint32(0)
@@ -185,7 +204,7 @@ func (ps *protoSubmitter) submit_proto_files(proto_dir string, filenames []strin
 	for _, fname := range filenames {
 		ct, err := utils.ReadFile(proto_dir + "/" + fname)
 		if err != nil {
-			return err
+			return errors.Wrap(err)
 		}
 		ps.debugf("Submitting %s (%d bytes)\n", "protos/"+fname, len(ct))
 		fname = strings.TrimPrefix(fname, "protos/")
@@ -247,7 +266,7 @@ func (ps *protoSubmitter) submit_proto_files(proto_dir string, filenames []strin
 }
 
 func (ps *protoSubmitter) debugf(format string, args ...interface{}) {
-	if !DEBUG {
+	if !*debug_proto_submitter {
 		return
 	}
 	fmt.Printf(format, args...)

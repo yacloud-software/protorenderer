@@ -220,7 +220,7 @@ func (e *protoRenderer) UpdateProto(ctx context.Context, req *pb.AddProtoRequest
 	rn = strings.TrimPrefix(rn, "/")
 	rn = strings.TrimPrefix(rn, "protos/")
 	req.Name = rn
-
+	go submit_to_protorenderer2(req)
 	pp, err := protoparser.Parse(req.Content)
 	if err != nil {
 		fmt.Printf("Failed to parse: %s\n", err)

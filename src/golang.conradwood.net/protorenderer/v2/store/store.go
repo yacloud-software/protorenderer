@@ -30,7 +30,7 @@ func TriggerUpload(dir string) {
 		//
 	case <-time.After(time.Duration(1) * time.Second):
 		// nope
-
+		fmt.Printf("[uploadworker] Failed to trigger upload.\n")
 	}
 }
 func upload_worker() {

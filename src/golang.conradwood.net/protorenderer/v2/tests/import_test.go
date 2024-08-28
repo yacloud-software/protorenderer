@@ -103,7 +103,7 @@ func test_submit_file(t *testing.T, proto_dir, proto_file string, expected map[s
 	if err != nil {
 		t.Fatalf("file not found: %s", err)
 	}
-	err = protosubmitter.New().SubmitProtos(fname)
+	err = protosubmitter.New().SubmitProtos([]string{fname})
 	if err != nil {
 		t.Logf("failed: %s\n", errors.ErrorStringWithStackTrace(err))
 		t.Fatalf("failed to submit file %s: %s", fname, err)
@@ -145,9 +145,9 @@ func run_test(t *testing.T, testname, dir string, expected map[string]int, save 
 		t.Logf("%s", txt)
 	})
 	if save {
-		err = ps.SubmitProtos(fname)
+		err = ps.SubmitProtos([]string{fname})
 	} else {
-		err = ps.CompileProtos(fname)
+		err = ps.CompileProtos([]string{fname})
 	}
 	if err != nil {
 		t.Logf("failed: %s\n", errors.ErrorStringWithStackTrace(err))

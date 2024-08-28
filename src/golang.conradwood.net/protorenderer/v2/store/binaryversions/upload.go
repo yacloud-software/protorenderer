@@ -24,6 +24,7 @@ const (
 
 func Upload(dname string) error {
 	if !*use_store {
+		fmt.Printf("[store] Not uploading - store deactivated\n")
 		return nil
 	}
 	c := pb.GetBinaryVersionsClient()
@@ -45,10 +46,24 @@ func Upload(dname string) error {
 	if err != nil {
 		return err
 	}
-	err = utils.DirWalk(dname, u.Walker)
+	var fnames []string
+	err = utils.DirWalk(dname, func(root, relfile string) error {
+		fnames = append(fnames, relfile)
+		return nil
+	})
 	//	err = u.UploadDir()
 	if err != nil {
 		return err
+	}
+	pr := utils.ProgressReporter{}
+	pr.SetTotal(uint64(len(fnames)))
+	for _, f := range fnames {
+		pr.Add(1)
+		pr.Print()
+		err = u.uploadFile(dname, f)
+		if err != nil {
+			return err
+		}
 	}
 	dv, err := u.srv.CloseAndRecv()
 	if err != nil {
@@ -58,11 +73,14 @@ func Upload(dname string) error {
 	fmt.Printf("[store] Created version %d (%s)\n", dv.ID, dv.UniqueReference)
 	return nil
 }
-func (u *Uploader) Walker(root string, rel string) error {
-	//	fmt.Printf("[store] uploading file: %s,%s\n", root, rel)
-	err := u.uploadFile(root, rel)
-	return err
-}
+
+/*
+	func (u *Uploader) Walker(root string, rel string) error {
+		fmt.Printf("[store] uploading file: %s,%s\n", root, rel)
+		err := u.uploadFile(root, rel)
+		return err
+	}
+*/
 func (u *Uploader) UploadDir() error {
 	dirname := u.root
 	// now walk through all the files

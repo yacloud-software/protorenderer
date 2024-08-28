@@ -23,16 +23,14 @@ var (
 	get_vinfo           = flag.Bool("get_versioninfo", false, "if true get versioninfo, print it out and exit")
 	save                = flag.Bool("save", false, "if true, and compilation is successful, add the proto and its artefacts to protorenderers store")
 	version             = flag.Uint64("version", 0, "work on this version, 0 (default) is latest")
-	edit_store          = flag.Bool("edit_store", false, "if true, checkout store, wait for key and save it again (needs -token and -ge_disable_user_token)")
 	get_package_files   = flag.String("get_package", "", "if set to a package, e.g. \"golang.conradwood.net/apis/registry\", then get the compiled files for this package")
+	submit_store        = flag.Bool("force_submit_store", false, "if true, tell the server to submit the store as-is right now")
 )
 
 func main() {
 	flag.Parse()
 	var err error
-	if *edit_store {
-		utils.Bail("failed to edit store", EditStore())
-	} else if *get_package_files != "" {
+	if *get_package_files != "" {
 		utils.Bail("failed to get files", GetPackageFiles())
 	} else if *display_versioninfo != "" {
 		utils.Bail("failed to display version info", DisplayVersionInfo())
@@ -40,22 +38,28 @@ func main() {
 		utils.Bail("failed to do reverse dependencies", ReverseDeps())
 	} else if *get_vinfo {
 		utils.Bail("failed to get versioninfo", GetVersionInfo())
+	} else if *submit_store {
+		utils.Bail("failed to get versioninfo", SubmitStore())
 	} else {
 		ps := protosubmitter.New()
 		if len(flag.Args()) != 0 {
-			for _, a := range flag.Args() {
-				if *save {
-					err = ps.SubmitProtos(a)
-				} else {
-					err = ps.CompileProtos(a)
-				}
-				utils.Bail("failed to compile", err)
+			a := flag.Args()
+			if *save {
+				err = ps.SubmitProtos(a)
+			} else {
+				err = ps.CompileProtos(a)
 			}
+			utils.Bail("failed to compile", err)
+
 			os.Exit(0)
 		}
-		utils.Bail("failed to submit", ps.SubmitProtosGit())
+		submit_protos_in_current_git_dir()
 	}
 	fmt.Printf("Done\n")
+}
+func submit_protos_in_current_git_dir() {
+	fmt.Printf("no protos specified.\n")
+	os.Exit(10)
 }
 
 /*
@@ -159,6 +163,16 @@ func ReverseDeps() error {
 		fmt.Printf("%s\n", filename)
 	}
 
+	return nil
+}
+
+func SubmitStore() error {
+	fmt.Printf("Telling server to submit its store\n")
+	ctx := authremote.Context()
+	_, err := pb.GetProtoRenderer2Client().SubmitStore(ctx, &cma.Void{})
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

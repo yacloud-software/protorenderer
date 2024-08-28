@@ -175,7 +175,8 @@ func (gc *JavaCompiler) compileJava2Class(ctx context.Context, ce interfaces.Com
 	}
 
 	fmt.Printf("Start java (.java->.class) compilation (src=%s,target=%s) (%d files, submitted %d files)...\n", dir, targetdir, len(java_files), len(files))
-	javac := "/etc/java-home/bin/javac"
+	//	javac := "/etc/java-home/bin/javac"
+	javac := "/usr/bin/javac"
 	cmd := []string{
 		javac,
 		"-Xlint:none",

@@ -10,7 +10,7 @@ import (
 	"golang.yacloud.eu/yatools/gitrepo"
 	"io"
 	"os"
-	"path/filepath"
+	//	"path/filepath"
 	"strings"
 	"time"
 )
@@ -24,47 +24,34 @@ var (
 )
 
 type ProtoSubmitter interface {
-	SubmitProtos(dir string) error
-	CompileProtos(dir string) error
-	SubmitProtosGit() error
-	CompileProtosGit() error
+	SubmitProtos(dir_or_files []string) error // files or dirs as provided
+	CompileProtos(dir_or_files []string) error
 }
 type protoSubmitter struct {
-	printer func(txt string)
+	printer   func(txt string)
+	git_cache map[string]*gitrepo.YAGitRepo // path->repoid
 }
 
 func New() ProtoSubmitter {
-	return &protoSubmitter{}
+	return &protoSubmitter{git_cache: make(map[string]*gitrepo.YAGitRepo)}
 }
 func NewWithOutput(print func(txt string)) ProtoSubmitter {
-	return &protoSubmitter{printer: print}
+	ps := New().(*protoSubmitter)
+	ps.printer = print
+	return ps
 }
 
 // CLI function, compile and submit directory or file to store
-func (ps *protoSubmitter) SubmitProtos(dir string) error {
-	return ps.submit_protos_with_dir(dir, true)
+func (ps *protoSubmitter) SubmitProtos(dir_or_files []string) error {
+	return ps.submit_protos_with_dir(dir_or_files, true)
 }
 
 // CLI function, compile but do not submit to store
-func (ps *protoSubmitter) CompileProtos(dir string) error {
-	return ps.submit_protos_with_dir(dir, false)
+func (ps *protoSubmitter) CompileProtos(dir_or_files []string) error {
+	return ps.submit_protos_with_dir(dir_or_files, false)
 }
 
-func (ps *protoSubmitter) SubmitProtosGit() error {
-	dir, err := ps.find_git_dir()
-	if err != nil {
-		return err
-	}
-	return ps.submit_protos_with_dir(dir, true)
-}
-func (ps *protoSubmitter) CompileProtosGit() error {
-	dir, err := ps.find_git_dir()
-	if err != nil {
-		return err
-	}
-	return ps.submit_protos_with_dir(dir, false)
-}
-
+/*
 func (ps *protoSubmitter) find_git_dir() (string, error) {
 	path, err := os.Getwd()
 	if err != nil {
@@ -77,37 +64,123 @@ func (ps *protoSubmitter) find_git_dir() (string, error) {
 	proto_dir := gr.Path() + "/protos/"
 	return proto_dir, nil
 }
-
-/*
-given a directory, all .proto files in that directory will be submitted to protorenderer.
 */
-func (ps *protoSubmitter) submit_protos_with_dir(proto_dir string, save bool) error {
-	d, err := IsDir(proto_dir)
-	if err != nil {
-		return err
+/*
+resolve dirs to files and submit the final file
+*/
+func (ps *protoSubmitter) submit_protos_with_dir(proto_dir_or_files []string, save bool) error {
+	// check if each file exists
+	for _, df := range proto_dir_or_files {
+		if !utils.FileExists(df) {
+			return errors.Errorf("file \"%s\" does not exiset", df)
+		}
 	}
-	if !d {
-		return ps.submit_proto_filenames([]string{proto_dir}, save)
-		//		return errors.Errorf("\"%s\" is not a directory", proto_dir)
+	curdir, err := os.Getwd()
+	if err != nil {
+		return errors.Wrap(err)
 	}
 
-	var filenames []string // relative to proto_dir
-	err = utils.DirWalk(proto_dir, func(root, relfil string) error {
-		if !strings.HasSuffix(relfil, ".proto") {
-			return nil
+	var filenames []*rel_file_in_path
+	for _, df := range proto_dir_or_files {
+		if len(df) == 0 {
+			return errors.Errorf("Empty file submitted")
 		}
-		filenames = append(filenames, relfil)
-		return nil
-	},
-	)
+		if df[0] == '/' {
+			return errors.Errorf("Absolute filename submitted (%s)", df)
+		}
+		d, err := IsDir(df)
+		if err != nil {
+			return err
+		}
+		// it's a file
+		if !d {
+			filenames = append(filenames, &rel_file_in_path{path: curdir, filename: df}) // relative file submitted
+			continue
+		}
+		// it's a dir
+		root := curdir + "/" + df
+		err = utils.DirWalk(root, func(root, relfil string) error {
+			if !strings.HasSuffix(relfil, ".proto") {
+				return nil
+			}
+			filenames = append(filenames, &rel_file_in_path{path: root, filename: relfil})
+			return nil
+		},
+		)
+		if err != nil {
+			return err
+		}
+	}
+	ps.debugf("finding repos for %d files\n", len(filenames))
+	err = ps.find_repos_for_files(filenames)
 	if err != nil {
 		return err
 	}
-	return ps.submit_proto_files(proto_dir, filenames, save)
+
+	t := utils.Table{}
+	t.AddHeaders("path", "filename", "gitrepoid", "gitrepopath")
+	for _, f := range filenames {
+		t.AddString(f.path)
+		t.AddString(f.filename)
+		t.AddUint64(f.repositoryid)
+		t.AddString(f.gitrepopath)
+		t.NewRow()
+	}
+
+	fmt.Println(t.ToPrettyString())
+
+	fmap, err := ps.build_map_of_repoids(filenames)
+	if err != nil {
+		return err
+	}
+	for k, v := range fmap {
+		for _, fname := range v {
+			ps.debugf("Repo \"%d\": %s\n", k, fname.filename)
+		}
+		err := ps.submit_proto_files(v, save)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+	// return ps.submit_proto_files(filenames, save)
+}
+
+// fill in repositoryid for each filename
+func (ps *protoSubmitter) find_repos_for_files(filenames []*rel_file_in_path) error {
+	for _, f := range filenames {
+		for path, gr := range ps.git_cache {
+			if strings.HasPrefix(f.abs(), path) {
+				f.repositoryid = gr.RepositoryID()
+				f.gitrepopath = gr.Path()
+				return nil
+			}
+		}
+		ps.debugf("need Repo for \"%s\"\n", f.abs())
+		gr, err := gitrepo.NewYAGitRepo(f.abs())
+		if err != nil {
+			return err
+		}
+		f.repositoryid = gr.RepositoryID()
+		f.gitrepopath = gr.Path()
+		ps.git_cache[gr.Path()] = gr
+		ps.debugf("repo \"%s\" = %d\n", gr.Path(), gr.RepositoryID())
+	}
+	return nil
+}
+
+// return a map with arrays of files for each repositoryid
+func (ps *protoSubmitter) build_map_of_repoids(filenames []*rel_file_in_path) (map[uint64][]*rel_file_in_path, error) {
+	res := make(map[uint64][]*rel_file_in_path)
+	for _, rf := range filenames {
+		res[rf.repositoryid] = append(res[rf.repositoryid], rf)
+	}
+	return res, nil
 }
 
 // given absolute filename(s), will submit those to protorenderer
 // if filenames are part of different git repositories, it will make multiple calls, one per git repository
+/*
 func (ps *protoSubmitter) submit_proto_filenames(abs_filenames []string, save bool) error {
 	repo_files := make(map[string][]string) // git repository directory -> filenames
 	for _, fname := range abs_filenames {
@@ -150,7 +223,7 @@ func (ps *protoSubmitter) submit_proto_filenames(abs_filenames []string, save bo
 	}
 	return nil
 }
-
+*/
 /*
 given a list of filenames, relative to proto_dir, will send those to protorenderer server.
 The result of the compilation will be stored in PROTO_COMPILE_RESULT.
@@ -162,23 +235,23 @@ the filenames must match the golang convention. That is stripped from prefixing 
 for example: VALID: "golang.conradwood.net/apis/common/common.proto"
 
 for example: NOT VALID: "protos/golang.conradwood.net/apis/common/common.proto"
+
+all files MUST have the same repositoryid
 */
-func (ps *protoSubmitter) submit_proto_files(proto_dir string, filenames []string, save bool) error {
+func (ps *protoSubmitter) submit_proto_files(filenames []*rel_file_in_path, save bool) error {
+	if len(filenames) == 0 {
+		return nil
+	}
 	utils.RecreateSafely(PROTO_COMPILE_RESULT)
 	ctx := authremote.ContextWithTimeout(time.Duration(1800) * time.Second)
-	ps.debugf("proto-dir: %s\n", proto_dir)
+	//	ps.debugf("proto-dir: %s\n", proto_dir)
 	for _, f := range filenames {
-		ps.debugf("submitting: \"%s\"\n", f)
+		ps.debugf("submitting: \"%s\"\n", f.abs())
 	}
 
 	// repoid
-	repoid := uint32(0)
-	gr, err := gitrepo.NewYAGitRepo(proto_dir)
-	if err != nil {
-		ps.debugf("Not a YAGitRepo: \"%s\"\n", proto_dir)
-	} else {
-		repoid = uint32(gr.RepositoryID())
-	}
+	repoid := uint32(filenames[0].repositoryid)
+
 	srv, err := pb.GetProtoRenderer2Client().Submit(ctx)
 	if err != nil {
 		return err
@@ -202,13 +275,13 @@ func (ps *protoSubmitter) submit_proto_files(proto_dir string, filenames []strin
 	)
 
 	for _, fname := range filenames {
-		ct, err := utils.ReadFile(proto_dir + "/" + fname)
+		ct, err := utils.ReadFile(fname.abs())
 		if err != nil {
 			return errors.Wrap(err)
 		}
-		ps.debugf("Submitting %s (%d bytes)\n", "protos/"+fname, len(ct))
-		fname = strings.TrimPrefix(fname, "protos/")
-		err = bs.SendBytes("foo", fname, ct)
+		ps.debugf("Submitting %s (%d bytes)\n", fname.abs(), len(ct))
+		//		fname = strings.TrimPrefix(fname, "protos/")
+		err = bs.SendBytes("foo", fname.filename, ct)
 		if err != nil {
 			return err
 		}
@@ -270,4 +343,17 @@ func (ps *protoSubmitter) debugf(format string, args ...interface{}) {
 		return
 	}
 	fmt.Printf(format, args...)
+}
+
+type rel_file_in_path struct {
+	path         string // e.g. /home/cnw/devel/go/protorenderer/tests/02_test/protos
+	filename     string // e.g. golang.conradwood.net/apis/common/common.proto
+	repositoryid uint64 // the repo the file is in (or 0)
+	gitrepopath  string // e.g. /home/cnw/devel/go/protorenderer (or "")
+}
+
+func (rfp *rel_file_in_path) abs() string {
+	path := strings.TrimSuffix(rfp.path, "/")
+	filename := strings.TrimPrefix(rfp.filename, "/")
+	return path + "/" + filename
 }

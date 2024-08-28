@@ -44,6 +44,7 @@ var (
 	protocache          = pc.New()
 	updateChan          = make(chan *updateinfo, 10000)
 	names               = make(map[string]bool)
+	names_lock          sync.Mutex
 	current             *version
 	nextVersion         *version
 	completeVersion     *version
@@ -166,10 +167,13 @@ func (e *protoRenderer) ListSourceFiles(ctx context.Context, req *common.Void) (
 	return res, nil
 }
 func (e *protoRenderer) DeleteFile(ctx context.Context, req *pb.DeleteRequest) (*common.Void, error) {
+	names_lock.Lock()
 	if !names[req.Name] {
+		names_lock.Unlock()
 		return nil, errors.InvalidArgs(ctx, "file not found", "file \"%s\" not fond", req.Name)
 	}
 	names[req.Name] = false
+	names_lock.Unlock()
 	if updateObjectStore() {
 		pir := &ost.PutWithIDRequest{ID: cmdline.GetPrefixObjectStore() + req.Name, Expiry: 1}
 		_, err := osclient().PutWithID(ctx, pir)
@@ -234,8 +238,9 @@ func (e *protoRenderer) UpdateProto(ctx context.Context, req *pb.AddProtoRequest
 			return nil, errors.InvalidArgs(ctx, "Invalid java package", "Invalid java package \"%s\" in file %s", pp.JavaPackage, req.Name)
 		}
 	}
-
+	names_lock.Lock()
 	names[req.Name] = true
+	names_lock.Unlock()
 	if updateObjectStore() && start_update {
 		pir := &ost.PutWithIDRequest{ID: cmdline.GetPrefixObjectStore() + req.Name, Content: []byte(req.Content)}
 		_, err := osclient().PutWithID(ctx, pir)
@@ -398,11 +403,13 @@ func rewriteIndexFile(ctx context.Context) error {
 	uosLock.Lock()
 	defer uosLock.Unlock()
 	var bf bytes.Buffer
+	names_lock.Lock()
 	for k, _ := range names {
 		if names[k] {
 			bf.WriteString(fmt.Sprintf("%s\n", k))
 		}
 	}
+	names_lock.Unlock()
 	pir := &ost.PutWithIDRequest{ID: cmdline.GetPrefixObjectStore() + cmdline.INDEX_FILENAME, Content: bf.Bytes()}
 	_, err := osclient().PutWithID(ctx, pir)
 	return err

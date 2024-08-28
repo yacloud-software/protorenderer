@@ -158,4 +158,6 @@ service ProtoRenderer2 {
   rpc GetProtoFile(ProtoFileRequest) returns (stream FileTransfer);
   // get the results of compiling a protofile, including its meta file
   rpc GetCompiledFiles(CompiledFilesRequest) returns (stream FileTransfer);
+  // submit the store as-is. a debug helper if one fiddles with the repository, which one should not do. during debugging it can be useful to reset the repository though
+  rpc SubmitStore(common.Void) returns (common.Void);
 }

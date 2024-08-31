@@ -8,6 +8,7 @@ import (
 	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/protorenderer/cmdline"
 	"golang.conradwood.net/protorenderer/v2/store"
+	"strings"
 )
 
 func (smc *ServerMetaCompiler) handle_protofile(ctx context.Context, pf *google_protobuf.FileDescriptorProto) (*pb.ProtoFileInfo, error) {
@@ -35,7 +36,7 @@ func (smc *ServerMetaCompiler) handle_protofile(ctx context.Context, pf *google_
 			res.PackageJava = *pf.Options.JavaPackage
 		}
 		if pf.Options.GoPackage != nil {
-			res.PackageGo = *pf.Options.GoPackage
+			res.PackageGo = go_package_parser(*pf.Options.GoPackage)
 		}
 	}
 	for _, imp := range pf.Dependency { // the imports
@@ -233,4 +234,23 @@ func (smc *ServerMetaCompiler) hasFailedRecursively(ctx context.Context, filenam
 		}
 	}
 	return nil
+}
+
+func go_package_parser(in string) string {
+
+	idx := strings.Index(in, ";")
+	if idx == -1 {
+		return in
+	}
+	parts := strings.Split(in, ";")
+	res := ""
+	for _, p := range parts {
+		if len(p) > len(res) {
+			res = p
+		}
+	}
+	if res == "" {
+		return in //fail-safe
+	}
+	return res
 }

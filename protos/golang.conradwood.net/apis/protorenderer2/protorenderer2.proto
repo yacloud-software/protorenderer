@@ -145,6 +145,17 @@ message CompiledFilesRequest {
   repeated string Compilers=2; // if nil, only get proto and info. Otherwise get artefacts from the specified compilers. e.g. "golang" or "java"
 }
 
+// a package, but without nested objects
+message FlatPackage {
+  string ID = 1;
+  string ShortName = 2;   // e.g. "common"
+  string FQDN = 3; // e.g. "golang.conradwood.net/apis/common"
+  uint64 RepositoryID = 4;
+}
+message FlatPackageList {
+  repeated FlatPackage Packages=1;
+}
+
 service ProtoRenderer2 {
   // protoc-gen-meta2 submits files to protorenderer server for analysis. not intented to be used by clients other than protoc-gen-meta2
   rpc InternalMetaSubmit(ProtocRequest) returns (common.Void);
@@ -160,4 +171,6 @@ service ProtoRenderer2 {
   rpc GetCompiledFiles(CompiledFilesRequest) returns (stream FileTransfer);
   // submit the store as-is. a debug helper if one fiddles with the repository, which one should not do. during debugging it can be useful to reset the repository though
   rpc SubmitStore(common.Void) returns (common.Void);
+  // get all the packages we currently have (useful, e.g. for rendering a single html page with doc)
+  rpc GetAllPackages(common.Void) returns (FlatPackageList);
 }

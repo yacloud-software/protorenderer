@@ -22,4 +22,5 @@ type MetaCache interface {
 	ByProtoFile(pf ProtoFile) *pb.ProtoFileInfo
 	ByFilename(filename string) *pb.ProtoFileInfo // by .proto file
 	AllWithDependencyOn(filename string, maxdepth uint32) ([]*pb.ProtoFileInfo, error)
+	AllPackages(f func(pfi *pb.ProtoFileInfo)) error
 }

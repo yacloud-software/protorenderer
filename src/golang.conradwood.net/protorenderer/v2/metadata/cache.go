@@ -170,3 +170,17 @@ func (mc *metaCache) ImportFrom(src interfaces.MetaCache) {
 		mc.metaEntries[k] = v
 	}
 }
+
+func (mc *metaCache) AllPackages(f func(*pb.ProtoFileInfo)) error {
+	mc.Lock()
+	x := mc.metaEntries
+	mc.Unlock()
+	for _, me := range x {
+		pfi, err := me.GetProtoFileInfo()
+		if err != nil {
+			return err
+		}
+		f(pfi)
+	}
+	return nil
+}

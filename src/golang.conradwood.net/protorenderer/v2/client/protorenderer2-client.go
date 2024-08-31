@@ -25,6 +25,7 @@ var (
 	version             = flag.Uint64("version", 0, "work on this version, 0 (default) is latest")
 	get_package_files   = flag.String("get_package", "", "if set to a package, e.g. \"golang.conradwood.net/apis/registry\", then get the compiled files for this package")
 	submit_store        = flag.Bool("force_submit_store", false, "if true, tell the server to submit the store as-is right now")
+	list_packages       = flag.Bool("list_packages", false, "list all packages")
 )
 
 func main() {
@@ -40,6 +41,8 @@ func main() {
 		utils.Bail("failed to get versioninfo", GetVersionInfo())
 	} else if *submit_store {
 		utils.Bail("failed to get versioninfo", SubmitStore())
+	} else if *list_packages {
+		utils.Bail("failed to list packages", ListPackages())
 	} else {
 		ps := protosubmitter.New()
 		if len(flag.Args()) != 0 {
@@ -192,5 +195,24 @@ func DisplayVersionInfo() error {
 		return err
 	}
 	fmt.Printf("Written to %s\n", fname)
+	return nil
+}
+
+func ListPackages() error {
+	ctx := authremote.Context()
+	fpl, err := pb.GetProtoRenderer2Client().GetAllPackages(ctx, &cma.Void{})
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Listing %d packages\n", len(fpl.Packages))
+	t := &utils.Table{}
+	t.AddHeaders("ID", "Shortname", "FQDN")
+	for _, fp := range fpl.Packages {
+		t.AddString(fp.ID)
+		t.AddString(fp.ShortName)
+		t.AddString(fp.FQDN)
+		t.NewRow()
+	}
+	fmt.Println(t.ToPrettyString())
 	return nil
 }

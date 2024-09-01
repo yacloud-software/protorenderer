@@ -13,7 +13,7 @@ import (
 
 var (
 	submit_to_pr2   = flag.Bool("submit_to_protorenderer2", true, "if true, submit to protorenderer2 as well")
-	pr2_submit_chan = make(chan *pb.AddProtoRequest, 500)
+	pr2_submit_chan = make(chan *pb.AddProtoRequest, 5000)
 )
 
 func init() {

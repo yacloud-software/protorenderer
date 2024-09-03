@@ -33,6 +33,7 @@ func (m *MetaCompiler) generate(req *pr.ProtocRequest) error {
 		opts := parseCNWOptionsFromFile(pf)
 		fqdn := filepath.Dir(*pf.Name)
 		pkg := result.ObtainPackage(fqdn)
+		fmt.Printf("meta compiling file %s (fqdn %s)\n", *pf.Name, fqdn)
 		pkg.CNWOptions = opts
 		pkg.Protofiles = append(pkg.Protofiles, pp)
 		pkg.Filename = *pf.Name

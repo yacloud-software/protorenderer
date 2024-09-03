@@ -261,6 +261,7 @@ func (e *protoRenderer) UpdateProto(ctx context.Context, req *pb.AddProtoRequest
 	// maintain the repositoryid in the cache
 	pfdb, err := dbproto.ByFilename(context.Background(), req.Name)
 	if err == nil && len(pfdb) != 0 {
+		fmt.Printf("DBProtofile ID for file %s: %d\n", req.Name, pfdb[0].ID)
 		add.RepositoryID = pfdb[0].RepositoryID
 	}
 	add.Filename = req.Name

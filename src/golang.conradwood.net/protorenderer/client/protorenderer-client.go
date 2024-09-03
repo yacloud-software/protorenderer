@@ -115,6 +115,7 @@ func add(files []string) {
 		ctx = getContext()
 		v, err := protoClient.UpdateProto(ctx, pf)
 		utils.Bail("failed to add proto", err)
+		fmt.Printf("File provides go package: %s\n", v.GoPackage)
 		fmt.Printf("File is in Version: %d\n", v.Version)
 	}
 }
@@ -275,31 +276,3 @@ func showFailed() error {
 	fmt.Println(t.ToPrettyString())
 	return nil
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

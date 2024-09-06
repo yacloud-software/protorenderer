@@ -8,6 +8,7 @@ import (
 	"golang.conradwood.net/go-easyops/authremote"
 	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/go-easyops/utils"
+	"io"
 	"sync"
 	"time"
 )
@@ -83,7 +84,10 @@ func submit_to_protorenderer2_werr(req *pb.AddProtoRequest) error {
 	for {
 		_, err := srv.Recv() // receive, but discard result
 		if err != nil {
-			break
+			if err == io.EOF {
+				break
+			}
+			return err
 		}
 	}
 

@@ -282,9 +282,10 @@ func showFailed() error {
 
 	t = &utils.Table{}
 	fmt.Printf("Failed protorenderer2 submissions (bridge failures)\n")
-	t.AddHeaders("Occured", "Filename", "message")
+	t.AddHeaders("Occured", "RepositoryID", "Filename", "message")
 	for _, f := range res.BridgeFiles {
 		t.AddTimestamp(f.Occured)
+		t.AddUint64(f.RepositoryID)
 		t.AddString(f.Filename)
 		t.AddString(f.ErrorMessage)
 		t.NewRow()

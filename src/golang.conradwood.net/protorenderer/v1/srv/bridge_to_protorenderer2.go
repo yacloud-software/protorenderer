@@ -48,7 +48,7 @@ func protorenderer2_submit_worker() {
 		if err != nil {
 			fmt.Printf("Error submitting to protorenderer2: %s\n", errors.ErrorStringWithStackTrace(err))
 		}
-		setFileError(req.Name, err)
+		setFileError(req, err)
 	}
 }
 func submit_to_protorenderer2_werr(req *pb.AddProtoRequest) error {
@@ -98,9 +98,10 @@ func submit_to_protorenderer2_werr(req *pb.AddProtoRequest) error {
 	return nil
 }
 
-func setFileError(filename string, err error) {
+func setFileError(req *pb.AddProtoRequest, err error) {
 	bridge_failures_lock.Lock()
 	defer bridge_failures_lock.Unlock()
+	filename := req.Name
 	if err == nil {
 		delete(bridge_failures, filename)
 	} else {
@@ -108,6 +109,7 @@ func setFileError(filename string, err error) {
 			Occured:      uint32(time.Now().Unix()),
 			Filename:     filename,
 			ErrorMessage: utils.ErrorString(err),
+			RepositoryID: req.RepositoryID,
 		}
 	}
 }

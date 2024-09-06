@@ -14,6 +14,7 @@ import (
 	ar "golang.conradwood.net/go-easyops/authremote"
 	"golang.conradwood.net/go-easyops/utils"
 	//	"golang.conradwood.net/protorenderer/renderer"
+	"golang.conradwood.net/protorenderer/v1/migrate"
 	//	"io/ioutil"
 	//	"net/http"
 	"os"
@@ -40,11 +41,16 @@ var (
 	find_pkg    = flag.String("find_package", "", "if non-nil find package by name")
 	debug       = flag.Bool("debug", false, "debug mode")
 	svc_name    = flag.String("service", "", "information about a service")
+	fix_failed  = flag.Bool("fix_failed", false, "if true, fix failed bridge files")
 )
 
 func main() {
 	flag.Parse()
 	protoClient = pb.GetProtoRendererServiceClient()
+	if *fix_failed {
+		utils.Bail("failed to fix failed files", fixFailed())
+		os.Exit(0)
+	}
 	if *show_failed {
 		utils.Bail("failed to show failed files", showFailed())
 		os.Exit(0)
@@ -281,7 +287,7 @@ func showFailed() error {
 	fmt.Println(t.ToPrettyString())
 
 	t = &utils.Table{}
-	fmt.Printf("Failed protorenderer2 submissions (bridge failures)\n")
+	fmt.Printf("%d Failed protorenderer2 submissions (bridge failures)\n", len(res.BridgeFiles))
 	t.AddHeaders("Occured", "RepositoryID", "Filename", "message")
 	for _, f := range res.BridgeFiles {
 		t.AddTimestamp(f.Occured)
@@ -306,5 +312,24 @@ func ShowService() error {
 	for _, s := range res.Services {
 		fmt.Printf("ServiceID         : %s\n", s.Service.ID)
 	}
+	return nil
+}
+func fixFailed() error {
+	ctx := getContext()
+	res, err := pb.GetProtoRendererServiceClient().GetFailedFiles(ctx, &common.Void{})
+	if err != nil {
+		return err
+	}
+	t := &utils.ProgressReporter{}
+	t.SetTotal(uint64(len(res.BridgeFiles)))
+	for _, file := range res.BridgeFiles {
+		t.Add(1)
+		t.Print()
+		err = migrate.Fix(file)
+		if err != nil {
+			fmt.Printf("Failed to fix file %s: %s\n", file.Filename, utils.ErrorString(err))
+		}
+	}
+	fmt.Println("done")
 	return nil
 }

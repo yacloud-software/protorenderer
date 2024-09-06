@@ -9,6 +9,7 @@ import (
 	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/go-easyops/utils"
 	"io"
+	"sort"
 	"sync"
 	"time"
 )
@@ -34,6 +35,9 @@ func GetBridgeFailures() []*pb.FailedBridgeFile {
 	for _, v := range bridge_failures {
 		res = append(res, v)
 	}
+	sort.Slice(res, func(i, j int) bool {
+		return res[i].Filename < res[j].Filename
+	})
 	return res
 }
 

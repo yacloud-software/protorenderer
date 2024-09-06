@@ -39,6 +39,7 @@ var (
 	get_zip     = flag.String("zip", "", "if non-nil get zip file for packagename")
 	find_pkg    = flag.String("find_package", "", "if non-nil find package by name")
 	debug       = flag.Bool("debug", false, "debug mode")
+	svc_name    = flag.String("service", "", "information about a service")
 )
 
 func main() {
@@ -46,6 +47,10 @@ func main() {
 	protoClient = pb.GetProtoRendererServiceClient()
 	if *show_failed {
 		utils.Bail("failed to show failed files", showFailed())
+		os.Exit(0)
+	}
+	if *svc_name != "" {
+		utils.Bail("failed to get service", ShowService())
 		os.Exit(0)
 	}
 	if *find_pkg != "" {
@@ -274,5 +279,31 @@ func showFailed() error {
 		t.NewRow()
 	}
 	fmt.Println(t.ToPrettyString())
+
+	t = &utils.Table{}
+	fmt.Printf("Failed protorenderer2 submissions (bridge failures)\n")
+	t.AddHeaders("Occured", "Filename", "message")
+	for _, f := range res.BridgeFiles {
+		t.AddTimestamp(f.Occured)
+		t.AddString(f.Filename)
+		t.AddString(f.ErrorMessage)
+		t.NewRow()
+	}
+	fmt.Println(t.ToPrettyString())
+
+	return nil
+}
+
+func ShowService() error {
+	svcname := *svc_name
+	req := &pb.FindServiceByNameRequest{Name: svcname}
+	ctx := getContext()
+	res, err := pb.GetProtoRendererServiceClient().FindServiceByName(ctx, req)
+	if err != nil {
+		return err
+	}
+	for _, s := range res.Services {
+		fmt.Printf("ServiceID         : %s\n", s.Service.ID)
+	}
 	return nil
 }

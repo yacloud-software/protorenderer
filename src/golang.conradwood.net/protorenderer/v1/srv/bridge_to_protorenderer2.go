@@ -8,12 +8,15 @@ import (
 	"golang.conradwood.net/go-easyops/authremote"
 	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/go-easyops/utils"
+	"sync"
 	"time"
 )
 
 var (
-	submit_to_pr2   = flag.Bool("submit_to_protorenderer2", true, "if true, submit to protorenderer2 as well")
-	pr2_submit_chan = make(chan *pb.AddProtoRequest, 5000)
+	submit_to_pr2        = flag.Bool("submit_to_protorenderer2", true, "if true, submit to protorenderer2 as well")
+	pr2_submit_chan      = make(chan *pb.AddProtoRequest, 5000)
+	bridge_failures      = make(map[string]*pb.FailedBridgeFile)
+	bridge_failures_lock sync.Mutex
 )
 
 func init() {
@@ -23,6 +26,15 @@ func init() {
 func submit_to_protorenderer2(req *pb.AddProtoRequest) {
 	pr2_submit_chan <- req
 }
+func GetBridgeFailures() []*pb.FailedBridgeFile {
+	bridge_failures_lock.Lock()
+	defer bridge_failures_lock.Unlock()
+	var res []*pb.FailedBridgeFile
+	for _, v := range bridge_failures {
+		res = append(res, v)
+	}
+	return res
+}
 
 func protorenderer2_submit_worker() {
 	for {
@@ -31,6 +43,7 @@ func protorenderer2_submit_worker() {
 		if err != nil {
 			fmt.Printf("Error submitting to protorenderer2: %s\n", errors.ErrorStringWithStackTrace(err))
 		}
+		setFileError(req.Name, err)
 	}
 }
 func submit_to_protorenderer2_werr(req *pb.AddProtoRequest) error {
@@ -75,4 +88,18 @@ func submit_to_protorenderer2_werr(req *pb.AddProtoRequest) error {
 	}
 
 	return nil
+}
+
+func setFileError(filename string, err error) {
+	bridge_failures_lock.Lock()
+	defer bridge_failures_lock.Unlock()
+	if err == nil {
+		delete(bridge_failures, filename)
+	} else {
+		bridge_failures[filename] = &pb.FailedBridgeFile{
+			Occured:      uint32(time.Now().Unix()),
+			Filename:     filename,
+			ErrorMessage: utils.ErrorString(err),
+		}
+	}
 }

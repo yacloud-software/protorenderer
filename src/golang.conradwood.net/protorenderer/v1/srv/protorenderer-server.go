@@ -501,5 +501,6 @@ func (e *protoRenderer) GetFailedFiles(ctx context.Context, req *common.Void) (*
 		}
 		res.Files = append(res.Files, ff)
 	}
+	res.BridgeFiles = GetBridgeFailures()
 	return res, nil
 }

@@ -233,6 +233,7 @@ message FailedBridgeFile {
   uint32 Occured=1;
   string Filename=2;
   string ErrorMessage=3;
+  uint64 RepositoryID=4;
 }
 message FailedFile {
   string Compiler=1;

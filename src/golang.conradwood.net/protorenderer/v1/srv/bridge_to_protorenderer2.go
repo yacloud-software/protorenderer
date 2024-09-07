@@ -26,7 +26,9 @@ func init() {
 }
 
 func submit_to_protorenderer2(req *pb.AddProtoRequest) {
-	pr2_submit_chan <- req
+	if *submit_to_pr2 {
+		pr2_submit_chan <- req
+	}
 }
 func GetBridgeFailures() []*pb.FailedBridgeFile {
 	bridge_failures_lock.Lock()

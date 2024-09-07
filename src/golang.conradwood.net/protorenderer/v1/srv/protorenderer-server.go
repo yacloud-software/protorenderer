@@ -436,6 +436,15 @@ func (e *protoRenderer) FindServiceByName(ctx context.Context, req *pb.FindServi
 			if fp == req.Name {
 				add = true
 			}
+			fp = fmt.Sprintf("%s/%s", pkg.Name, svc.Name)
+			if fp == req.Name {
+				add = true
+			}
+			fp = fmt.Sprintf("%s/%s", pkg.FQDN, svc.Name)
+			if fp == req.Name {
+				add = true
+			}
+			fmt.Printf("%s vs %s\n", req.Name, fp)
 			if add {
 				asvc := &pb.ServiceResponse{
 					Service: &pb.Service{

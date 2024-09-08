@@ -513,3 +513,17 @@ func (e *protoRenderer) GetFailedFiles(ctx context.Context, req *common.Void) (*
 	res.BridgeFiles = GetBridgeFailures()
 	return res, nil
 }
+
+func (e *protoRenderer) TriggerUploadToProtoRenderer2(ctx context.Context, req *common.Void) (*common.Void, error) {
+	result := completeVersion.metaCompiler.GetMostRecentResult()
+	if result == nil {
+		return nil, errors.Unavailable(ctx, "GetPackages")
+	}
+	for _, p := range result.Packages {
+		for _, pf := range p.Protofiles {
+			ap := &pb.AddProtoRequest{Name: pf.Filename, Content: pf.Content, RepositoryID: pf.RepositoryID}
+			submit_to_protorenderer2(ap)
+		}
+	}
+	return &common.Void{}, nil
+}

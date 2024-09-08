@@ -224,7 +224,7 @@ func (e *protoRenderer) UpdateProto(ctx context.Context, req *pb.AddProtoRequest
 	rn = strings.TrimPrefix(rn, "/")
 	rn = strings.TrimPrefix(rn, "protos/")
 	req.Name = rn
-	go submit_to_protorenderer2(req)
+	go submit_to_protorenderer2([]*pb.AddProtoRequest{req})
 	pp, err := protoparser.Parse(req.Content)
 	if err != nil {
 		fmt.Printf("Failed to parse: %s\n", err)
@@ -519,11 +519,13 @@ func (e *protoRenderer) TriggerUploadToProtoRenderer2(ctx context.Context, req *
 	if result == nil {
 		return nil, errors.Unavailable(ctx, "GetPackages")
 	}
+	var aprs []*pb.AddProtoRequest
 	for _, p := range result.Packages {
 		for _, pf := range p.Protofiles {
 			ap := &pb.AddProtoRequest{Name: pf.Filename, Content: pf.Content, RepositoryID: pf.RepositoryID}
-			submit_to_protorenderer2(ap)
+			aprs = append(aprs, ap)
 		}
 	}
+	submit_to_protorenderer2(aprs)
 	return &common.Void{}, nil
 }

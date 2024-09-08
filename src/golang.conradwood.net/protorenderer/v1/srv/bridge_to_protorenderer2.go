@@ -16,7 +16,7 @@ import (
 
 var (
 	submit_to_pr2        = flag.Bool("submit_to_protorenderer2", true, "if true, submit to protorenderer2 as well")
-	pr2_submit_chan      = make(chan *pb.AddProtoRequest, 5000)
+	pr2_submit_chan      = make(chan []*pb.AddProtoRequest, 5000)
 	bridge_failures      = make(map[string]*pb.FailedBridgeFile)
 	bridge_failures_lock sync.Mutex
 )
@@ -25,7 +25,10 @@ func init() {
 	go protorenderer2_submit_worker()
 }
 
-func submit_to_protorenderer2(req *pb.AddProtoRequest) {
+func submit_to_protorenderer2(req []*pb.AddProtoRequest) {
+	if len(req) == 0 {
+		return
+	}
 	if *submit_to_pr2 {
 		pr2_submit_chan <- req
 	}
@@ -50,24 +53,34 @@ func protorenderer2_submit_worker() {
 		if err != nil {
 			fmt.Printf("Error submitting to protorenderer2: %s\n", errors.ErrorStringWithStackTrace(err))
 		}
-		setFileError(req, err)
 	}
 }
-func submit_to_protorenderer2_werr(req *pb.AddProtoRequest) error {
-	fmt.Printf("Submitting file \"%s\" to protorenderer2\n", req.Name)
+func submit_to_protorenderer2_werr(reqs []*pb.AddProtoRequest) error {
 	ctx := authremote.ContextWithTimeout(time.Duration(10) * time.Minute)
-	repoid := uint32(req.RepositoryID)
+	//	repoid := uint32(req.RepositoryID)
 
 	srv, err := protorenderer2.GetProtoRenderer2Client().Submit(ctx)
 	if err != nil {
+		for _, req := range reqs {
+			setFileError(req, err)
+		}
 		return err
 	}
 	so := &protorenderer2.SubmitOption{Save: true}
 	err = srv.Send(&protorenderer2.FileTransfer{SubmitOption: so})
 	if err != nil {
+		for _, req := range reqs {
+			setFileError(req, err)
+		}
 		return err
 	}
 	bs := utils.NewByteStreamSender(func(key, filename string) error {
+		repoid := uint32(0)
+		for _, req := range reqs {
+			if req.Name == filename {
+				repoid = uint32(req.RepositoryID)
+			}
+		}
 		// start new file
 		err := srv.Send(&protorenderer2.FileTransfer{Filename: filename, RepositoryID: repoid})
 		return err
@@ -78,14 +91,17 @@ func submit_to_protorenderer2_werr(req *pb.AddProtoRequest) error {
 			return err
 		},
 	)
+	for _, apr := range reqs {
+		fmt.Printf("Submitting file \"%s\" to protorenderer2\n", apr.Name)
 
-	err = bs.SendBytes(req.Name, req.Name, []byte(req.Content))
-	if err != nil {
-		return err
-	}
-	err = srv.Send(&protorenderer2.FileTransfer{TransferComplete: true}) // switching to recv mode now
-	if err != nil {
-		return err
+		err = bs.SendBytes(apr.Name, apr.Name, []byte(apr.Content))
+		if err != nil {
+			return err
+		}
+		err = srv.Send(&protorenderer2.FileTransfer{TransferComplete: true}) // switching to recv mode now
+		if err != nil {
+			return err
+		}
 	}
 	for {
 		_, err := srv.Recv() // receive, but discard result

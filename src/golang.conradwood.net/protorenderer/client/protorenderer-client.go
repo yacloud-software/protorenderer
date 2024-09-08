@@ -22,31 +22,36 @@ import (
 )
 
 var (
-	http_port   = flag.Int("http_port", 8081, "http port to listen on")
-	protoClient pb.ProtoRendererServiceClient
-	view        = flag.Bool("view", false, "view current proto docs")
-	files       = flag.Bool("files", false, "download .proto, .pb.go, .class, .py, and nanopb files (if extra arguments are given on the commandline, limit downloads to those packages matching remaining non-option arguments")
-	sources     = flag.Bool("sources", false, "download .proto files (remaining args, if present, filter the output)")
-	compilers   = flag.String("compilers", "", "specify compilers. if empty (Default): autodetect")
-	version     = flag.Bool("version", false, "get version")
-	delete      = flag.Bool("delete", false, "delete files listed on command line")
-	compile     = flag.Bool("compile", false, "compile files on the fly (but do not add to repository")
-	show_failed = flag.Bool("failed", false, "show failed files")
-	outdir      = flag.String("outdir", "", "directory where to place compiled protos files")
-	listflag    = flag.Bool("list", false, "list source files currently in repository")
-	repoid      = flag.Uint64("repository_id", 0, "repository id of the proto being submitted. if not set, will look at deploy.yaml")
-	pkgid       = flag.Uint64("package_id", 0, "package id to operate on")
-	packages    = flag.Bool("packages", false, "get packages")
-	get_zip     = flag.String("zip", "", "if non-nil get zip file for packagename")
-	find_pkg    = flag.String("find_package", "", "if non-nil find package by name")
-	debug       = flag.Bool("debug", false, "debug mode")
-	svc_name    = flag.String("service", "", "information about a service")
-	fix_failed  = flag.Bool("fix_failed", false, "if true, fix failed bridge files")
+	submit_bridge = flag.Bool("bridge_submit", false, "if true resubmit all protos to protorenderer2")
+	http_port     = flag.Int("http_port", 8081, "http port to listen on")
+	protoClient   pb.ProtoRendererServiceClient
+	view          = flag.Bool("view", false, "view current proto docs")
+	files         = flag.Bool("files", false, "download .proto, .pb.go, .class, .py, and nanopb files (if extra arguments are given on the commandline, limit downloads to those packages matching remaining non-option arguments")
+	sources       = flag.Bool("sources", false, "download .proto files (remaining args, if present, filter the output)")
+	compilers     = flag.String("compilers", "", "specify compilers. if empty (Default): autodetect")
+	version       = flag.Bool("version", false, "get version")
+	delete        = flag.Bool("delete", false, "delete files listed on command line")
+	compile       = flag.Bool("compile", false, "compile files on the fly (but do not add to repository")
+	show_failed   = flag.Bool("failed", false, "show failed files")
+	outdir        = flag.String("outdir", "", "directory where to place compiled protos files")
+	listflag      = flag.Bool("list", false, "list source files currently in repository")
+	repoid        = flag.Uint64("repository_id", 0, "repository id of the proto being submitted. if not set, will look at deploy.yaml")
+	pkgid         = flag.Uint64("package_id", 0, "package id to operate on")
+	packages      = flag.Bool("packages", false, "get packages")
+	get_zip       = flag.String("zip", "", "if non-nil get zip file for packagename")
+	find_pkg      = flag.String("find_package", "", "if non-nil find package by name")
+	debug         = flag.Bool("debug", false, "debug mode")
+	svc_name      = flag.String("service", "", "information about a service")
+	fix_failed    = flag.Bool("fix_failed", false, "if true, fix failed bridge files")
 )
 
 func main() {
 	flag.Parse()
 	protoClient = pb.GetProtoRendererServiceClient()
+	if *submit_bridge {
+		utils.Bail("failed to resubmit", ResubmitBridge())
+		os.Exit(0)
+	}
 	if *fix_failed {
 		utils.Bail("failed to fix failed files", fixFailed())
 		os.Exit(0)
@@ -331,5 +336,14 @@ func fixFailed() error {
 		}
 	}
 	fmt.Println("done")
+	return nil
+}
+func ResubmitBridge() error {
+	ctx := getContext()
+	_, err := pb.GetProtoRendererServiceClient().TriggerUploadToProtoRenderer2(ctx, &common.Void{})
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Resubmit triggered\n")
 	return nil
 }

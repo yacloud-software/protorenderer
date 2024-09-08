@@ -105,14 +105,16 @@ func submit_to_protorenderer2_werr(reqs []*pb.AddProtoRequest) error {
 	}
 	for {
 		recv, err := srv.Recv() // receive, but discard result
-		res := recv.Result
-		if res != nil {
-			for _, req := range reqs {
-				if req.Name == res.Filename {
-					setResult(req, res)
+		if recv != nil {
+			res := recv.Result
+			if res != nil {
+				for _, req := range reqs {
+					if req.Name == res.Filename {
+						setResult(req, res)
+					}
 				}
-			}
 
+			}
 		}
 		if err != nil {
 			if err == io.EOF {

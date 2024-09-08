@@ -312,4 +312,6 @@ service ProtoRendererService {
   rpc FindPackageByName(PackageName) returns (PackageFindResult);
   // get failures
   rpc GetFailedFiles(common.Void) returns (FailedFilesList);
+  // upload all known proto files to protorenderer2 (useful during migration and testing of new protorenderer)
+  rpc TriggerUploadToProtoRenderer2(common.Void) returns (common.Void);
 }

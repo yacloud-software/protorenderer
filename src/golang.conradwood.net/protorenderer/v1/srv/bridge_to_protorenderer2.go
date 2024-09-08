@@ -98,10 +98,10 @@ func submit_to_protorenderer2_werr(reqs []*pb.AddProtoRequest) error {
 		if err != nil {
 			return err
 		}
-		err = srv.Send(&protorenderer2.FileTransfer{TransferComplete: true}) // switching to recv mode now
-		if err != nil {
-			return err
-		}
+	}
+	err = srv.Send(&protorenderer2.FileTransfer{TransferComplete: true}) // switching to recv mode now
+	if err != nil {
+		return err
 	}
 	for {
 		_, err := srv.Recv() // receive, but discard result

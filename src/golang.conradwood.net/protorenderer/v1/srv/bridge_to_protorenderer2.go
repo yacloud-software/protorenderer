@@ -104,7 +104,16 @@ func submit_to_protorenderer2_werr(reqs []*pb.AddProtoRequest) error {
 		return err
 	}
 	for {
-		_, err := srv.Recv() // receive, but discard result
+		recv, err := srv.Recv() // receive, but discard result
+		res := recv.Result
+		if res != nil {
+			for _, req := range reqs {
+				if req.Name == res.Filename {
+					setResult(req, res)
+				}
+			}
+
+		}
 		if err != nil {
 			if err == io.EOF {
 				break
@@ -115,7 +124,24 @@ func submit_to_protorenderer2_werr(reqs []*pb.AddProtoRequest) error {
 
 	return nil
 }
+func setResult(req *pb.AddProtoRequest, result *protorenderer2.FileResult) {
+	allgood := true
+	var failed_result *protorenderer2.CompileResult
+	for _, cr := range result.CompileResults {
+		if !cr.Success {
+			allgood = false
+			failed_result = cr
+			break
+		}
+	}
+	if allgood {
+		setFileError(req, nil)
+		return
+	}
+	ferr := fmt.Errorf("%s", failed_result.ErrorMessage)
+	setFileError(req, ferr)
 
+}
 func setFileError(req *pb.AddProtoRequest, err error) {
 	bridge_failures_lock.Lock()
 	defer bridge_failures_lock.Unlock()

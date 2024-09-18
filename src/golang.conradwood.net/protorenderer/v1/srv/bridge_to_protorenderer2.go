@@ -3,15 +3,16 @@ package srv
 import (
 	"flag"
 	"fmt"
+	"io"
+	"sort"
+	"sync"
+	"time"
+
 	pb "golang.conradwood.net/apis/protorenderer"
 	"golang.conradwood.net/apis/protorenderer2"
 	"golang.conradwood.net/go-easyops/authremote"
 	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/go-easyops/utils"
-	"io"
-	"sort"
-	"sync"
-	"time"
 )
 
 var (
@@ -80,6 +81,9 @@ func submit_to_protorenderer2_werr(reqs []*pb.AddProtoRequest) error {
 			if req.Name == filename {
 				repoid = uint32(req.RepositoryID)
 			}
+		}
+		if repoid == 0 {
+			fmt.Printf("[bridge] - Warning, got no repoid for file %s\n", filename)
 		}
 		// start new file
 		err := srv.Send(&protorenderer2.FileTransfer{Filename: filename, RepositoryID: repoid})

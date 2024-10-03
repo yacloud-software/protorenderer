@@ -17,6 +17,7 @@ func Parse(content string) (*ProtoParsed, error) {
 	lines := strings.Split(content, "\n")
 	res := &ProtoParsed{Content: content}
 	comment := false
+	got_package := false
 	for _, line := range lines {
 		if comment {
 			idx := strings.Index(line, "*/")
@@ -40,7 +41,10 @@ func Parse(content string) (*ProtoParsed, error) {
 		if strings.Contains(line, "java_package") && strings.Contains(line, "option") && res.JavaPackage == "" {
 			res.JavaPackage = lastElement(line)
 		} else if strings.Contains(line, "package") {
-			res.GoPackage = lastElement(line)
+			got_package = true
+			if !got_package { // only first one counts
+				res.GoPackage = lastElement(line)
+			}
 		} else if strings.Contains(line, "import") {
 			i := lastElement(line)
 			res.Imports = append(res.Imports, i)
@@ -73,31 +77,3 @@ func lastElement(input string) string {
 	s = strings.Trim(s, "\"")
 	return s
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

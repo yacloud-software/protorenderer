@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	submit_to_pr2        = flag.Bool("submit_to_protorenderer2", true, "if true, submit to protorenderer2 as well")
+	submit_to_pr2        = flag.Bool("submit_to_protorenderer2", false, "if true, submit to protorenderer2 as well")
 	pr2_submit_chan      = make(chan []*pb.AddProtoRequest, 5000)
 	bridge_failures      = make(map[string]*pb.FailedBridgeFile)
 	bridge_failures_lock sync.Mutex

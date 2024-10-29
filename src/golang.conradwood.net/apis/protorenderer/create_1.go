@@ -4,7 +4,7 @@
 */
 
 /* geninfo:
-   filename  : protos/golang.conradwood.net/apis/protorenderer/protorenderer.proto
+   filename  : golang.conradwood.net/apis/protorenderer/protorenderer.proto
    gopackage : golang.conradwood.net/apis/protorenderer
    importname: ai_0
    clientfunc: GetProtoRendererService
